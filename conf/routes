@@ -1,0 +1,8 @@
+GET        /                    controllers.Logs.index
+GET        /servers             controllers.Logs.servers
+GET        /web                 controllers.Logs.webClient
+GET        /srv                 controllers.Logs.serverClient
+GET        /streamed            controllers.AkkaStreamCtrl.indexStreamed
+GET        /webstream           controllers.AkkaStreamCtrl.webStream
+GET        /rx                  controllers.AkkaStreamCtrl.rxStream
+GET        /assets/*file        controllers.Assets.at(path = "/public", file)

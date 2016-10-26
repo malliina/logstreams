@@ -1,0 +1,16 @@
+@(wsUrl: String)
+<html>
+    <script src="@routes.Assets.at(s"js/logs.js")"></script>
+    <body>
+        <h1>Home</h1>
+        <p id="status">Waiting...</p>
+        <table class="table table-striped table-hover" id="logTable">
+            <thead>
+                <tr><th>Message</th></tr>
+            </thead>
+            <tbody id="logTableBody">
+            </tbody>
+        </table>
+    </body>
+</html>
+@wsopen(wsUrl)

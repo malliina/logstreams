@@ -1,0 +1,12 @@
+@(wsUrl: String)
+
+<script type="text/javascript" charset="utf-8">
+    window.onload = function () {
+        var WS = window['MozWebSocket'] ? MozWebSocket : WebSocket;
+        webSocket = new WS ("@(wsUrl)");
+        webSocket.onopen = onconnect;
+        webSocket.onmessage = onmessage;
+        webSocket.onclose = onclose;
+        webSocket.onerror = onerror;
+    };
+</script>

@@ -6,12 +6,20 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.RequestHeader
 import rx.lang.scala.{Observable, Observer}
 
-object ServerActor {
+object SourceActor {
   def props(out: ActorRef, req: RequestHeader, next: Observer[LogEvent]) =
-    Props(new ServerActor(out, req, next))
+    Props(new SourceActor(out, req, next))
 }
 
-class ServerActor(out: ActorRef, val req: RequestHeader, next: Observer[LogEvent]) extends JsonActor {
+/** A connected event source.
+  *
+  * @param out the source, unused unless we want to send messages to sources
+  * @param req request
+  * @param next sink for messages from the source
+  */
+class SourceActor(out: ActorRef, val req: RequestHeader, next: Observer[LogEvent])
+  extends JsonActor {
+
   override def onMessage(message: JsValue): Unit = push(message, req)
 
   private def push(message: JsValue, req: RequestHeader): Unit = {
@@ -21,12 +29,22 @@ class ServerActor(out: ActorRef, val req: RequestHeader, next: Observer[LogEvent
   }
 }
 
-object ClientActor {
+object ListenerActor {
   def props(out: ActorRef, req: RequestHeader, next: Observable[LogEvent]) =
-    Props(new ClientActor(out, req, next))
+    Props(new ListenerActor(out, req, next))
 }
 
-class ClientActor(out: ActorRef, val req: RequestHeader, next: Observable[LogEvent]) extends JsonActor {
+/** A connected listener, typically a browser.
+  *
+  * Send a message to `out` to send it to the listener.
+  *
+  * @param out client
+  * @param req request
+  * @param next event source
+  */
+class ListenerActor(out: ActorRef, val req: RequestHeader, next: Observable[LogEvent])
+  extends JsonActor {
+
   val subscription = next.subscribe(
     event => out ! Json.toJson(event),
     err => log.error("Log queue failed.", err),

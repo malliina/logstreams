@@ -1,3 +1,3 @@
-# logstreams #
+# logstreams
 
 This app displays logs.

@@ -20,7 +20,7 @@ class StreamTests extends FunSuite {
     ref ! 42
   }
 
-  test("akka streams") {
+  ignore("akka streams") {
     val (queue, publisher) = Source.queue[Int](2, OverflowStrategy.backpressure)
       .toMat(Sink.asPublisher(fanout = true))(Keep.both).run()
     val source = Source.fromPublisher(publisher)

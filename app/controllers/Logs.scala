@@ -27,12 +27,29 @@ class Logs(htmls: Htmls)(implicit actorSystem: ActorSystem, mat: Materializer)
   val events: Observable[LogEvent] = messages
   val eventSink: Observer[LogEvent] = messages
 
-  def dummyEvent = LogEvent(System.currentTimeMillis(), "now", "message", "logger", "this thread", Level.INFO, None)
+  def dummyEvent(msg: String) = LogEvent(
+    System.currentTimeMillis(),
+    "now",
+    msg,
+    getClass.getName.stripSuffix("$"),
+    "this thread",
+    Level.INFO,
+    None)
+
+  def failEvent(msg: String) = LogEvent(
+    System.currentTimeMillis(),
+    "now!",
+    msg,
+    getClass.getName.stripSuffix("$"),
+    Thread.currentThread().getName,
+    Level.ERROR,
+    Option(new Exception("boom").getStackTraceString)
+  )
 
   // HTML
 
   def index = okAction { _ =>
-    htmls.index
+    htmls.logs
   }
 
   def sources = okAction { _ =>
@@ -41,11 +58,13 @@ class Logs(htmls: Htmls)(implicit actorSystem: ActorSystem, mat: Materializer)
 
   // Websockets
 
-  def webClient = WebSocket.accept[Any, JsValue] { req =>
+  def listenerSocket = WebSocket.accept[Any, JsValue] { req =>
+    eventSink onNext dummyEvent("listener connected - this is a very long line blahblahblah jdhsfjkdshf dskhf dskgfdsgfj dsgfdsgfk gdsfkghdskufhdsku f kdsf kdshfkhdskfuhdskufhdskhfkdshfkjdshfkhdsf sduhfdskhfdkshfds fds fdshfkdshfkdshfksdhf dskfhdskfh")
+    eventSink onNext failEvent("test fail")
     ActorFlow.actorRef(out => ListenerActor.props(out, req, events))
   }
 
-  def serverClient = WebSocket.accept[JsValue, JsValue] { req =>
+  def sourceSocket = WebSocket.accept[JsValue, JsValue] { req =>
     ActorFlow.actorRef(out => SourceActor.props(out, req, eventSink))
   }
 }

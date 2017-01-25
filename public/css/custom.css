@@ -5,3 +5,13 @@
 .top-padding {
     padding-top: 60px;
 }
+
+.cell-content {
+    white-space: nowrap;
+}
+
+.cell-wide {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 400px;
+}

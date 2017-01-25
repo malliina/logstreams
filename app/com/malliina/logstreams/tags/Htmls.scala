@@ -1,14 +1,13 @@
 package com.malliina.logstreams.tags
 
+import com.malliina.logstreams.tags.Htmls.js
 import com.malliina.play.tags.Bootstrap._
 import com.malliina.play.tags.TagPage
 import com.malliina.play.tags.Tags._
-import controllers.routes.Assets.at
 import play.api.mvc.Call
-
+import controllers.routes.Assets.at
 import scalatags.Text.GenericAttr
 import scalatags.Text.all._
-import Htmls.js
 import Htmls.callAttr
 
 object Htmls {
@@ -40,9 +39,8 @@ class Htmls(scripts: Modifier*) {
     )
   )
 
-  def logs(error: Option[String]) = root("logs")(
+  def logs = root("logs")(
     headerRow()("Logs ", small(`class` := s"$PullRight $HiddenXs", id := "status")("Initializing...")),
-    error.fold(empty)(err => leadPara(err)),
     logTable(Seq("Time", "Message", "Logger", "Thread", "Level"))
   )
 

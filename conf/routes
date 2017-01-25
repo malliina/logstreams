@@ -1,7 +1,7 @@
 GET        /                    controllers.Logs.index
 GET        /sources             controllers.Logs.sources
-GET        /ws/clients          controllers.Logs.webClient
-GET        /ws/sources          controllers.Logs.serverClient
+GET        /ws/clients          controllers.Logs.listenerSocket
+GET        /ws/sources          controllers.Logs.sourceSocket
 GET        /streamed            controllers.AkkaStreamCtrl.indexStreamed
 GET        /webstream           controllers.AkkaStreamCtrl.webStream
 GET        /rx                  controllers.AkkaStreamCtrl.rxStream

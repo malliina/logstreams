@@ -24,13 +24,15 @@ object PlayBuild {
   lazy val server = PlayProject.default("logstreams").settings(commonSettings: _*)
 
   val malliinaGroup = "com.malliina"
+  val utilPlayDep = malliinaGroup %% "util-play" % "3.5.0"
 
   lazy val commonSettings = scalaJSSettings ++ Seq(
     organization := malliinaGroup,
     version := "0.0.1",
     scalaVersion := "2.11.8",
     libraryDependencies ++= Seq(
-      malliinaGroup %% "util-play" % "3.5.0",
+      utilPlayDep,
+      utilPlayDep % Test classifier "tests",
       malliinaGroup %% "logback-rx" % "1.1.0"
     )
   )

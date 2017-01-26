@@ -1,11 +1,12 @@
 package tests
 
-import com.malliina.app.{AppComponents, WithAppComponents}
-import org.scalatest.FunSuite
+import com.malliina.app.AppComponents
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 
-class AppTestsScalaTest extends FunSuite with OneAppPerSuite2[AppComponents] with WithAppComponents {
+class TestSuite extends AppSuite(new AppComponents(_))
+
+class AppTestsScalaTest extends TestSuite {
 
   test("can make request") {
     val result = route(app, FakeRequest(GET, "/")).get

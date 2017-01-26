@@ -17,7 +17,7 @@ object Logs {
   private val log = Logger(getClass)
 }
 
-class Logs(htmls: Htmls)(implicit actorSystem: ActorSystem, mat: Materializer)
+class Logs(htmls: Htmls, oauth: OAuthCtrl)(implicit actorSystem: ActorSystem, mat: Materializer)
   extends BaseController {
 
   implicit val ec = mat.executionContext
@@ -47,12 +47,11 @@ class Logs(htmls: Htmls)(implicit actorSystem: ActorSystem, mat: Materializer)
   )
 
   // HTML
-
-  def index = okAction { _ =>
+  def index = oauth.navigate { _ =>
     htmls.logs
   }
 
-  def sources = okAction { _ =>
+  def sources = oauth.navigate { _ =>
     htmls.servers
   }
 

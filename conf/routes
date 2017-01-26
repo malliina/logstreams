@@ -2,7 +2,6 @@ GET        /                    controllers.Logs.index
 GET        /sources             controllers.Logs.sources
 GET        /ws/clients          controllers.Logs.listenerSocket
 GET        /ws/sources          controllers.Logs.sourceSocket
-GET        /streamed            controllers.AkkaStreamCtrl.indexStreamed
-GET        /webstream           controllers.AkkaStreamCtrl.webStream
-GET        /rx                  controllers.AkkaStreamCtrl.rxStream
+GET        /oauth               controllers.OAuthCtrl.initiate
+GET        /oauthcb             controllers.OAuthCtrl.redirResponse
 GET        /assets/*file        controllers.Assets.at(path = "/public", file)

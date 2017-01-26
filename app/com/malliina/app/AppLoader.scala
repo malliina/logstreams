@@ -1,5 +1,6 @@
 package com.malliina.app
 
+import com.malliina.logstreams.auth.PassThruAuth
 import com.malliina.logstreams.tags.Htmls
 import com.malliina.play.app.DefaultApp
 import controllers.OAuth
@@ -17,7 +18,8 @@ class AppComponents(context: Context) extends BuiltInComponentsFromContext(conte
   lazy val isProd = environment.mode == Mode.Prod
   lazy val htmls = Htmls.forApp("frontend", isProd)
   lazy val oauth = new OAuthCtrl(new OAuth(materializer))
+  lazy val users = new PassThruAuth
   // Controllers
-  val home = new Logs(htmls, oauth)(actorSystem, materializer)
+  val home = new Logs(htmls, oauth, users)(actorSystem, materializer)
   override val router: Router = new Routes(httpErrorHandler, home, oauth, assets)
 }

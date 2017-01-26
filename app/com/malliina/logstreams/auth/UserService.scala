@@ -13,7 +13,7 @@ trait UserService {
 
   def remove(user: Username): Future[Either[DoesNotExist, Unit]]
 
-  def isValid(creds: BasicCredentials): Future[Boolean]
+  def isValid(token: BasicCredentials): Future[Boolean]
 
   def all(): Future[Seq[BasicCredentials]]
 }

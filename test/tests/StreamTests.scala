@@ -13,7 +13,7 @@ class StreamTests extends FunSuite {
   implicit val mat = ActorMaterializer()(ActorSystem("test"))
   implicit val ec = mat.executionContext
 
-  test("actors") {
+  ignore("actors") {
     val source = Source.actorRef[Int](1000, OverflowStrategy.dropHead)
     val printer = Sink.foreach(println)
     val ref = source.toMat(printer)(Keep.left).run()
@@ -29,7 +29,7 @@ class StreamTests extends FunSuite {
     source.runForeach(println)
   }
 
-  test("subjects") {
+  ignore("subjects") {
     val s = BoundedReplaySubject[Int](3).toSerialized
     s.onNext(1)
     s.onNext(2)

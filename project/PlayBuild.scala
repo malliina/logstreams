@@ -1,4 +1,5 @@
 import com.malliina.sbtplay.PlayProject
+import com.malliina.sbtutils.SbtUtils._
 import com.typesafe.sbt.web.Import.{Assets, pipelineStages}
 import org.scalajs.sbtplugin.ScalaJSPlugin
 import org.scalajs.sbtplugin.ScalaJSPlugin.AutoImport.persistLauncher
@@ -17,28 +18,42 @@ object PlayBuild {
         "com.lihaoyi" %%% "scalatags" % "0.6.2",
         "com.lihaoyi" %%% "upickle" % "0.4.3",
         "be.doeraene" %%% "scalajs-jquery" % "0.9.1"
-        //"org.scala-js" %%% "scalajs-dom" % "0.9.1"
       )
     )
 
-  lazy val server = PlayProject.default("logstreams").settings(commonSettings: _*)
+  lazy val server = PlayProject.default("logstreams")
+    .settings(serverSettings: _*)
+
+  lazy val client = Project("logstreams-client", file("client"))
+    .settings(clientSettings: _*)
 
   val malliinaGroup = "com.malliina"
   val utilPlayDep = malliinaGroup %% "util-play" % "3.5.0"
 
-  lazy val commonSettings = scalaJSSettings ++ Seq(
-    organization := malliinaGroup,
-    version := "0.0.1",
-    scalaVersion := "2.11.8",
+  def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
     libraryDependencies ++= Seq(
       utilPlayDep,
-      utilPlayDep % Test classifier "tests",
-      malliinaGroup %% "logback-rx" % "1.1.0"
+      utilPlayDep % Test classifier "tests"
     )
   )
 
   def scalaJSSettings = Seq(
     scalaJSProjects := Seq(frontend),
     pipelineStages in Assets := Seq(scalaJSPipeline)
+  )
+
+  def clientSettings = basicSettings ++ mavenSettings ++ Seq(
+    gitUserName := "malliina",
+    developerName := "Michael Skogberg",
+    libraryDependencies ++= loggingDeps ++ Seq(
+      "com.neovisionaries" % "nv-websocket-client" % "1.31",
+      "org.scalatest" %% "scalatest" % "3.0.0" % Test
+    )
+  )
+
+  def basicSettings = Seq(
+    organization := malliinaGroup,
+    version := "0.0.1",
+    scalaVersion := "2.11.8"
   )
 }

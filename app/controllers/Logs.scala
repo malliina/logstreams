@@ -22,7 +22,7 @@ object Logs {
 }
 
 class Logs(htmls: Htmls, oauth: OAuthCtrl, users: UserService)(implicit actorSystem: ActorSystem, mat: Materializer)
-  extends BaseController {
+  extends Controller {
 
   implicit val ec = mat.executionContext
 

@@ -10,6 +10,6 @@ class AppTestsScalaTest extends TestSuite {
 
   test("can make request") {
     val result = route(app, FakeRequest(GET, "/")).get
-    assert(status(result) === 200)
+    assert(status(result) === 303)
   }
 }

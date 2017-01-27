@@ -28,7 +28,7 @@ object PlayBuild {
     .settings(clientSettings: _*)
 
   val malliinaGroup = "com.malliina"
-  val utilPlayDep = malliinaGroup %% "util-play" % "3.5.0"
+  val utilPlayDep = malliinaGroup %% "util-play" % "3.5.2"
 
   def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
     libraryDependencies ++= Seq(

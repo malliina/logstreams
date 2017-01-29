@@ -2,6 +2,6 @@ GET        /                    controllers.Logs.index
 GET        /sources             controllers.Logs.sources
 GET        /ws/clients          controllers.Logs.listenerSocket
 GET        /ws/sources          controllers.Logs.sourceSocket
-GET        /oauth               controllers.OAuthCtrl.initiate
-GET        /oauthcb             controllers.OAuthCtrl.redirResponse
+GET        /oauth               controllers.OAuthRoutes.initiate
+GET        /oauthcb             controllers.OAuthRoutes.redirResponse
 GET        /assets/*file        controllers.Assets.at(path = "/public", file)

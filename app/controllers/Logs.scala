@@ -10,6 +10,7 @@ import com.malliina.logstreams.{ListenerActor, SourceActor}
 import com.malliina.play.auth.Auth
 import com.malliina.rx.BoundedReplaySubject
 import play.api.Logger
+import play.api.http.Writeable
 import play.api.libs.json.JsValue
 import play.api.libs.streams.ActorFlow
 import play.api.mvc._
@@ -21,7 +22,7 @@ object Logs {
   private val log = Logger(getClass)
 }
 
-class Logs(htmls: Htmls, oauth: OAuthCtrl, users: UserService)(implicit actorSystem: ActorSystem, mat: Materializer)
+class Logs(htmls: Htmls, oauth: LogAuth, users: UserService)(implicit actorSystem: ActorSystem, mat: Materializer)
   extends Controller {
 
   implicit val ec = mat.executionContext
@@ -33,13 +34,12 @@ class Logs(htmls: Htmls, oauth: OAuthCtrl, users: UserService)(implicit actorSys
 
   // HTML
 
-  def index = oauth.navigate { _ =>
-    htmls.logs
-  }
+  def index = navigate(htmls.logs)
 
-  def sources = oauth.navigate { _ =>
-    htmls.servers
-  }
+  def sources = navigate(htmls.servers)
+
+  def navigate[C: Writeable](content: => C): EssentialAction =
+    oauth.withAuth(_ => Ok(content))
 
   // WebSockets
 
@@ -49,7 +49,7 @@ class Logs(htmls: Htmls, oauth: OAuthCtrl, users: UserService)(implicit actorSys
 
     def authorizedFlow = ActorFlow.actorRef(out => ListenerActor.props(out, req, events))
 
-    oauth.authenticateFromSession(req) map { maybeUser =>
+    oauth.authenticateSocket(req) map { maybeUser =>
       maybeUser
         .map(_ => Right(authorizedFlow))
         .getOrElse(Left(Unauthorized))

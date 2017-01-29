@@ -34,7 +34,7 @@ object PlayBuild {
     libraryDependencies ++= Seq(
       utilPlayDep,
       utilPlayDep % Test classifier "tests"
-    )
+    ) map (_.withSources().withJavadoc())
   )
 
   def scalaJSSettings = Seq(

@@ -1,14 +1,15 @@
 package com.malliina.logstreams.tags
 
+import com.malliina.logstreams.tags.Htmls.callAttr
 import com.malliina.logstreams.tags.Htmls.js
 import com.malliina.play.tags.Bootstrap._
 import com.malliina.play.tags.TagPage
 import com.malliina.play.tags.Tags._
-import play.api.mvc.Call
 import controllers.routes.Assets.at
+import play.api.mvc.Call
+
 import scalatags.Text.GenericAttr
 import scalatags.Text.all._
-import Htmls.callAttr
 
 object Htmls {
   implicit val callAttr = new GenericAttr[Call]
@@ -30,6 +31,7 @@ object Htmls {
 }
 
 class Htmls(scripts: Modifier*) {
+  val Status = "status"
 
   def servers = root("servers")(
     headerRow()("Servers"),
@@ -39,13 +41,13 @@ class Htmls(scripts: Modifier*) {
   )
 
   def logs = root("logs")(
-    headerRow()("Logs ", small(`class` := s"$PullRight $HiddenXs", id := "status")("Initializing...")),
+    headerRow()("Logs ", small(`class` := s"$PullRight $HiddenXs", id := Status)("Initializing...")),
     logTable(Seq("Time", "Message", "Logger", "Thread", "Level"))
   )
 
   def index = root("index")(
     h1("Home"),
-    p(id := "status")("Waiting..."),
+    p(id := Status)("Waiting..."),
     logTable(Seq("Message"))
   )
 

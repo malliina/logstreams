@@ -17,6 +17,8 @@ case class JVMLogEntry(level: String,
                        stackTrace: Option[String] = None)
 
 class ListenerSocket(wsPath: String) extends SocketJS(wsPath) {
+  val Danger = "danger"
+  val Warning = "warning"
   val CellContent = "cell-content"
   val CellWide = "cell-wide"
   val NoWrap = "no-wrap"
@@ -54,8 +56,8 @@ class ListenerSocket(wsPath: String) extends SocketJS(wsPath) {
   // "Time", "Message", "Logger", "Thread", "Level"
   def toRow(entry: JVMLogEntry): (Frag, String, String) = {
     val rowClass = entry.level match {
-      case "ERROR" => "danger"
-      case "WARN" => "warning"
+      case "ERROR" => Danger
+      case "WARN" => Warning
       case _ => ""
     }
     val entryId = UUID.randomUUID().toString take 5

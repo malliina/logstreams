@@ -13,9 +13,6 @@ object Frontend extends JSApp {
     val path = dom.window.location.pathname
     val jsImpl: PartialFunction[String, SocketJS] = {
       case "/" => ListenerSocket.web
-      // wtf?
-      case "/sources" => ListenerSocket.server
-      case "/streamed" => ListenerSocket.rx
     }
 
     app = jsImpl.lift(path)

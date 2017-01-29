@@ -34,7 +34,6 @@ class Htmls(scripts: Modifier*) {
   def servers = root("servers")(
     headerRow()("Servers"),
     fullRow(
-      p(id := "status")("Waiting..."),
       logTable(Seq("Message"))
     )
   )

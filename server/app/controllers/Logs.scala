@@ -6,7 +6,7 @@ import ch.qos.logback.classic.Level
 import com.malliina.app.AppMeta
 import com.malliina.logbackrx.LogEvent
 import com.malliina.logstreams.auth.UserService
-import com.malliina.logstreams.models.{AppLogEvent, AppName, LogSource}
+import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents, AppName, LogSource}
 import com.malliina.logstreams.tags.Htmls
 import com.malliina.logstreams.{ListenerActor, SourceActor}
 import com.malliina.play.auth.Auth
@@ -20,6 +20,7 @@ import play.api.mvc._
 import rx.lang.scala.{Observable, Observer}
 
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 object Logs {
   private val log = Logger(getClass)
@@ -34,7 +35,7 @@ class Logs(htmls: Htmls, oauth: LogAuth, users: UserService, actorSystem: ActorS
 
   val replaySize = 10
   val messages = BoundedReplaySubject[AppLogEvent](replaySize).toSerialized
-  val events: Observable[AppLogEvent] = messages
+  val events: Observable[AppLogEvents] = messages.tumblingBuffer(100.millis).filter(_.nonEmpty).map(AppLogEvents.apply)
   val eventSink: Observer[AppLogEvent] = messages
 
   // HTML

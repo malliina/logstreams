@@ -2,8 +2,9 @@ package com.malliina.logstreams
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.malliina.logbackrx.LogEvent
-import com.malliina.logstreams.models.{AppLogEvent, AppName, LogSource}
+import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents, AppName, LogSource}
 import com.malliina.play.models.Username
+import play.api.http.HeaderNames
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.RequestHeader
 import rx.lang.scala.{Observable, Observer}
@@ -26,13 +27,13 @@ class SourceActor(out: ActorRef, user: Username, val req: RequestHeader, next: O
 
   private def push(message: JsValue, req: RequestHeader): Unit = {
     message.validate[LogEvent]
-      .map(msg => next.onNext(AppLogEvent(LogSource(AppName(user.name), req.remoteAddress), msg)))
+      .map(msg => next.onNext(AppLogEvent(LogSource(AppName(user.name), address), msg)))
       .recoverTotal(_ => log.error(s"Unsupported server message from $address: '$message'."))
   }
 }
 
 object ListenerActor {
-  def props(out: ActorRef, req: RequestHeader, next: Observable[AppLogEvent]) =
+  def props(out: ActorRef, req: RequestHeader, next: Observable[AppLogEvents]) =
     Props(new ListenerActor(out, req, next))
 }
 
@@ -44,7 +45,7 @@ object ListenerActor {
   * @param req  request
   * @param next event source
   */
-class ListenerActor(out: ActorRef, val req: RequestHeader, next: Observable[AppLogEvent])
+class ListenerActor(out: ActorRef, val req: RequestHeader, next: Observable[AppLogEvents])
   extends JsonActor {
 
   val subscription = next.subscribe(
@@ -72,5 +73,5 @@ trait JsonActor extends Actor with ActorLogging {
     case json: JsValue => onMessage(json)
   }
 
-  def address = req.remoteAddress
+  def address: String = req.headers.get(HeaderNames.X_FORWARDED_FOR) getOrElse req.remoteAddress
 }

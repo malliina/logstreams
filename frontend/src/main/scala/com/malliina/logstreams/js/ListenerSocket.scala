@@ -11,14 +11,16 @@ import scalatags.Text.all._
 
 case class LogSource(name: String, remoteAddress: String)
 
-case class AppLogEvent(source: LogSource, event: LogEvent)
-
 case class LogEvent(level: String,
                     message: String,
                     loggerName: String,
                     threadName: String,
                     timeFormatted: String,
                     stackTrace: Option[String] = None)
+
+case class AppLogEvent(source: LogSource, event: LogEvent)
+
+case class AppLogEvents(events: Seq[AppLogEvent])
 
 class ListenerSocket(wsPath: String) extends SocketJS(wsPath) {
   val CellContent = "cell-content"
@@ -34,11 +36,14 @@ class ListenerSocket(wsPath: String) extends SocketJS(wsPath) {
   lazy val table = dom.document.getElementById(TableId).asInstanceOf[HTMLTableElement]
 
   override def handlePayload(payload: String): Unit = {
-    val parsed = validate[AppLogEvent](payload)
-    parsed.fold(onInvalidData.lift, onLogEntry)
+    val parsed = validate[AppLogEvents](payload)
+    parsed.fold(onInvalidData.lift, onLogEvents)
   }
 
-  def onLogEntry(event: AppLogEvent) = {
+  def onLogEvents(appLogEvents: AppLogEvents) =
+    appLogEvents.events foreach onLogEvent
+
+  def onLogEvent(event: AppLogEvent) = {
     val entry = event.event
     val (frag, msgCellId, linkId) = toRow(event)
     val stackId = s"stack-$linkId"

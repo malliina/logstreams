@@ -22,3 +22,9 @@ case class AppLogEvent(source: LogSource, event: LogEvent)
 object AppLogEvent {
   implicit val json = Json.format[AppLogEvent]
 }
+
+case class AppLogEvents(events: Seq[AppLogEvent])
+
+object AppLogEvents {
+  implicit val json = Json.format[AppLogEvents]
+}

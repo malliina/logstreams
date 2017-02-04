@@ -14,7 +14,7 @@ import webscalajs.WebScalaJS.autoImport.{scalaJSPipeline, scalaJSProjects}
 
 object PlayBuild {
   lazy val root = Project("root", file("."))
-    .settings(basicSettings:_*)
+    .settings(basicSettings: _*)
     .aggregate(frontend, server, client, integrationTest)
 
   lazy val frontend = Project("frontend", file("frontend"))

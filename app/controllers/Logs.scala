@@ -3,16 +3,18 @@ package controllers
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import ch.qos.logback.classic.Level
+import com.malliina.app.AppMeta
 import com.malliina.logbackrx.LogEvent
 import com.malliina.logstreams.auth.UserService
 import com.malliina.logstreams.models.{AppLogEvent, AppName, LogSource}
 import com.malliina.logstreams.tags.Htmls
 import com.malliina.logstreams.{ListenerActor, SourceActor}
 import com.malliina.play.auth.Auth
+import com.malliina.play.controllers.BaseController
 import com.malliina.rx.BoundedReplaySubject
 import play.api.Logger
 import play.api.http.Writeable
-import play.api.libs.json.JsValue
+import play.api.libs.json.{JsValue, Json}
 import play.api.libs.streams.ActorFlow
 import play.api.mvc._
 import rx.lang.scala.{Observable, Observer}
@@ -51,7 +53,8 @@ class Logs(htmls: Htmls, oauth: LogAuth, users: UserService, actorSystem: ActorS
     eventSink onNext dummy
     eventSink onNext testEvent(failEvent("test fail"))
 
-    def authorizedFlow = ActorFlow.actorRef(out => ListenerActor.props(out, req, events))
+    def authorizedFlow = ActorFlow.actorRef(out =>
+      ListenerActor.props(out, req, events))
 
     oauth.authenticateSocket(req) map { maybeUser =>
       maybeUser
@@ -73,6 +76,12 @@ class Logs(htmls: Htmls, oauth: LogAuth, users: UserService, actorSystem: ActorS
       Future.successful(Left(Unauthorized))
     }
   }
+
+  // Utils
+
+  def ping = Action(BaseController.NoCacheOk(Json.toJson(AppMeta.ThisApp)))
+
+  // Dev purposes
 
   def dummyEvent(msg: String) = LogEvent(
     System.currentTimeMillis(),

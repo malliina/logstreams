@@ -3,6 +3,7 @@ package com.malliina.logstreams.js
 import upickle.{Invalid, Js}
 
 object PimpJSON extends upickle.AttributeTagged {
+  // writes empty Optional values as null
   override implicit def OptionW[T: Writer]: Writer[Option[T]] = Writer {
     case None => Js.Null
     case Some(s) => implicitly[Writer[T]].write(s)

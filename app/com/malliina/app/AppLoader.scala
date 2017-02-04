@@ -24,7 +24,7 @@ abstract class AppComponents(context: Context) extends BuiltInComponentsFromCont
   def oauth: OAuthRoutes
 
   // Controllers
-  lazy val home = new Logs(htmls, auth, users)(actorSystem, materializer)
+  lazy val home = new Logs(htmls, auth, users, actorSystem, materializer)
   override lazy val router: Router = new Routes(httpErrorHandler, home, oauth, assets)
 }
 

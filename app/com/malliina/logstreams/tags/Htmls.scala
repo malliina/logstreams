@@ -32,6 +32,8 @@ object Htmls {
 
 class Htmls(scripts: Modifier*) {
   val Status = "status"
+  val TableId = "logTable"
+  val TableBodyId = "logTableBody"
 
   def servers = root("servers")(
     headerRow()("Servers"),
@@ -42,7 +44,7 @@ class Htmls(scripts: Modifier*) {
 
   def logs = root("logs")(
     headerRow()("Logs ", small(`class` := s"$PullRight $HiddenXs", id := Status)("Initializing...")),
-    logTable(Seq("Time", "Message", "Logger", "Thread", "Level"))
+    logTable(Seq("App", "Time", "Message", "Logger", "Thread", "Level"))
   )
 
   def index = root("index")(
@@ -52,9 +54,9 @@ class Htmls(scripts: Modifier*) {
   )
 
   def logTable(headers: Seq[String]) =
-    table(`class` := TableStripedHoverResponsive, id := "logTable")(
+    table(`class` := TableStripedHoverResponsive, id := TableId)(
       thead(tr(headers.map(h => th(h)))),
-      tbody(id := "logTableBody")
+      tbody(id := TableBodyId)
     )
 
   def root(titleLabel: String, extraHeader: Modifier*)(inner: Modifier*) =

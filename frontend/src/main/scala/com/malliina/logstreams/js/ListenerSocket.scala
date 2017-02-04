@@ -3,41 +3,48 @@ package com.malliina.logstreams.js
 import java.util.UUID
 
 import org.scalajs.dom
-import org.scalajs.dom.raw.{HTMLTableElement, HTMLTableRowElement}
+import org.scalajs.dom.raw.HTMLTableElement
 import org.scalajs.jquery.JQueryEventObject
 
 import scalatags.Text.TypedTag
 import scalatags.Text.all._
 
-case class JVMLogEntry(level: String,
-                       message: String,
-                       loggerName: String,
-                       threadName: String,
-                       timeFormatted: String,
-                       stackTrace: Option[String] = None)
+case class LogSource(name: String, remoteAddress: String)
+
+case class AppLogEvent(source: LogSource, event: LogEvent)
+
+case class LogEvent(level: String,
+                    message: String,
+                    loggerName: String,
+                    threadName: String,
+                    timeFormatted: String,
+                    stackTrace: Option[String] = None)
 
 class ListenerSocket(wsPath: String) extends SocketJS(wsPath) {
-  val Danger = "danger"
-  val Warning = "warning"
   val CellContent = "cell-content"
   val CellWide = "cell-wide"
-  val NoWrap = "no-wrap"
+  val ColumnCount = 6
+  val Danger = "danger"
   val Hidden = "hidden"
+  val NoWrap = "no-wrap"
+  val TableId = "logTable"
+  val Warning = "warning"
 
-  lazy val jQueryTable = elem("logTable")
-  lazy val table = dom.document.getElementById("logTable").asInstanceOf[HTMLTableElement]
+  lazy val jQueryTable = elem(TableId)
+  lazy val table = dom.document.getElementById(TableId).asInstanceOf[HTMLTableElement]
 
   override def handlePayload(payload: String): Unit = {
-    val parsed = validate[JVMLogEntry](payload)
-    parsed.fold(onInvalidData, onLogEntry)
+    val parsed = validate[AppLogEvent](payload)
+    parsed.fold(onInvalidData.lift, onLogEntry)
   }
 
-  def onLogEntry(entry: JVMLogEntry) = {
-    val (frag, msgCellId, linkId) = toRow(entry)
+  def onLogEntry(event: AppLogEvent) = {
+    val entry = event.event
+    val (frag, msgCellId, linkId) = toRow(event)
     val stackId = s"stack-$linkId"
     entry.stackTrace foreach { stackTrace =>
       val errorRow = tr(`class` := Hidden, id := stackId)(
-        td(colspan := "5")(pre(stackTrace))
+        td(colspan := s"$ColumnCount")(pre(stackTrace))
       )
       jQueryTable prepend errorRow.render
     }
@@ -53,8 +60,9 @@ class ListenerSocket(wsPath: String) extends SocketJS(wsPath) {
     }
   }
 
-  // "Time", "Message", "Logger", "Thread", "Level"
-  def toRow(entry: JVMLogEntry): (Frag, String, String) = {
+  // "App", "Time", "Message", "Logger", "Thread", "Level"
+  def toRow(event: AppLogEvent): (Frag, String, String) = {
+    val entry = event.event
     val rowClass = entry.level match {
       case "ERROR" => Danger
       case "WARN" => Warning
@@ -68,6 +76,7 @@ class ListenerSocket(wsPath: String) extends SocketJS(wsPath) {
       .map(_ => a(href := "#", id := linkId)(level))
       .getOrElse(level)
     val frag = tr(`class` := rowClass)(
+      cell(event.source.name),
       cell(entry.timeFormatted),
       wideCell(entry.message, msgCellId),
       cell(entry.loggerName),
@@ -94,7 +103,4 @@ object ListenerSocket {
   def web = ListenerSocket("/ws/clients")
 
   def server = ListenerSocket("/ws/sources")
-
-  @deprecated
-  def rx = ListenerSocket("/rx")
 }

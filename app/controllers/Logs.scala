@@ -5,6 +5,7 @@ import akka.stream.Materializer
 import ch.qos.logback.classic.Level
 import com.malliina.logbackrx.LogEvent
 import com.malliina.logstreams.auth.UserService
+import com.malliina.logstreams.models.{AppLogEvent, AppName, LogSource}
 import com.malliina.logstreams.tags.Htmls
 import com.malliina.logstreams.{ListenerActor, SourceActor}
 import com.malliina.play.auth.Auth
@@ -22,15 +23,17 @@ object Logs {
   private val log = Logger(getClass)
 }
 
-class Logs(htmls: Htmls, oauth: LogAuth, users: UserService)(implicit actorSystem: ActorSystem, mat: Materializer)
+class Logs(htmls: Htmls, oauth: LogAuth, users: UserService, actorSystem: ActorSystem, mat: Materializer)
   extends Controller {
 
+  implicit val as = actorSystem
+  implicit val m = mat
   implicit val ec = mat.executionContext
 
   val replaySize = 10
-  val messages = BoundedReplaySubject[LogEvent](replaySize).toSerialized
-  val events: Observable[LogEvent] = messages
-  val eventSink: Observer[LogEvent] = messages
+  val messages = BoundedReplaySubject[AppLogEvent](replaySize).toSerialized
+  val events: Observable[AppLogEvent] = messages
+  val eventSink: Observer[AppLogEvent] = messages
 
   // HTML
 
@@ -44,8 +47,9 @@ class Logs(htmls: Htmls, oauth: LogAuth, users: UserService)(implicit actorSyste
   // WebSockets
 
   def listenerSocket = WebSocket.acceptOrResult[Any, JsValue] { req =>
-    eventSink onNext dummyEvent("listener connected - this is a very long line blahblahblah jdhsfjkdshf dskhf dskgfdsgfj dsgfdsgfk gdsfkghdskufhdsku f kdsf kdshfkhdskfuhdskufhdskhfkdshfkjdshfkhdsf sduhfdskhfdkshfds fds fdshfkdshfkdshfksdhf dskfhdskfh")
-    eventSink onNext failEvent("test fail")
+    val dummy = testEvent(dummyEvent("listener connected - this is a very long line blahblahblah jdhsfjkdshf dskhf dskgfdsgfj dsgfdsgfk gdsfkghdskufhdsku f kdsf kdshfkhdskfuhdskufhdskhfkdshfkjdshfkhdsf sduhfdskhfdkshfds fds fdshfkdshfkdshfksdhf dskfhdskfh"))
+    eventSink onNext dummy
+    eventSink onNext testEvent(failEvent("test fail"))
 
     def authorizedFlow = ActorFlow.actorRef(out => ListenerActor.props(out, req, events))
 
@@ -79,13 +83,17 @@ class Logs(htmls: Htmls, oauth: LogAuth, users: UserService)(implicit actorSyste
     Level.INFO,
     None)
 
-  def failEvent(msg: String) = LogEvent(
-    System.currentTimeMillis(),
-    "now!",
-    msg,
-    getClass.getName.stripSuffix("$"),
-    Thread.currentThread().getName,
-    Level.ERROR,
-    Option(new Exception("boom").getStackTraceString)
-  )
+  def failEvent(msg: String) = {
+    LogEvent(
+      System.currentTimeMillis(),
+      "now!",
+      msg,
+      getClass.getName.stripSuffix("$"),
+      Thread.currentThread().getName,
+      Level.ERROR,
+      Option(new Exception("boom").getStackTraceString)
+    )
+  }
+
+  def testEvent(e: LogEvent) = AppLogEvent(LogSource(AppName("test"), "localhost"), e)
 }

@@ -2,13 +2,14 @@ package com.malliina.logstreams
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.malliina.logbackrx.LogEvent
+import com.malliina.logstreams.models.{AppLogEvent, AppName, LogSource}
 import com.malliina.play.models.Username
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.RequestHeader
 import rx.lang.scala.{Observable, Observer}
 
 object SourceActor {
-  def props(out: ActorRef, user: Username, req: RequestHeader, next: Observer[LogEvent]) =
+  def props(out: ActorRef, user: Username, req: RequestHeader, next: Observer[AppLogEvent]) =
     Props(new SourceActor(out, user, req, next))
 }
 
@@ -18,20 +19,20 @@ object SourceActor {
   * @param req  request
   * @param next sink for messages from the source
   */
-class SourceActor(out: ActorRef, user: Username, val req: RequestHeader, next: Observer[LogEvent])
+class SourceActor(out: ActorRef, user: Username, val req: RequestHeader, next: Observer[AppLogEvent])
   extends JsonActor {
 
   override def onMessage(message: JsValue): Unit = push(message, req)
 
   private def push(message: JsValue, req: RequestHeader): Unit = {
     message.validate[LogEvent]
-      .map(next.onNext)
-      .recoverTotal(error => log.error(s"Unsupported server message from $address: '$message'."))
+      .map(msg => next.onNext(AppLogEvent(LogSource(AppName(user.name), req.remoteAddress), msg)))
+      .recoverTotal(_ => log.error(s"Unsupported server message from $address: '$message'."))
   }
 }
 
 object ListenerActor {
-  def props(out: ActorRef, req: RequestHeader, next: Observable[LogEvent]) =
+  def props(out: ActorRef, req: RequestHeader, next: Observable[AppLogEvent]) =
     Props(new ListenerActor(out, req, next))
 }
 
@@ -43,7 +44,7 @@ object ListenerActor {
   * @param req  request
   * @param next event source
   */
-class ListenerActor(out: ActorRef, val req: RequestHeader, next: Observable[LogEvent])
+class ListenerActor(out: ActorRef, val req: RequestHeader, next: Observable[AppLogEvent])
   extends JsonActor {
 
   val subscription = next.subscribe(

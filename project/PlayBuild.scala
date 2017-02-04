@@ -8,8 +8,12 @@ import sbt.Keys._
 import sbt._
 import webscalajs.ScalaJSWeb
 import webscalajs.WebScalaJS.autoImport.{scalaJSPipeline, scalaJSProjects}
+import sbtbuildinfo.BuildInfoKeys.{buildInfoPackage, buildInfoKeys}
+import sbtbuildinfo.BuildInfoPlugin
+import sbtbuildinfo.BuildInfoKey
 
 object PlayBuild {
+  // buildInfoKeys += BuildInfoKey("frontName" -> (name in frontend).value),
   lazy val frontend = Project("frontend", file("frontend"))
     .enablePlugins(ScalaJSPlugin, ScalaJSWeb)
     .settings(
@@ -22,6 +26,7 @@ object PlayBuild {
     )
 
   lazy val server = PlayProject.default("logstreams")
+    .enablePlugins(BuildInfoPlugin)
     .settings(serverSettings: _*)
 
   lazy val client = Project("logstreams-client", file("client"))
@@ -31,6 +36,7 @@ object PlayBuild {
   val utilPlayDep = malliinaGroup %% "util-play" % "3.5.2"
 
   def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
+    buildInfoKeys += BuildInfoKey("frontName" -> (name in frontend).value),
     libraryDependencies ++= Seq(
       utilPlayDep,
       utilPlayDep % Test classifier "tests"

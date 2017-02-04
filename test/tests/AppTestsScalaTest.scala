@@ -16,9 +16,8 @@ object TestOAuthRoutes extends OAuthRoutes {
 }
 
 class TestComponents(ctx: Context) extends AppComponents(ctx) {
-  override def auth = new TestAuth
-
-  override def oauth = TestOAuthRoutes
+  override lazy val auth = new TestAuth
+  override lazy val oauth = TestOAuthRoutes
 }
 
 class TestSuite extends AppSuite(new TestComponents(_))

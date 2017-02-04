@@ -1,5 +1,6 @@
 package com.malliina.app
 
+import buildinfo.BuildInfo
 import com.malliina.logstreams.auth.PassThruAuth
 import com.malliina.logstreams.tags.Htmls
 import com.malliina.play.app.DefaultApp
@@ -14,7 +15,7 @@ class AppLoader extends DefaultApp(new ProdAppComponents(_))
 abstract class AppComponents(context: Context) extends BuiltInComponentsFromContext(context) {
   lazy val assets = new Assets(httpErrorHandler)
   lazy val isProd = environment.mode == Mode.Prod
-  lazy val htmls = Htmls.forApp("frontend", isProd)
+  lazy val htmls = Htmls.forApp(BuildInfo.frontName, isProd)
   lazy val users = new PassThruAuth
 
   // mocked for tests

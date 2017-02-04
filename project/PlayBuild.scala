@@ -62,6 +62,7 @@ object PlayBuild {
     developerName := "Michael Skogberg",
     libraryDependencies ++= loggingDeps ++ Seq(
       "com.neovisionaries" % "nv-websocket-client" % "1.31",
+      "com.malliina" %% "logback-rx" % "1.1.0",
       PlayImport.json,
       "org.scalatest" %% "scalatest" % "3.0.0" % Test
     )

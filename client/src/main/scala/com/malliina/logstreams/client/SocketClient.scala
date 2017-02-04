@@ -26,7 +26,7 @@ object SocketClient {
   * Supports automatic reconnections. Calling `close()` will close any open resources
   * and cancel future reconnections, after which this instance must no longer be used.
   */
-class SocketClient(uri: URI,
+class SocketClient(val uri: URI,
                    socketFactory: SSLSocketFactory,
                    headers: Seq[KeyValue],
                    connectTimeout: FiniteDuration = DefaultConnectTimeout) extends Closeable {

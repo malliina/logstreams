@@ -6,14 +6,12 @@ import org.scalajs.sbtplugin.ScalaJSPlugin.AutoImport.persistLauncher
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
 import sbt.Keys._
 import sbt._
+import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
+import sbtbuildinfo.{BuildInfoKey, BuildInfoPlugin}
 import webscalajs.ScalaJSWeb
 import webscalajs.WebScalaJS.autoImport.{scalaJSPipeline, scalaJSProjects}
-import sbtbuildinfo.BuildInfoKeys.{buildInfoPackage, buildInfoKeys}
-import sbtbuildinfo.BuildInfoPlugin
-import sbtbuildinfo.BuildInfoKey
 
 object PlayBuild {
-  // buildInfoKeys += BuildInfoKey("frontName" -> (name in frontend).value),
   lazy val frontend = Project("frontend", file("frontend"))
     .enablePlugins(ScalaJSPlugin, ScalaJSWeb)
     .settings(

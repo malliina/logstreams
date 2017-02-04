@@ -5,7 +5,7 @@ import java.net.URI
 import ch.qos.logback.classic.Level
 import com.malliina.logbackrx.LogEvent
 import com.malliina.logstreams.client.{HttpUtil, KeyValue, SocketClient}
-import com.malliina.logstreams.models.AppName
+import com.malliina.logstreams.models.{AppName, LogEvents}
 import com.malliina.security.SSLUtils
 import com.malliina.util.Utils
 import org.scalatest.FunSuite
@@ -24,6 +24,8 @@ abstract class ServerSuite[T <: BuiltInComponents](build: Context => T)
 }
 
 class LogStreamsTest extends TestServerSuite {
+  val testUser = "u"
+
   test("can read component") {
     assert(components.home.replaySize === 10)
   }
@@ -56,9 +58,9 @@ class LogStreamsTest extends TestServerSuite {
 
     withSocket { client =>
       await(client.initialConnection)
-      client send Json.stringify(Json.toJson(testEvent))
-      val receivedEvent = components.home.events.toBlocking.first
-      assert(receivedEvent.source.name === AppName("u"))
+      client send Json.stringify(Json.toJson(LogEvents(Seq(testEvent))))
+      val receivedEvent = components.home.events.toBlocking.first.events.head
+      assert(receivedEvent.source.name === AppName(testUser))
       assert(receivedEvent.event.message === message)
     }
   }
@@ -67,7 +69,7 @@ class LogStreamsTest extends TestServerSuite {
     val path = "/ws/sources"
     val wsUri = new URI(s"ws://localhost:$port$path")
     val sf = SSLUtils.trustAllSslContext().getSocketFactory
-    val headers: Seq[KeyValue] = Seq(HttpUtil.Authorization -> HttpUtil.authorizationValue("u", "p"))
+    val headers: Seq[KeyValue] = Seq(HttpUtil.Authorization -> HttpUtil.authorizationValue(testUser, "p"))
 
     Utils.using(new SocketClient(wsUri, sf, headers)) { client =>
       code(client)

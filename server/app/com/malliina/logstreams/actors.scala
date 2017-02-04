@@ -1,8 +1,7 @@
 package com.malliina.logstreams
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import com.malliina.logbackrx.LogEvent
-import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents, AppName, LogSource}
+import com.malliina.logstreams.models._
 import com.malliina.play.models.Username
 import play.api.http.HeaderNames
 import play.api.libs.json.{JsValue, Json}
@@ -26,8 +25,8 @@ class SourceActor(out: ActorRef, user: Username, val req: RequestHeader, next: O
   override def onMessage(message: JsValue): Unit = push(message, req)
 
   private def push(message: JsValue, req: RequestHeader): Unit = {
-    message.validate[LogEvent]
-      .map(msg => next.onNext(AppLogEvent(LogSource(AppName(user.name), address), msg)))
+    message.validate[LogEvents]
+      .map(es => es.events.foreach(e => next.onNext(AppLogEvent(LogSource(AppName(user.name), address), e))))
       .recoverTotal(_ => log.error(s"Unsupported server message from $address: '$message'."))
   }
 }

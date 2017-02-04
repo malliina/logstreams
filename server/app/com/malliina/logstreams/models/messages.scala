@@ -5,6 +5,12 @@ import com.malliina.play.json.SimpleCompanion
 import play.api.data.format.Formats.stringFormat
 import play.api.libs.json.Json
 
+case class LogEvents(events: Seq[LogEvent])
+
+object LogEvents {
+  implicit val json = Json.format[LogEvents]
+}
+
 case class AppName(name: String)
 
 object AppName extends SimpleCompanion[String, AppName] {

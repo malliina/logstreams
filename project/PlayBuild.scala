@@ -13,11 +13,15 @@ import webscalajs.ScalaJSWeb
 import webscalajs.WebScalaJS.autoImport.{scalaJSPipeline, scalaJSProjects}
 
 object PlayBuild {
+  lazy val root = Project("root", file("."))
+    .settings(basicSettings:_*)
+    .aggregate(frontend, server, client, integrationTest)
+
   lazy val frontend = Project("frontend", file("frontend"))
     .settings(frontSettings: _*)
     .enablePlugins(ScalaJSPlugin, ScalaJSWeb)
 
-  lazy val server = PlayProject.default("logstreams")
+  lazy val server = PlayProject.default("logstreams", file("server"))
     .enablePlugins(BuildInfoPlugin)
     .settings(serverSettings: _*)
 

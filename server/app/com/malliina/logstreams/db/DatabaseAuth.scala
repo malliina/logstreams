@@ -14,14 +14,13 @@ import slick.driver.H2Driver.api._
 import scala.concurrent.Future
 
 object DatabaseAuth {
-  def default(): DatabaseAuth = new DatabaseAuth(UserDB.default())
+  def apply(userDB: UserDB): DatabaseAuth = new DatabaseAuth(userDB)
 
   def hash(username: Username, password: Password): Password =
     Password(DigestUtils.md5Hex(username.name + ":" + password.pass))
 }
 
 class DatabaseAuth(db: UserDB) extends UserService {
-
   import UserDB.users
 
   override def add(creds: BasicCredentials): Future[Either[AlreadyExists, Unit]] = {

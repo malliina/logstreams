@@ -34,14 +34,14 @@ class Tokens(tag: Tag) extends Table[DataUser](tag, "TOKENS") {
   def * = (user, token) <> ((DataUser.apply _).tupled, DataUser.unapply)
 }
 
-class UserDB(dbDir: Path) extends DatabaseLike with Closeable {
-  Files.createDirectories(dbDir)
-  val databaseFile = dbDir / "logsdb"
-  val url = s"jdbc:h2:$databaseFile;DB_CLOSE_DELAY=-1"
+class UserDB(conn: String) extends DatabaseLike with Closeable {
+  val url = s"jdbc:h2:$conn;DB_CLOSE_DELAY=-1"
   log info s"Connecting to: $url"
   val pool = JdbcConnectionPool.create(url, "", "")
   override val database = Database.forDataSource(pool)
   override val tableQueries = Seq(UserDB.tokens, UserDB.users)
+
+  init()
 
   override def close() = {
     database.close()
@@ -59,6 +59,20 @@ object UserDB {
   def default() = {
     val homeDir = (sys.props.get(HomeKey) orElse sys.env.get(HomeKey)).map(p => Paths.get(p))
       .getOrElse(FileUtilities.userHome / ".logstreams")
-    new UserDB(homeDir / "db")
+    file(homeDir / "db" / "logsdb")
   }
+
+  /**
+    * @param path path to database file
+    * @return a file-based database stored at `path`
+    */
+  def file(path: Path) = {
+    Option(path.getParent).foreach(p => Files.createDirectories(p))
+    new UserDB(path.toString)
+  }
+
+  /**
+    * @return an in-memory database
+    */
+  def test() = new UserDB("mem:test")
 }

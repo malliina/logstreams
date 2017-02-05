@@ -6,6 +6,8 @@ import ch.qos.logback.classic.Level
 import com.malliina.logbackrx.LogEvent
 import com.malliina.logstreams.client.{HttpUtil, KeyValue, SocketClient}
 import com.malliina.logstreams.models.{AppName, LogEvents}
+import com.malliina.play.auth.BasicCredentials
+import com.malliina.play.models.{Password, Username}
 import com.malliina.security.SSLUtils
 import com.malliina.util.Utils
 import org.scalatest.FunSuite
@@ -25,6 +27,8 @@ abstract class ServerSuite[T <: BuiltInComponents](build: Context => T)
 
 class LogStreamsTest extends TestServerSuite {
   val testUser = "u"
+  val testPass = "p"
+  val testCreds = BasicCredentials(Username(testUser), Password(testPass))
 
   test("can read component") {
     assert(components.home.replaySize === 10)
@@ -39,6 +43,7 @@ class LogStreamsTest extends TestServerSuite {
   }
 
   test("can open socket") {
+    await(components.users.add(testCreds))
     withSocket { client =>
       val uri = await(client.initialConnection)
       assert(uri.toString.nonEmpty)
@@ -56,6 +61,7 @@ class LogStreamsTest extends TestServerSuite {
       Level.INFO,
       None)
 
+    await(components.users.add(testCreds))
     withSocket { client =>
       await(client.initialConnection)
       client send Json.stringify(Json.toJson(LogEvents(Seq(testEvent))))

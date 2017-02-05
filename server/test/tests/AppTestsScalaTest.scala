@@ -1,6 +1,7 @@
 package tests
 
 import com.malliina.app.AppComponents
+import com.malliina.logstreams.db.UserDB
 import controllers.OAuthRoutes
 import play.api.ApplicationLoader.Context
 import play.api.mvc.{Action, Results}
@@ -16,6 +17,7 @@ object TestOAuthRoutes extends OAuthRoutes {
 }
 
 class TestComponents(ctx: Context) extends AppComponents(ctx) {
+  override val db = UserDB.test()
   override lazy val auth = new TestAuth
   override lazy val oauth = TestOAuthRoutes
 }

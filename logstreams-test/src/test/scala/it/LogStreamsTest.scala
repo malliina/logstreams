@@ -10,7 +10,7 @@ import com.malliina.security.SSLUtils
 import com.malliina.util.Utils
 import org.scalatest.FunSuite
 import play.api.ApplicationLoader.Context
-import play.api.BuiltInComponents
+import play.api.{BuiltInComponents, Logger}
 import play.api.libs.json.Json
 import play.api.libs.ws.ahc.AhcWSClient
 import tests.{OneServerPerSuite2, TestComponents}
@@ -63,6 +63,11 @@ class LogStreamsTest extends TestServerSuite {
       assert(receivedEvent.source.name === AppName(testUser))
       assert(receivedEvent.event.message === message)
     }
+  }
+
+  test("logback appender") {
+    Logger("test").error("This is a test event")
+    Thread sleep 100
   }
 
   def withSocket[T](code: SocketClient => T) = {

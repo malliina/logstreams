@@ -2,7 +2,7 @@ package controllers
 
 import akka.stream.Materializer
 import com.malliina.play.controllers.{OAuthControl, OAuthSecured}
-import com.malliina.play.http.FullRequest
+import com.malliina.play.http.{AuthedRequest, CookiedRequest, FullRequest}
 import com.malliina.play.models.Username
 import play.api.mvc._
 
@@ -15,12 +15,17 @@ trait OAuthRoutes {
 }
 
 trait LogAuth {
+  def withAuthAsync(f: CookiedRequest[AnyContent, AuthedRequest] => Future[Result]): EssentialAction
+
   def withAuth(f: FullRequest => Result): EssentialAction
 
   def authenticateSocket(rh: RequestHeader): Future[Option[Username]]
 }
 
 class WebAuth(oauth: OAuthCtrl) extends LogAuth {
+  override def withAuthAsync(f: (CookiedRequest[AnyContent, AuthedRequest]) => Future[Result]) =
+    oauth.authActionAsync(f)
+
   override def withAuth(f: FullRequest => Result) = oauth.authAction(f)
 
   override def authenticateSocket(rh: RequestHeader) =

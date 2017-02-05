@@ -6,6 +6,7 @@ import com.malliina.play.tags.Bootstrap._
 import com.malliina.play.tags.TagPage
 import com.malliina.play.tags.Tags._
 import controllers.routes.Assets.at
+import controllers.routes
 import play.api.mvc.Call
 
 import scalatags.Text.GenericAttr
@@ -35,22 +36,16 @@ class Htmls(scripts: Modifier*) {
   val TableId = "logTable"
   val TableBodyId = "logTableBody"
 
-  def servers = root("servers")(
-    headerRow()("Servers"),
-    fullRow(
-      logTable(Seq("Message"))
-    )
-  )
-
-  def logs = root("logs")(
+  def logs = baseIndex("logs")(
     headerRow()("Logs ", small(`class` := s"$PullRight $HiddenXs", id := Status)("Initializing...")),
     logTable(Seq("App", "Time", "Message", "Logger", "Thread", "Level"))
   )
 
-  def index = root("index")(
-    h1("Home"),
-    p(id := Status)("Waiting..."),
-    logTable(Seq("Message"))
+  def sources = baseIndex("sources")(
+    headerRow()("Servers"),
+    fullRow(
+      logTable(Seq("Message"))
+    )
   )
 
   def logTable(headers: Seq[String]) =
@@ -58,6 +53,31 @@ class Htmls(scripts: Modifier*) {
       thead(tr(headers.map(h => th(h)))),
       tbody(id := TableBodyId)
     )
+
+  def baseIndex(tabName: String)(inner: Modifier*) = {
+    def navItem(thisTabName: String, tabId: String, url: Call, glyphiconName: String) = {
+      val maybeActive = if (tabId == tabName) Option(`class` := "active") else None
+      li(maybeActive)(a(href := url)(glyphIcon(glyphiconName), s" $thisTabName"))
+    }
+
+    root("logstreams")(
+      divClass(s"$Navbar $NavbarDefault")(
+        divContainer(
+          divClass(NavbarHeader)(
+            hamburgerButton,
+            a(`class` := NavbarBrand, href := routes.Logs.index())("LogStreams")
+          ),
+          divClass(s"$NavbarCollapse $Collapse")(
+            ulClass(s"$Nav $NavbarNav")(
+              navItem("Logs", "logs", routes.Logs.index(), "list"),
+              navItem("Sources", "sources", routes.Logs.sources(), "home")
+            )
+          )
+        )
+      ),
+      divClass(Container)(inner)
+    )
+  }
 
   def root(titleLabel: String, extraHeader: Modifier*)(inner: Modifier*) =
     TagPage(

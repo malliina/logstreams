@@ -42,7 +42,7 @@ class Logs(htmls: Htmls, oauth: LogAuth, users: UserService, actorSystem: ActorS
 
   def index = navigate(htmls.logs)
 
-  def sources = navigate(htmls.servers)
+  def sources = navigate(htmls.sources)
 
   def navigate[C: Writeable](content: => C): EssentialAction =
     oauth.withAuth(_ => Ok(content))

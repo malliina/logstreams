@@ -47,6 +47,8 @@ object PlayBuild {
   def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
     buildInfoKeys += BuildInfoKey("frontName" -> (name in frontend).value),
     libraryDependencies ++= Seq(
+      "com.h2database" % "h2" % "1.4.193",
+      "com.typesafe.slick" %% "slick" % "3.1.1",
       utilPlayDep,
       utilPlayDep % Test classifier "tests"
     ) map (_.withSources().withJavadoc())

@@ -13,9 +13,9 @@ trait UserService {
 
   def remove(user: Username): Future[Either[DoesNotExist, Unit]]
 
-  def isValid(token: BasicCredentials): Future[Boolean]
+  def isValid(creds: BasicCredentials): Future[Boolean]
 
-  def all(): Future[Seq[BasicCredentials]]
+  def all(): Future[Seq[Username]]
 }
 
 sealed trait UserError

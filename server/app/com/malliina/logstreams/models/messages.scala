@@ -23,6 +23,13 @@ object LogSource {
   implicit val json = Json.format[LogSource]
 }
 
+case class LogSources(sources: Seq[LogSource])
+
+object LogSources {
+  implicit val json = Json.format[LogSources]
+  val empty = LogSources(Nil)
+}
+
 case class AppLogEvent(source: LogSource, event: LogEvent)
 
 object AppLogEvent {

@@ -1,76 +1,144 @@
 package com.malliina.logstreams
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
+import com.malliina.logstreams.MediatorActor._
 import com.malliina.logstreams.models._
 import com.malliina.play.models.Username
 import play.api.http.HeaderNames
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.RequestHeader
-import rx.lang.scala.{Observable, Observer}
 
-object SourceActor {
-  def props(out: ActorRef, user: Username, req: RequestHeader, next: Observer[AppLogEvent]) =
-    Props(new SourceActor(out, user, req, next))
+import scala.concurrent.duration.DurationInt
+
+case class Listener(out: ActorRef, req: RequestHeader, username: Username, mediator: ActorRef)
+
+object MediatorActor {
+
+  def props() = Props(new MediatorActor)
+
+  case class SourceInfo(source: LogSource, out: ActorRef)
+
+  trait ControlMessage
+
+  case class SourceJoined(source: SourceInfo) extends ControlMessage
+
+  case class SourceLeft(source: SourceInfo) extends ControlMessage
+
+  case class SourceViewerJoined(admin: ActorRef) extends ControlMessage
+
+  case class LogViewerJoined(out: ActorRef) extends ControlMessage
+
+  case class LogViewerLeft(out: ActorRef) extends ControlMessage
+
+  case class Events(event: AppLogEvents) extends ControlMessage
+
 }
 
-/** A connected event source.
-  *
-  * @param out  the source, unused unless we want to send messages to sources
-  * @param req  request
-  * @param next sink for messages from the source
-  */
-class SourceActor(out: ActorRef, user: Username, val req: RequestHeader, next: Observer[AppLogEvent])
-  extends JsonActor {
+class MediatorActor extends Actor with ActorLogging {
+  var sources: Set[SourceInfo] = Set.empty
+  // The ActorRef is ListenerActor.out
+  var logViewers: Set[ActorRef] = Set.empty
+  var sourceViewers: Set[ActorRef] = Set.empty
 
-  override def onMessage(message: JsValue): Unit = push(message, req)
+  import context.dispatcher
 
-  private def push(message: JsValue, req: RequestHeader): Unit = {
-    message.validate[LogEvents]
-      .map(es => es.events.foreach(e => next.onNext(AppLogEvent(LogSource(AppName(user.name), address), e))))
-      .recoverTotal(_ => log.error(s"Unsupported server message from $address: '$message'."))
+  val cancellable = context.system.scheduler.schedule(1.second, 5.seconds)(self ! devMessage)
+
+  def devMessage = {
+    val e = if (math.random < 0.5) TestData.dummyEvent("hello, world!") else TestData.failEvent("failed!")
+    Events(AppLogEvents(Seq(TestData.testEvent(e))))
+  }
+
+  override def receive = {
+    case Events(events) =>
+      val json = Json.toJson(events)
+      logViewers foreach { out => out ! json }
+    case SourceJoined(source) =>
+      context watch source.out
+      sources += source
+      updateSourceViewers()
+    case SourceLeft(source) =>
+      sources -= source
+      updateSourceViewers()
+    case LogViewerJoined(listener) =>
+      context watch listener
+      logViewers += listener
+    case LogViewerLeft(listener) =>
+      logViewers -= listener
+    case SourceViewerJoined(out) =>
+      sourceViewers += out
+    case Terminated(actor) =>
+      logViewers -= actor
+      sources.find(_.out == actor) foreach { src =>
+        sources -= src
+        updateSourceViewers()
+      }
+      log info s"Log viewers: ${logViewers.size}, source viewers: ${sourceViewers.size}, sources: ${sources.size}"
+  }
+
+  def updateSourceViewers() = {
+    val srcs = LogSources(sources.map(_.source).toSeq)
+    val json = Json.toJson(srcs)
+    sourceViewers foreach { out => out ! json }
+  }
+
+  override def postStop() = {
+    cancellable.cancel()
   }
 }
 
-object ListenerActor {
-  def props(out: ActorRef, req: RequestHeader, next: Observable[AppLogEvents]) =
-    Props(new ListenerActor(out, req, next))
+object SourceActor {
+  def props(ctx: Listener) = Props(new SourceActor(ctx))
+}
+
+/** A connected event source.
+  */
+class SourceActor(ctx: Listener) extends JsonActor(ctx.req) {
+  val src = LogSource(AppName(ctx.username.name), address)
+
+  override def preStart() = ctx.mediator ! SourceJoined(SourceInfo(src, ctx.out))
+
+  override def onMessage(message: JsValue): Unit = push(message, ctx.req)
+
+  private def push(message: JsValue, req: RequestHeader): Unit = {
+    message.validate[LogEvents]
+      .map(onEvents)
+      .recoverTotal(_ => log.error(s"Unsupported server message from $address: '$message'."))
+  }
+
+  private def onEvents(events: LogEvents) = {
+    val appEvents = events.events.map(logEvent => AppLogEvent(src, logEvent))
+    ctx.mediator ! Events(AppLogEvents(appEvents))
+  }
+}
+
+object SourceViewerActor {
+  def props(ctx: Listener) = Props(new SourceViewerActor(ctx))
+}
+
+class SourceViewerActor(ctx: Listener) extends JsonActor(ctx.req) {
+  override def preStart() = ctx.mediator ! SourceViewerJoined(ctx.out)
+}
+
+object LogViewerActor {
+  def props(ctx: Listener) = Props(new LogViewerActor(ctx))
 }
 
 /** A connected listener, typically a browser.
   *
-  * Send a message to `out` to send it to the listener.
-  *
-  * @param out  client
-  * @param req  request
-  * @param next event source
+  * Send a message to `ctx.out` to send it to the listener.
   */
-class ListenerActor(out: ActorRef, val req: RequestHeader, next: Observable[AppLogEvents])
-  extends JsonActor {
-
-  val subscription = next.subscribe(
-    event => out ! Json.toJson(event),
-    err => log.error("Log queue failed.", err),
-    () => log.info("Log queue completed.")
-  )
-
-  override def onMessage(message: JsValue): Unit =
-    log.info(s"Client $address says: $message")
-
-  override def postStop(): Unit = {
-    super.postStop()
-    subscription.unsubscribe()
-    log.info(s"Unsubscribed client $address")
-  }
+class LogViewerActor(ctx: Listener) extends JsonActor(ctx.req) {
+  override def preStart() = ctx.mediator ! LogViewerJoined(ctx.out)
 }
 
-trait JsonActor extends Actor with ActorLogging {
-  def req: RequestHeader
-
-  def onMessage(message: JsValue): Unit
-
+class JsonActor(req: RequestHeader) extends Actor with ActorLogging {
   override def receive: Receive = {
     case json: JsValue => onMessage(json)
   }
+
+  def onMessage(message: JsValue): Unit =
+    log.info(s"Client $address says: $message")
 
   def address: String = req.headers.get(HeaderNames.X_FORWARDED_FOR) getOrElse req.remoteAddress
 }

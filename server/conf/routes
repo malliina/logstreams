@@ -4,6 +4,7 @@ GET         /users                     controllers.Logs.allSources
 POST        /users                     controllers.Logs.addUser
 POST        /users/:user/delete        controllers.Logs.removeUser(user: com.malliina.play.models.Username)
 GET         /ws/clients                controllers.Logs.listenerSocket
+GET         /ws/admins                 controllers.Logs.adminSocket
 GET         /ws/sources                controllers.Logs.sourceSocket
 GET         /oauth                     controllers.OAuthRoutes.initiate
 GET         /oauthcb                   controllers.OAuthRoutes.redirResponse

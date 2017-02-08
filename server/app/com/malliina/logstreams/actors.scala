@@ -45,7 +45,9 @@ class MediatorActor extends Actor with ActorLogging {
   val cancellable = context.system.scheduler.schedule(1.second, 5.seconds)(self ! devMessage)
 
   def devMessage = {
-    val e = if (math.random < 0.5) TestData.dummyEvent("hello, world!") else TestData.failEvent("failed!")
+    val e =
+      if (math.random < 0.5) TestData.dummyEvent("hello, world!")
+      else TestData.failEvent("failed!")
     Events(AppLogEvents(Seq(TestData.testEvent(e))))
   }
 

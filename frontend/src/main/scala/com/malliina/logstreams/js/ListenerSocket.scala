@@ -9,20 +9,6 @@ import org.scalajs.jquery.JQueryEventObject
 import scalatags.Text.TypedTag
 import scalatags.Text.all._
 
-case class LogSource(name: String, remoteAddress: String)
-
-case class LogEvent(timeStamp: Long,
-                    level: String,
-                    message: String,
-                    loggerName: String,
-                    threadName: String,
-                    timeFormatted: String,
-                    stackTrace: Option[String] = None)
-
-case class AppLogEvent(source: LogSource, event: LogEvent)
-
-case class AppLogEvents(events: Seq[AppLogEvent])
-
 class ListenerSocket(wsPath: String) extends SocketJS(wsPath) {
   val CellContent = "cell-content"
   val CellWide = "cell-wide"
@@ -38,7 +24,7 @@ class ListenerSocket(wsPath: String) extends SocketJS(wsPath) {
 
   override def handlePayload(payload: String): Unit = {
     val parsed = validate[AppLogEvents](payload)
-    parsed.fold(onInvalidData.lift, onLogEvents)
+    parsed.fold(onInvalidData(payload).lift, onLogEvents)
   }
 
   def onLogEvents(appLogEvents: AppLogEvents) =
@@ -107,6 +93,4 @@ object ListenerSocket {
   def apply(wsPath: String) = new ListenerSocket(s"$wsPath?f=json")
 
   def web = ListenerSocket("/ws/clients")
-
-  def server = ListenerSocket("/ws/sources")
 }

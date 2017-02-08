@@ -40,8 +40,10 @@ object PlayBuild {
     libraryDependencies ++= Seq(
       "com.lihaoyi" %%% "scalatags" % "0.6.2",
       "com.lihaoyi" %%% "upickle" % "0.4.3",
+      "com.lihaoyi" %%% "utest" % "0.4.4" % Test,
       "be.doeraene" %%% "scalajs-jquery" % "0.9.1"
-    )
+    ),
+    testFrameworks += new TestFramework("utest.runner.Framework")
   )
 
   def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(

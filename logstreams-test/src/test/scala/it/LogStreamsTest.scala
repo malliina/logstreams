@@ -4,18 +4,20 @@ import java.net.URI
 
 import ch.qos.logback.classic.Level
 import com.malliina.logbackrx.LogEvent
-import com.malliina.logstreams.client.{HttpUtil, KeyValue, SocketClient}
-import com.malliina.logstreams.models.{AppName, LogEvents}
+import com.malliina.logstreams.client.{HttpUtil, SocketClient}
+import com.malliina.logstreams.models.{AppLogEvents, AppName, LogEvents}
 import com.malliina.play.auth.BasicCredentials
 import com.malliina.play.models.{Password, Username}
 import com.malliina.security.SSLUtils
 import com.malliina.util.Utils
 import org.scalatest.FunSuite
 import play.api.ApplicationLoader.Context
-import play.api.{BuiltInComponents, Logger}
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.ahc.AhcWSClient
+import play.api.{BuiltInComponents, Logger}
 import tests.{OneServerPerSuite2, TestComponents}
+
+import scala.concurrent.Promise
 
 abstract class TestServerSuite extends ServerSuite(new TestComponents(_))
 
@@ -30,10 +32,6 @@ class LogStreamsTest extends TestServerSuite {
   val testPass = "p"
   val testCreds = BasicCredentials(Username(testUser), Password(testPass))
 
-  ignore("can read component") {
-    assert(components.home.replaySize === 500)
-  }
-
   test("can ping server") {
     Utils.using(AhcWSClient()(components.materializer)) { client =>
       val res = await(client.url(s"http://localhost:$port/ping").get())
@@ -44,13 +42,13 @@ class LogStreamsTest extends TestServerSuite {
 
   test("can open socket") {
     await(components.users.add(testCreds))
-    withSocket { client =>
+    withSource { client =>
       val uri = await(client.initialConnection)
       assert(uri.toString.nonEmpty)
     }
   }
 
-  test("sent message is received on the server") {
+  test("sent message is received by listener") {
     val message = "hello, world"
     val testEvent = LogEvent(
       System.currentTimeMillis(),
@@ -59,15 +57,25 @@ class LogStreamsTest extends TestServerSuite {
       getClass.getName.stripSuffix("$"),
       "this thread",
       Level.INFO,
-      None)
+      None
+    )
 
     await(components.users.add(testCreds))
-    withSocket { client =>
-      await(client.initialConnection)
-      client send Json.stringify(Json.toJson(LogEvents(Seq(testEvent))))
-      val receivedEvent = components.home.events.toBlocking.first.events.head
-      assert(receivedEvent.source.name === AppName(testUser))
-      assert(receivedEvent.event.message === message)
+    withSource { source =>
+      await(source.initialConnection)
+      val p = Promise[JsValue]()
+      withListener(p.success) { listener =>
+        await(listener.initialConnection)
+        source send Json.stringify(Json.toJson(LogEvents(Seq(testEvent))))
+        val receivedEvent = await(p.future)
+        val jsonResult = receivedEvent.validate[AppLogEvents]
+        assert(jsonResult.isSuccess)
+        val events = jsonResult.get
+        assert(events.events.size === 1)
+        val event = events.events.head
+        assert(event.source.name === AppName(testUser))
+        assert(event.event.message === message)
+      }
     }
   }
 
@@ -76,14 +84,25 @@ class LogStreamsTest extends TestServerSuite {
     Thread sleep 100
   }
 
-  def withSocket[T](code: SocketClient => T) = {
-    val path = "/ws/sources"
-    val wsUri = new URI(s"ws://localhost:$port$path")
-    val sf = SSLUtils.trustAllSslContext().getSocketFactory
-    val headers: Seq[KeyValue] = Seq(HttpUtil.Authorization -> HttpUtil.authorizationValue(testUser, "p"))
+  def withListener[T](onJson: JsValue => Any)(code: SocketClient => T) =
+    withWebSocket("/ws/clients", onJson)(code)
 
-    Utils.using(new SocketClient(wsUri, sf, headers)) { client =>
+  def withSource[T](code: SocketClient => T) =
+    withWebSocket("/ws/sources", _ => ())(code)
+
+  def withWebSocket[T](path: String, onJson: JsValue => Any)(code: TestSocket => T) = {
+    val wsUri = new URI(s"ws://localhost:$port$path")
+    Utils.using(new TestSocket(wsUri, onJson)) { client =>
+      await(client.initialConnection)
       code(client)
     }
   }
+
+  class TestSocket(wsUri: URI, onJson: JsValue => Any) extends SocketClient(
+    wsUri,
+    SSLUtils.trustAllSslContext().getSocketFactory,
+    Seq(HttpUtil.Authorization -> HttpUtil.authorizationValue(testUser, "p"))) {
+    override def onText(message: String) = onJson(Json.parse(message))
+  }
+
 }

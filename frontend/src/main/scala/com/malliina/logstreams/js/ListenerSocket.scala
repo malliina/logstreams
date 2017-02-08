@@ -11,7 +11,8 @@ import scalatags.Text.all._
 
 case class LogSource(name: String, remoteAddress: String)
 
-case class LogEvent(level: String,
+case class LogEvent(timeStamp: Long,
+                    level: String,
                     message: String,
                     loggerName: String,
                     threadName: String,

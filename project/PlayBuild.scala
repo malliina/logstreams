@@ -17,13 +17,13 @@ object PlayBuild {
     .settings(basicSettings: _*)
     .aggregate(frontend, server, client, integrationTest)
 
-  lazy val frontend = Project("frontend", file("frontend"))
-    .settings(frontSettings: _*)
-    .enablePlugins(ScalaJSPlugin, ScalaJSWeb)
-
   lazy val server = PlayProject.default("logstreams", file("server"))
     .enablePlugins(BuildInfoPlugin)
     .settings(serverSettings: _*)
+
+  lazy val frontend = Project("frontend", file("frontend"))
+    .settings(frontSettings: _*)
+    .enablePlugins(ScalaJSPlugin, ScalaJSWeb)
 
   lazy val client = Project("logstreams-client", file("client"))
     .settings(clientSettings: _*)

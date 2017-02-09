@@ -8,7 +8,8 @@ object PimpJSON extends upickle.AttributeTagged {
   // By default, upickle refuses to read Numbers to Long.
   // https://github.com/lihaoyi/upickle-pprint/issues/66
   // So we roll our own...
-  override implicit val LongRW = NumericReadWriter[Long](_.toLong, s => java.lang.Long.parseLong(s))
+  override implicit val LongRW: RW[Long] =
+    NumericReadWriter[Long](_.toLong, s => java.lang.Long.parseLong(s))
 
   def NumericReadWriter[T: Numeric](func: Double => T, func2: String => T): RW[T] = RW[T](
     x => Js.Num(implicitly[Numeric[T]].toDouble(x)),

@@ -30,7 +30,11 @@ object Logs {
   val PasswordKey = "password"
 }
 
-class Logs(htmls: Htmls, oauth: LogAuth, users: UserService, actorSystem: ActorSystem, mat: Materializer)
+class Logs(htmls: Htmls,
+           oauth: LogAuth,
+           users: UserService,
+           actorSystem: ActorSystem,
+           mat: Materializer)
   extends Controller {
 
   implicit val as = actorSystem

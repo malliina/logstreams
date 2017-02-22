@@ -2,24 +2,14 @@ package tests
 
 import com.malliina.app.AppComponents
 import com.malliina.logstreams.db.UserDB
-import controllers.OAuthRoutes
+import com.malliina.oauth.GoogleOAuthCredentials
 import play.api.ApplicationLoader.Context
-import play.api.mvc.{Action, Results}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 
-object TestOAuthRoutes extends OAuthRoutes {
-  override def initiate = ok
-
-  override def redirResponse = ok
-
-  def ok = Action(Results.Ok)
-}
-
-class TestComponents(ctx: Context) extends AppComponents(ctx) {
-  override val db = UserDB.test()
+class TestComponents(ctx: Context)
+  extends AppComponents(ctx, GoogleOAuthCredentials("", "", ""), UserDB.test()) {
   override lazy val auth = new TestAuth
-  override lazy val oauth = TestOAuthRoutes
 }
 
 class TestSuite extends AppSuite(new TestComponents(_))

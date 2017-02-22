@@ -1,5 +1,6 @@
 package tests
 
+import com.malliina.play.auth.InvalidCredentials
 import com.malliina.play.http.{AuthedRequest, CookiedRequest, FullRequest}
 import com.malliina.play.models.Username
 import controllers.LogAuth
@@ -21,6 +22,6 @@ class TestAuth extends LogAuth {
     f(fakeRequest)
   }
 
-  override def authenticateSocket(rh: RequestHeader): Future[Option[Username]] =
-    Future.successful(Option(testUser))
+  override def authenticateSocket(rh: RequestHeader): Future[Either[InvalidCredentials, Username]] =
+    Future.successful(Right(testUser))
 }

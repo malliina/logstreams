@@ -1,12 +1,12 @@
+GET         /ping                      controllers.Logs.ping
 GET         /                          controllers.Logs.index
 GET         /sources                   controllers.Logs.sources
 GET         /users                     controllers.Logs.allSources
 POST        /users                     controllers.Logs.addUser
 POST        /users/:user/delete        controllers.Logs.removeUser(user: com.malliina.play.models.Username)
-GET         /ws/clients                controllers.Logs.listenerSocket
-GET         /ws/admins                 controllers.Logs.adminSocket
-GET         /ws/sources                controllers.Logs.sourceSocket
-GET         /oauth                     controllers.OAuthRoutes.initiate
-GET         /oauthcb                   controllers.OAuthRoutes.redirResponse
+GET         /ws/clients                controllers.SocketsBundle.listenerSocket
+GET         /ws/admins                 controllers.SocketsBundle.adminSocket
+GET         /ws/sources                controllers.SocketsBundle.sourceSocket
+GET         /oauth                     controllers.OAuth.initiate
+GET         /oauthcb                   controllers.OAuth.redirResponse
 GET         /assets/*file              controllers.Assets.at(path = "/public", file)
-GET         /ping                      controllers.Logs.ping

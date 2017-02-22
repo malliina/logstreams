@@ -101,7 +101,8 @@ class LogStreamsTest extends TestServerSuite {
   class TestSocket(wsUri: URI, onJson: JsValue => Any) extends SocketClient(
     wsUri,
     SSLUtils.trustAllSslContext().getSocketFactory,
-    Seq(HttpUtil.Authorization -> HttpUtil.authorizationValue(testUser, "p"))) {
+    Seq(HttpUtil.Authorization -> HttpUtil.authorizationValue(testUser, "p"))
+  ) {
     override def onText(message: String) = onJson(Json.parse(message))
   }
 

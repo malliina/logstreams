@@ -1,8 +1,8 @@
-package com.malliina.logstreams
+package com.malliina.logstreams.ws
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Terminated}
-import com.malliina.logstreams.SourceMediatorActor._
 import com.malliina.logstreams.models._
+import com.malliina.logstreams.ws.SourceMediatorActor.{SourceInfo, SourceJoined, SourceLeft}
 import com.malliina.play.ws.Mediator.{Broadcast, ClientMessage}
 import play.api.libs.json.Json
 
@@ -22,6 +22,10 @@ class SourceMediatorActor(eventsSink: ActorRef, adminSink: ActorRef)
   extends Actor with ActorLogging {
 
   var sources: Set[SourceInfo] = Set.empty
+
+  override def preStart() = {
+    updateSourceViewers()
+  }
 
   override def receive = {
     case ClientMessage(msg, _) =>

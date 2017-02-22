@@ -5,7 +5,7 @@ import java.net.URI
 import ch.qos.logback.classic.Level
 import com.malliina.logbackrx.LogEvent
 import com.malliina.logstreams.client.{HttpUtil, SocketClient}
-import com.malliina.logstreams.models.{AppLogEvents, AppName, LogEvents}
+import com.malliina.logstreams.models.{AppLogEvents, AppName, LogEvents, LogSources}
 import com.malliina.play.auth.BasicCredentials
 import com.malliina.play.models.{Password, Username}
 import com.malliina.security.SSLUtils
@@ -79,16 +79,37 @@ class LogStreamsTest extends TestServerSuite {
     }
   }
 
+  test("admin receives status on connect, and update when a source connects") {
+    val status = Promise[JsValue]()
+    val update = Promise[JsValue]()
+    withAdmin(json => if (!status.trySuccess(json)) update.trySuccess(json)) { client =>
+      assert(client.isConnected)
+      val msg = await(status.future).validate[LogSources]
+      assert(msg.isSuccess)
+      assert(msg.get.sources.size === 0)
+      withSource { _ =>
+        val upd = await(update.future).validate[LogSources]
+        assert(upd.isSuccess)
+        val sources = upd.get
+        assert(sources.sources.size === 1)
+        assert(sources.sources.head.name.name === testUser)
+      }
+    }
+  }
+
   test("logback appender") {
     Logger("test").error("This is a test event")
     Thread sleep 100
   }
 
+  def withAdmin[T](onJson: JsValue => Any)(code: SocketClient => T) =
+    withWebSocket(controllers.routes.SocketsBundle.adminSocket().url, onJson)(code)
+
   def withListener[T](onJson: JsValue => Any)(code: SocketClient => T) =
-    withWebSocket("/ws/clients", onJson)(code)
+    withWebSocket(controllers.routes.SocketsBundle.listenerSocket().url, onJson)(code)
 
   def withSource[T](code: SocketClient => T) =
-    withWebSocket("/ws/sources", _ => ())(code)
+    withWebSocket(controllers.routes.SocketsBundle.sourceSocket().url, _ => ())(code)
 
   def withWebSocket[T](path: String, onJson: JsValue => Any)(code: TestSocket => T) = {
     val wsUri = new URI(s"ws://localhost:$port$path")

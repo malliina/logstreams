@@ -1,6 +1,6 @@
 package com.malliina.logstreams.ws
 
-import com.malliina.logstreams.SourceMediatorActor.{SourceInfo, SourceJoined}
+import SourceMediatorActor.{SourceInfo, SourceJoined}
 import com.malliina.logstreams.models._
 import com.malliina.play.ws.{ClientActor, ClientContext}
 import play.api.libs.json.{JsResult, JsValue, Json}

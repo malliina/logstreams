@@ -33,7 +33,8 @@ class WebAuth(oauth: OAuthCtrl) extends LogAuth {
 
 class OAuthCtrl(oauth: OAuth) extends OAuthSecured(oauth, oauth.mat)
 
-class OAuth(creds: GoogleOAuthCredentials, val mat: Materializer) extends OAuthControl(creds, mat) {
+class OAuth(creds: GoogleOAuthCredentials, val mat: Materializer)
+  extends OAuthControl(creds, mat) {
   override val sessionUserKey: String = "email"
 
   override def isAuthorized(email: String) = email == "malliina123@gmail.com"

@@ -92,5 +92,5 @@ class ListenerSocket(wsPath: String) extends SocketJS(wsPath) {
 object ListenerSocket {
   def apply(wsPath: String) = new ListenerSocket(s"$wsPath?f=json")
 
-  def web = ListenerSocket("/ws/clients")
+  def web = ListenerSocket("/ws/logs")
 }

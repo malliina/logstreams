@@ -6,10 +6,16 @@ object BuildBuild {
   lazy val settings = sbtPlugins ++ Seq(
     scalaVersion := "2.10.6",
     resolvers ++= Seq(
-      Resolver.url("malliina bintray sbt", url("https://dl.bintray.com/malliina/sbt-plugins/"))(Resolver.ivyStylePatterns)
+      ivyRepo("bintray-sbt-plugin-releases",
+        "http://dl.bintray.com/content/sbt/sbt-plugin-releases"),
+      ivyRepo("malliina bintray sbt",
+        "https://dl.bintray.com/malliina/sbt-plugins/")
     ),
     scalacOptions ++= Seq("-unchecked", "-deprecation")
   )
+
+  def ivyRepo(name: String, urlString: String) =
+    Resolver.url(name, url(urlString))(Resolver.ivyStylePatterns)
 
   def sbtPlugins = Seq(
     "com.malliina" % "sbt-play" % "0.9.3",

@@ -2,38 +2,62 @@ package controllers
 
 import akka.stream.Materializer
 import com.malliina.oauth.GoogleOAuthCredentials
-import com.malliina.play.auth.InvalidCredentials
-import com.malliina.play.controllers.{OAuthControl, OAuthSecured}
-import com.malliina.play.http.{AuthedRequest, CookiedRequest, FullRequest}
+import com.malliina.play.auth._
+import com.malliina.play.controllers.{AuthBundle, BaseSecurity, OAuthControl}
 import com.malliina.play.models.Username
 import play.api.mvc._
 
 import scala.concurrent.Future
 
 trait LogAuth {
-  def withAuthAsync(f: CookiedRequest[AnyContent, AuthedRequest] => Future[Result]): EssentialAction
+  def authAction(f: UserRequest => EssentialAction): EssentialAction
 
-  def withAuth(f: FullRequest => Result): EssentialAction
+  def withAuthAsync(f: UserRequest => Future[Result]): EssentialAction
 
-  def authenticateSocket(rh: RequestHeader): Future[Either[InvalidCredentials, Username]]
+  def withAuth(f: UserRequest => Result): EssentialAction
+
+  def authenticateSocket(rh: RequestHeader): Future[Either[AuthFailure, UserRequest]]
 }
 
 class WebAuth(oauth: OAuthCtrl) extends LogAuth {
   implicit val ec = oauth.ec
 
-  override def withAuthAsync(f: (CookiedRequest[AnyContent, AuthedRequest]) => Future[Result]) =
+  override def authAction(f: UserRequest => EssentialAction): EssentialAction =
+    oauth.authenticatedLogged(f)
+
+  override def withAuthAsync(f: UserRequest => Future[Result]) =
     oauth.authActionAsync(f)
 
-  override def withAuth(f: FullRequest => Result) =
+  override def withAuth(f: UserRequest => Result): EssentialAction =
     oauth.authAction(f)
 
   override def authenticateSocket(rh: RequestHeader) =
-    oauth.authenticateFromSession(rh).map(_.toRight(InvalidCredentials(rh)))
+    oauth.authenticate(rh)
 }
 
-class OAuthCtrl(oauth: OAuth) extends OAuthSecured(oauth, oauth.mat)
+class OAuthCtrl(oauth: OAuth) extends BaseSecurity(OAuth.authBundle(oauth), oauth.mat)
 
-class OAuth(creds: GoogleOAuthCredentials, val mat: Materializer)
+case class UserRequest(user: Username, rh: RequestHeader)
+
+object OAuth {
+  def sessionAuthenticator(oauth: OAuth): Authenticator[UserRequest] = {
+    Authenticator { rh =>
+      val result = Auth.authenticateFromSession(rh, oauth.sessionUserKey)
+        .map(user => UserRequest(user, rh))
+        .toRight(MissingCredentials(rh))
+      Future.successful(result)
+    }
+  }
+
+  def authBundle(oauth: OAuth) = new AuthBundle[UserRequest] {
+    override val authenticator = sessionAuthenticator(oauth)
+
+    override def onUnauthorized(failure: AuthFailure) =
+      Results.Redirect(oauth.startOAuth)
+  }
+}
+
+class OAuth(creds: GoogleOAuthCredentials, mat: Materializer)
   extends OAuthControl(creds, mat) {
   override val sessionUserKey: String = "email"
 

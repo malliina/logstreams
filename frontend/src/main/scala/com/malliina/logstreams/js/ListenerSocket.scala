@@ -16,7 +16,7 @@ class ListenerSocket(wsPath: String) extends SocketJS(wsPath) {
   val Danger = "danger"
   val Hidden = "hidden"
   val NoWrap = "no-wrap"
-  val TableId = "logTable"
+  val TableId = "log-table"
   val Warning = "warning"
 
   lazy val jQueryTable = elem(TableId)

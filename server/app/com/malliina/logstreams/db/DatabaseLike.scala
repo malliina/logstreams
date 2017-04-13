@@ -5,7 +5,7 @@ import java.sql.SQLException
 import com.malliina.logstreams.db.DatabaseLike.log
 import play.api.Logger
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import slick.driver.H2Driver.api._
+import slick.jdbc.H2Profile.api._
 import slick.jdbc.meta.MTable
 import slick.lifted.{AbstractTable, TableQuery}
 

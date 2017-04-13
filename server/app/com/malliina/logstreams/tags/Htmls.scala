@@ -32,9 +32,8 @@ object Htmls {
 
 class Htmls(scripts: Modifier*) {
   val Status = "status"
-  val LogTableId = "logTable"
-  val SourceTableId = "sourceTable"
-  //  val TableBodyId = "logTableBody"
+  val LogTableId = "log-table"
+  val SourceTableId = "source-table"
 
   def logs = baseIndex("logs")(
     headerRow()("Logs ", small(`class` := s"$PullRight $HiddenXs", id := Status)("Initializing...")),

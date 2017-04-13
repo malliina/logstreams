@@ -5,7 +5,7 @@ import com.malliina.logstreams.auth.{Auths, UserService}
 import com.malliina.logstreams.db.{DatabaseAuth, UserDB}
 import com.malliina.logstreams.tags.Htmls
 import com.malliina.oauth.{GoogleOAuthCredentials, GoogleOAuthReader}
-import com.malliina.play.ActorContext
+import com.malliina.play.ActorExecution
 import com.malliina.play.app.DefaultApp
 import controllers._
 import play.api.ApplicationLoader.Context
@@ -39,7 +39,7 @@ abstract class AppComponents(context: Context,
   lazy val sourceAuth = Auths.sources(users)
   lazy val oauth = new OAuth(creds, materializer)
   lazy val authImpl = new OAuthCtrl(oauth)
-  lazy val deps = ActorContext(actorSystem, materializer)
+  lazy val deps = ActorExecution(actorSystem, materializer)
 
   // Controllers
   lazy val home = new Logs(htmls, auth, users, deps)

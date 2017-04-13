@@ -9,7 +9,7 @@ import com.malliina.logstreams.db.UserDB.log
 import com.malliina.play.models.{Password, Username}
 import org.h2.jdbcx.JdbcConnectionPool
 import play.api.Logger
-import slick.driver.H2Driver.api._
+import slick.jdbc.H2Profile.api._
 
 class Users(tag: Tag) extends Table[DataUser](tag, "USERS") {
   def user = column[Username]("USER", O.PrimaryKey)
@@ -38,7 +38,7 @@ class UserDB(conn: String) extends DatabaseLike with Closeable {
   val url = s"jdbc:h2:$conn;DB_CLOSE_DELAY=-1"
   log info s"Connecting to: $url"
   val pool = JdbcConnectionPool.create(url, "", "")
-  override val database = Database.forDataSource(pool)
+  override val database = Database.forDataSource(pool, None)
   override val tableQueries = Seq(UserDB.tokens, UserDB.users)
 
   init()

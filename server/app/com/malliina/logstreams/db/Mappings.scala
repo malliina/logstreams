@@ -2,7 +2,7 @@ package com.malliina.logstreams.db
 
 import com.malliina.play.models.{Password, Username}
 import org.joda.time.DateTime
-import slick.driver.H2Driver.api.{MappedColumnType, longColumnType, stringColumnType}
+import slick.jdbc.H2Profile.api.{MappedColumnType, longColumnType, stringColumnType}
 
 object Mappings {
   implicit val jodaDate = MappedColumnType.base[DateTime, Long](_.getMillis, l => new DateTime(l))

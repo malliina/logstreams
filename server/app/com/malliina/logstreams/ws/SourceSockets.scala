@@ -1,21 +1,21 @@
 package com.malliina.logstreams.ws
 
-import akka.actor.{ActorRef, Props}
+import akka.actor.Props
 import com.malliina.logstreams.models.AppName
-import com.malliina.play.ActorContext
+import com.malliina.play.ActorExecution
 import com.malliina.play.auth.Authenticator
 import com.malliina.play.models.Username
-import com.malliina.play.ws.{SimpleClientContext, SimpleSockets}
-import play.api.mvc.RequestHeader
+import com.malliina.play.ws._
 
 class SourceSockets(mediatorProps: Props,
                     sourceAuth: Authenticator[Username],
-                    deps: ActorContext)
-  extends SimpleSockets[Username](mediatorProps, sourceAuth, deps) {
+                    ctx: ActorExecution)
+  extends Sockets[Username](sourceAuth, ctx) {
+  val mediator = actorSystem.actorOf(mediatorProps)
 
-  override def props(out: ActorRef, user: Username, rh: RequestHeader) = {
-    val app = AppName(user.name)
-    val ctx = SimpleClientContext(out, rh, mediator)
-    Props(new SourceActor(app, ctx))
+  override def props(conf: ActorConfig[Username]): Props = {
+    val app = AppName(conf.user.name)
+    val client = MediatorClient(conf, mediator)
+    Props(new SourceActor(app, client))
   }
 }

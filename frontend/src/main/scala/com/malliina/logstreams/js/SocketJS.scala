@@ -42,9 +42,9 @@ abstract class SocketJS(wsPath: String) {
 
   def onInvalidData(message: String): PartialFunction[Invalid, Unit] = {
     case Invalid.Data(jsValue, errorMessage) =>
-      println(s"JSON failed to parse: '$errorMessage' in value '$jsValue', message: '$message'.")
+      println(s"JSON failed to parse: '$errorMessage' in value '$jsValue', message '$message'.")
     case Invalid.Json(errorMessage, in) =>
-      println(s"Not JSON, '$errorMessage' in value '$in', message: '$message'.")
+      println(s"Not JSON, '$errorMessage' in value '$in', message '$message'.")
   }
 
   def setFeedback(feedback: String) = statusElem html feedback

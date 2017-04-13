@@ -3,7 +3,7 @@ package com.malliina.logstreams.js
 import scalatags.Text.all._
 
 class SourceSocket extends SocketJS("/ws/admins?f=json") {
-  val TableId = "sourceTable"
+  val TableId = "source-table"
   val table = elem(s"$TableId tbody")
 
   override def handlePayload(payload: String): Unit = {

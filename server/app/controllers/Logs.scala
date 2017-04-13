@@ -3,7 +3,7 @@ package controllers
 import com.malliina.app.AppMeta
 import com.malliina.logstreams.auth.UserService
 import com.malliina.logstreams.tags.Htmls
-import com.malliina.play.ActorContext
+import com.malliina.play.ActorExecution
 import com.malliina.play.auth._
 import com.malliina.play.controllers.Caching
 import com.malliina.play.http.{AuthedRequest, CookiedRequest}
@@ -30,7 +30,7 @@ object Logs {
 class Logs(htmls: Htmls,
            oauth: LogAuth,
            users: UserService,
-           dep: ActorContext)
+           dep: ActorExecution)
   extends Controller {
 
   implicit val as = dep.actorSystem
@@ -52,24 +52,28 @@ class Logs(htmls: Htmls,
 
   def allSources = async { req =>
     users.all() map { us =>
-      Ok(htmls.users(us, UserFeedback.flashed(req)))
+      Ok(htmls.users(us, UserFeedback.flashed(req.rh)))
     }
   }
 
-  def addUser = async { req =>
-    addUserForm.bindFromRequest()(req).fold(
-      formWithErrors => users.all().map { us =>
-        BadRequest(htmls.users(us, UserFeedback.formed(formWithErrors)))
-      },
-      newUser => users.add(newUser).map { result =>
-        val user = newUser.username
-        val feedback = result.fold(
-          _ => UserFeedback.error(s"User '$user' already exists."),
-          _ => UserFeedback.success(s"Created user '$user'.")
-        )
-        Redirect(routes.Logs.allSources()).flashing(feedback.toSeq: _*)
-      }
-    )
+  def action = Action(parse.json) { req => Ok }
+
+  def addUser = oauth.authAction { _ =>
+    Action.async { req =>
+      addUserForm.bindFromRequest()(req).fold(
+        formWithErrors => users.all().map { us =>
+          BadRequest(htmls.users(us, UserFeedback.formed(formWithErrors)))
+        },
+        newUser => users.add(newUser).map { result =>
+          val user = newUser.username
+          val feedback = result.fold(
+            _ => UserFeedback.error(s"User '$user' already exists."),
+            _ => UserFeedback.success(s"Created user '$user'.")
+          )
+          Redirect(routes.Logs.allSources()).flashing(feedback.toSeq: _*)
+        }
+      )
+    }
   }
 
   def removeUser(user: Username) = async { _ =>
@@ -81,7 +85,8 @@ class Logs(htmls: Htmls,
     }
   }
 
-  def async(result: LogRequest => Future[Result]) = oauth.withAuthAsync(result)
+  def async(result: UserRequest => Future[Result]) =
+    oauth.withAuthAsync(result)
 
   def navigate[C: Writeable](content: => C): EssentialAction =
     oauth.withAuth(_ => Ok(content))

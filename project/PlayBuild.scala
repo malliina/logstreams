@@ -33,14 +33,14 @@ object PlayBuild {
     .dependsOn(server % "test->test", client)
 
   val malliinaGroup = "com.malliina"
-  val utilPlayDep = malliinaGroup %% "util-play" % "3.6.0"
+  val utilPlayDep = malliinaGroup %% "util-play" % "3.6.7"
 
   def frontSettings = Seq(
     persistLauncher := true,
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %%% "scalatags" % "0.6.2",
-      "com.lihaoyi" %%% "upickle" % "0.4.3",
-      "com.lihaoyi" %%% "utest" % "0.4.4" % Test,
+      "com.lihaoyi" %%% "scalatags" % "0.6.3",
+      "com.lihaoyi" %%% "upickle" % "0.4.4",
+      "com.lihaoyi" %%% "utest" % "0.4.5" % Test,
       "be.doeraene" %%% "scalajs-jquery" % "0.9.1"
     ),
     testFrameworks += new TestFramework("utest.runner.Framework")
@@ -49,8 +49,8 @@ object PlayBuild {
   def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
     buildInfoKeys += BuildInfoKey("frontName" -> (name in frontend).value),
     libraryDependencies ++= Seq(
-      "com.h2database" % "h2" % "1.4.193",
-      "com.typesafe.slick" %% "slick" % "3.1.1",
+      "com.h2database" % "h2" % "1.4.194",
+      "com.typesafe.slick" %% "slick" % "3.2.0",
       utilPlayDep,
       utilPlayDep % Test classifier "tests"
     ) map (_.withSources().withJavadoc())

@@ -17,7 +17,7 @@ object PlayBuild {
     .settings(basicSettings: _*)
     .aggregate(frontend, server, client, integrationTest)
 
-  lazy val server = PlayProject.default("logstreams", file("server"))
+  lazy val server = PlayProject.server("logstreams", file("server"))
     .enablePlugins(BuildInfoPlugin)
     .settings(serverSettings: _*)
 

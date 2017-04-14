@@ -79,7 +79,7 @@ object PlayBuild {
 
   def basicSettings = Seq(
     organization := malliinaGroup,
-    version := "0.0.4",
+    version := "0.0.6",
     scalaVersion := "2.11.8"
   )
 }

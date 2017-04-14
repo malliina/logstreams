@@ -1,5 +1,5 @@
-GET         /ping                      controllers.Logs.ping
 GET         /                          controllers.Logs.index
+GET         /ping                      controllers.Logs.ping
 GET         /sources                   controllers.Logs.sources
 GET         /users                     controllers.Logs.allSources
 POST        /users                     controllers.Logs.addUser

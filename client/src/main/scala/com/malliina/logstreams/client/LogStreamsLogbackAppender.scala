@@ -51,15 +51,16 @@ class LogStreamsLogbackAppender extends BasicPublishRxAppender {
 
   override def start() = {
     val result = for {
-      logHost <- toMissing(endpoint, "endpoint")
+      hostAndPort <- toMissing(endpoint, "endpoint")
       user <- toMissing(username, "username")
       pass <- toMissing(password, "password")
-      _ <- validate(logHost).right
+      _ <- validate(hostAndPort).right
     } yield {
       val headers: Seq[KeyValue] = Seq(HttpUtil.basicAuth(user, pass))
-      val sf = CustomSSLSocketFactory.forHost(logHost)
+      val host = hostAndPort.takeWhile(_ != ':')
+      val sf = CustomSSLSocketFactory.forHost(host)
       val scheme = if (getSecure) "wss" else "ws"
-      val uri = new URI(s"$scheme://$logHost/ws/sources")
+      val uri = new URI(s"$scheme://$hostAndPort/ws/sources")
       addInfo(s"Connecting to logstreams URI ${uri.toString}...")
       val socket = new JsonSocket(uri, sf, headers)
       client = Option(socket)
@@ -77,7 +78,7 @@ class LogStreamsLogbackAppender extends BasicPublishRxAppender {
   def toMissing[T](o: Option[T], fieldName: String) = o.toRight(missing(fieldName)).right
 
   def validate(host: String): Either[String, Unit] =
-    if (host contains "/") Left(s"Host $host must not contain a slash ('/'). Only supply the host (and optionally, port).")
+    if (host contains "/") Left(s"Host '$host' must not contain a slash ('/'). Only supply the host (and optionally, port).")
     else Right(())
 
   def missing(fieldName: String) = s"No '$fieldName' is set for appender [$name]."

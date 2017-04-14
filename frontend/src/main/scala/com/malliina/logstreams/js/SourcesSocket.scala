@@ -2,7 +2,7 @@ package com.malliina.logstreams.js
 
 import scalatags.Text.all._
 
-class SourceSocket extends SocketJS("/ws/admins?f=json") {
+class SourcesSocket extends SocketJS("/ws/admins?f=json") {
   val TableId = "source-table"
   val table = elem(s"$TableId tbody")
 

@@ -87,7 +87,7 @@ class Htmls(scripts: Modifier*) {
         divContainer(
           divClass(NavbarHeader)(
             hamburgerButton,
-            a(`class` := NavbarBrand, href := routes.Logs.index())("LogStreams")
+            a(`class` := NavbarBrand, href := routes.Logs.index())("logstreams")
           ),
           divClass(s"$NavbarCollapse $Collapse")(
             ulClass(s"$Nav $NavbarNav")(

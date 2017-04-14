@@ -33,7 +33,7 @@ object PlayBuild {
     .dependsOn(server % "test->test", client)
 
   val malliinaGroup = "com.malliina"
-  val utilPlayDep = malliinaGroup %% "util-play" % "3.6.7"
+  val utilPlayDep = malliinaGroup %% "util-play" % "3.6.8"
 
   def frontSettings = Seq(
     version := "0.0.1",
@@ -79,7 +79,7 @@ object PlayBuild {
 
   def basicSettings = Seq(
     organization := malliinaGroup,
-    version := "0.0.1",
+    version := "0.0.4",
     scalaVersion := "2.11.8"
   )
 }

@@ -1,12 +1,14 @@
 package com.malliina.logstreams.ws
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Terminated}
+import akka.actor.{Actor, ActorRef, Terminated}
 import com.malliina.logstreams.models._
-import com.malliina.logstreams.ws.SourceMediatorActor.{SourceInfo, SourceJoined, SourceLeft}
+import com.malliina.logstreams.ws.SourceMediatorActor.{SourceInfo, SourceJoined, SourceLeft, log}
 import com.malliina.play.ws.Mediator.{Broadcast, ClientMessage}
+import play.api.Logger
 import play.api.libs.json.Json
 
 object SourceMediatorActor {
+  private val log = Logger(getClass)
 
   case class SourceInfo(source: LogSource, out: ActorRef)
 
@@ -19,7 +21,7 @@ object SourceMediatorActor {
 }
 
 class SourceMediatorActor(eventsSink: ActorRef, adminSink: ActorRef)
-  extends Actor with ActorLogging {
+  extends Actor {
 
   var sources: Set[SourceInfo] = Set.empty
 

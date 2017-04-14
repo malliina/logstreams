@@ -36,6 +36,7 @@ object PlayBuild {
   val utilPlayDep = malliinaGroup %% "util-play" % "3.6.7"
 
   def frontSettings = Seq(
+    version := "0.0.1",
     persistLauncher := true,
     libraryDependencies ++= Seq(
       "com.lihaoyi" %%% "scalatags" % "0.6.3",

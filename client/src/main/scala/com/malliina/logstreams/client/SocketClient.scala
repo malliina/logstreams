@@ -46,9 +46,6 @@ class SocketClient(val uri: URI,
 
   // The listener seems stateless, so it is safe to reuse it across connections
   private val listener = new WebSocketAdapter {
-
-    override def handleCallbackError(websocket: WebSocket, cause: Throwable) = super.handleCallbackError(websocket, cause)
-
     override def onConnected(websocket: WebSocket,
                              headers: util.Map[String, util.List[String]]) = {
       log info s"Connected to ${websocket.getURI}."

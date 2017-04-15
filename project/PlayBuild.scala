@@ -13,7 +13,7 @@ import webscalajs.ScalaJSWeb
 import webscalajs.WebScalaJS.autoImport.{scalaJSPipeline, scalaJSProjects}
 
 object PlayBuild {
-  val serverVersion = "0.0.7"
+  val serverVersion = "0.0.8"
 
   lazy val root = Project("root", file("."))
     .settings(basicSettings: _*)

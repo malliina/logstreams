@@ -13,12 +13,13 @@ import webscalajs.ScalaJSWeb
 import webscalajs.WebScalaJS.autoImport.{scalaJSPipeline, scalaJSProjects}
 
 object PlayBuild {
+  val serverVersion = "0.0.7"
+
   lazy val root = Project("root", file("."))
     .settings(basicSettings: _*)
     .aggregate(frontend, server, client, integrationTest)
 
   lazy val server = PlayProject.server("logstreams", file("server"))
-    .enablePlugins(BuildInfoPlugin)
     .settings(serverSettings: _*)
 
   lazy val frontend = Project("frontend", file("frontend"))
@@ -79,7 +80,7 @@ object PlayBuild {
 
   def basicSettings = Seq(
     organization := malliinaGroup,
-    version := "0.0.6",
+    version := serverVersion,
     scalaVersion := "2.11.8"
   )
 }

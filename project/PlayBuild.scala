@@ -49,6 +49,7 @@ object PlayBuild {
   )
 
   def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
+    version := serverVersion,
     buildInfoKeys += BuildInfoKey("frontName" -> (name in frontend).value),
     libraryDependencies ++= Seq(
       "com.h2database" % "h2" % "1.4.196",
@@ -80,7 +81,6 @@ object PlayBuild {
 
   def basicSettings = Seq(
     organization := malliinaGroup,
-    version := serverVersion,
     scalaVersion := "2.12.2",
     crossScalaVersions := Seq("2.11.11", scalaVersion.value),
     scalacOptions := Seq("-unchecked", "-deprecation")

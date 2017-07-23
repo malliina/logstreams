@@ -1,9 +1,8 @@
 package com.malliina.logstreams.client
 
 import java.net.{InetAddress, Socket, URI}
+import java.util
 import javax.net.ssl._
-
-import scala.collection.JavaConverters.seqAsJavaList
 
 object CustomSSLSocketFactory {
   def forUri(uri: URI) = forHost(uri.getHost)
@@ -16,8 +15,9 @@ object CustomSSLSocketFactory {
 
   def withSNI(sniMatcher: SNIMatcher, sniHost: SNIHostName): CustomSSLSocketFactory = {
     val sslParameters = new SSLParameters()
-    sslParameters.setSNIMatchers(seqAsJavaList(Seq(sniMatcher)))
-    sslParameters.setServerNames(seqAsJavaList(Seq(sniHost)))
+
+    sslParameters.setSNIMatchers(util.Arrays.asList(sniMatcher))
+    sslParameters.setServerNames(util.Arrays.asList(sniHost))
     val ctx = SSLContext.getDefault
     val inner = ctx.getSocketFactory
     new CustomSSLSocketFactory(inner, sslParameters)

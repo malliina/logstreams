@@ -13,7 +13,7 @@ import webscalajs.ScalaJSWeb
 import webscalajs.WebScalaJS.autoImport.{scalaJSPipeline, scalaJSProjects}
 
 object PlayBuild {
-  val serverVersion = "0.0.8"
+  val serverVersion = "0.0.9"
 
   lazy val root = Project("root", file("."))
     .settings(basicSettings: _*)
@@ -66,10 +66,9 @@ object PlayBuild {
   def clientSettings = basicSettings ++ mavenSettings ++ Seq(
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
-    libraryDependencies ++= loggingDeps ++ Seq(
+    libraryDependencies ++= Seq(
       "com.neovisionaries" % "nv-websocket-client" % "2.3",
       "com.malliina" %% "logback-rx" % "1.2.0",
-      "com.typesafe.play" %% "play-json" % "2.6.2",
       "org.scalatest" %% "scalatest" % "3.0.3" % Test
     ),
     ReleasePlugin.autoImport.releaseCrossBuild := true

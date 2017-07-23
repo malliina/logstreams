@@ -30,8 +30,9 @@ object Logs {
 class Logs(htmls: Htmls,
            oauth: LogAuth,
            users: UserService,
-           dep: ActorExecution)
-  extends Controller {
+           dep: ActorExecution,
+           comps: ControllerComponents)
+  extends AbstractController(comps) {
 
   implicit val as = dep.actorSystem
   implicit val m = dep.materializer

@@ -2,6 +2,7 @@ package com.malliina.logstreams.db
 
 import java.io.Closeable
 import java.nio.file.{Files, Path, Paths}
+import javax.sql.DataSource
 
 import com.malliina.file.{FileUtilities, StorageFile}
 import com.malliina.logstreams.db.Mappings.{password, username}
@@ -10,6 +11,8 @@ import com.malliina.play.models.{Password, Username}
 import org.h2.jdbcx.JdbcConnectionPool
 import play.api.Logger
 import slick.jdbc.H2Profile.api._
+
+import scala.concurrent.ExecutionContext
 
 class Users(tag: Tag) extends Table[DataUser](tag, "USERS") {
   def user = column[Username]("USER", O.PrimaryKey)
@@ -34,18 +37,17 @@ class Tokens(tag: Tag) extends Table[DataUser](tag, "TOKENS") {
   def * = (user, token) <> ((DataUser.apply _).tupled, DataUser.unapply)
 }
 
-class UserDB(conn: String) extends DatabaseLike with Closeable {
-  val url = s"jdbc:h2:$conn;DB_CLOSE_DELAY=-1"
-  log info s"Connecting to: $url"
-  val pool = JdbcConnectionPool.create(url, "", "")
-  override val database = Database.forDataSource(pool, None)
+class UserDB(ds: JdbcConnectionPool)(implicit val ec: ExecutionContext)
+  extends DatabaseLike(Database.forDataSource(ds, None))
+    with Closeable {
+
   override val tableQueries = Seq(UserDB.tokens, UserDB.users)
 
   init()
 
-  override def close() = {
+  override def close(): Unit = {
     database.close()
-    pool.dispose()
+    ds.dispose()
   }
 }
 
@@ -56,7 +58,14 @@ object UserDB {
   val tokens = TableQuery[Tokens]
   val HomeKey = "logstreams.home"
 
-  def default() = {
+  def forConn(conn: String)(implicit ec: ExecutionContext): UserDB = {
+    val url = s"jdbc:h2:$conn;DB_CLOSE_DELAY=-1"
+    log info s"Connecting to: $url"
+    val pool = JdbcConnectionPool.create(url, "", "")
+    new UserDB(pool)
+  }
+
+  def default()(implicit ec: ExecutionContext) = {
     val homeDir = (sys.props.get(HomeKey) orElse sys.env.get(HomeKey)).map(p => Paths.get(p))
       .getOrElse(FileUtilities.userHome / ".logstreams")
     file(homeDir / "db" / "logsdb")
@@ -66,13 +75,13 @@ object UserDB {
     * @param path path to database file
     * @return a file-based database stored at `path`
     */
-  def file(path: Path) = {
+  def file(path: Path)(implicit ec: ExecutionContext) = {
     Option(path.getParent).foreach(p => Files.createDirectories(p))
-    new UserDB(path.toString)
+    forConn(path.toString)
   }
 
   /**
     * @return an in-memory database
     */
-  def test() = new UserDB("mem:test")
+  def test()(implicit ec: ExecutionContext) = forConn("mem:test")
 }

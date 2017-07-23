@@ -4,10 +4,10 @@ import akka.stream.Materializer
 import com.malliina.oauth.GoogleOAuthCredentials
 import com.malliina.play.auth._
 import com.malliina.play.controllers.{AuthBundle, BaseSecurity, OAuthControl}
-import com.malliina.play.models.Username
+import com.malliina.play.models.{AuthInfo, Username}
 import play.api.mvc._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 trait LogAuth {
   def authAction(f: UserRequest => EssentialAction): EssentialAction
@@ -20,7 +20,7 @@ trait LogAuth {
 }
 
 class WebAuth(oauth: OAuthCtrl) extends LogAuth {
-  implicit val ec = oauth.ec
+  implicit val ec: ExecutionContext = oauth.ec
 
   override def authAction(f: UserRequest => EssentialAction): EssentialAction =
     oauth.authenticatedLogged(f)
@@ -35,9 +35,10 @@ class WebAuth(oauth: OAuthCtrl) extends LogAuth {
     oauth.authenticate(rh)
 }
 
-class OAuthCtrl(oauth: OAuth) extends BaseSecurity(OAuth.authBundle(oauth), oauth.mat)
+class OAuthCtrl(oauth: OAuth)
+  extends BaseSecurity(oauth.actions, OAuth.authBundle(oauth), oauth.mat)
 
-case class UserRequest(user: Username, rh: RequestHeader)
+case class UserRequest(user: Username, rh: RequestHeader) extends AuthInfo
 
 object OAuth {
   def sessionAuthenticator(oauth: OAuth): Authenticator[UserRequest] = {
@@ -57,8 +58,8 @@ object OAuth {
   }
 }
 
-class OAuth(creds: GoogleOAuthCredentials, mat: Materializer)
-  extends OAuthControl(creds, mat) {
+class OAuth(val actions: ActionBuilder[Request, AnyContent], creds: GoogleOAuthCredentials, mat: Materializer)
+  extends OAuthControl(actions, creds, mat) {
   override val sessionUserKey: String = "email"
 
   override def isAuthorized(email: String) = email == "malliina123@gmail.com"

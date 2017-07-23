@@ -2,13 +2,13 @@ import com.malliina.sbtplay.PlayProject
 import com.malliina.sbtutils.SbtUtils._
 import com.typesafe.sbt.web.Import.{Assets, pipelineStages}
 import org.scalajs.sbtplugin.ScalaJSPlugin
-import org.scalajs.sbtplugin.ScalaJSPlugin.AutoImport.persistLauncher
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
 import play.sbt.PlayImport
 import sbt.Keys._
 import sbt._
 import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
-import sbtbuildinfo.{BuildInfoKey, BuildInfoPlugin}
+import sbtbuildinfo.BuildInfoKey
+import sbtrelease.ReleasePlugin
 import webscalajs.ScalaJSWeb
 import webscalajs.WebScalaJS.autoImport.{scalaJSPipeline, scalaJSProjects}
 
@@ -34,16 +34,16 @@ object PlayBuild {
     .dependsOn(server % "test->test", client)
 
   val malliinaGroup = "com.malliina"
-  val utilPlayDep = malliinaGroup %% "util-play" % "3.6.8"
+  val utilPlayDep = malliinaGroup %% "util-play" % "4.1.1"
 
   def frontSettings = Seq(
     version := "0.0.1",
-    persistLauncher := true,
+    scalaJSUseMainModuleInitializer := true,
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %%% "scalatags" % "0.6.3",
+      "com.lihaoyi" %%% "scalatags" % "0.6.5",
       "com.lihaoyi" %%% "upickle" % "0.4.4",
-      "com.lihaoyi" %%% "utest" % "0.4.5" % Test,
-      "be.doeraene" %%% "scalajs-jquery" % "0.9.1"
+      "com.lihaoyi" %%% "utest" % "0.4.8" % Test,
+      "be.doeraene" %%% "scalajs-jquery" % "0.9.2"
     ),
     testFrameworks += new TestFramework("utest.runner.Framework")
   )
@@ -51,8 +51,8 @@ object PlayBuild {
   def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
     buildInfoKeys += BuildInfoKey("frontName" -> (name in frontend).value),
     libraryDependencies ++= Seq(
-      "com.h2database" % "h2" % "1.4.194",
-      "com.typesafe.slick" %% "slick" % "3.2.0",
+      "com.h2database" % "h2" % "1.4.196",
+      "com.typesafe.slick" %% "slick" % "3.2.1",
       utilPlayDep,
       utilPlayDep % Test classifier "tests"
     ) map (_.withSources().withJavadoc())
@@ -67,11 +67,12 @@ object PlayBuild {
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
     libraryDependencies ++= loggingDeps ++ Seq(
-      "com.neovisionaries" % "nv-websocket-client" % "1.31",
-      "com.malliina" %% "logback-rx" % "1.1.0",
-      PlayImport.json,
-      "org.scalatest" %% "scalatest" % "3.0.0" % Test
-    )
+      "com.neovisionaries" % "nv-websocket-client" % "2.3",
+      "com.malliina" %% "logback-rx" % "1.2.0",
+      "com.typesafe.play" %% "play-json" % "2.6.2",
+      "org.scalatest" %% "scalatest" % "3.0.3" % Test
+    ),
+    ReleasePlugin.autoImport.releaseCrossBuild := true
   )
 
   def testSettings = basicSettings ++ Seq(
@@ -81,6 +82,8 @@ object PlayBuild {
   def basicSettings = Seq(
     organization := malliinaGroup,
     version := serverVersion,
-    scalaVersion := "2.11.8"
+    scalaVersion := "2.12.2",
+    crossScalaVersions := Seq("2.11.11", scalaVersion.value),
+    scalacOptions := Seq("-unchecked", "-deprecation")
   )
 }

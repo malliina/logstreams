@@ -4,18 +4,15 @@ import java.sql.SQLException
 
 import com.malliina.logstreams.db.DatabaseLike.log
 import play.api.Logger
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import slick.jdbc.H2Profile.api._
 import slick.jdbc.meta.MTable
 import slick.lifted.{AbstractTable, TableQuery}
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.language.higherKinds
 
-trait DatabaseLike {
-  def database: Database
-
+abstract class DatabaseLike(val database: Database)(implicit ec: ExecutionContext) {
   def tableQueries: Seq[TableQuery[_ <: Table[_]]]
 
   def runQuery[A, B, C[_]](query: Query[A, B, C]): Future[C[B]] = run(query.result)

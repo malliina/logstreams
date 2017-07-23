@@ -3,11 +3,11 @@ package tests
 import com.malliina.play.auth.InvalidCredentials
 import com.malliina.play.models.Username
 import controllers.{LogAuth, UserRequest}
-import play.api.mvc._
+import play.api.mvc.{ActionBuilder, _}
 
 import scala.concurrent.Future
 
-class TestAuth extends LogAuth {
+class TestAuth(actions: ActionBuilder[Request, AnyContent]) extends LogAuth {
   val testUser = Username("testuser")
 
   override def authAction(f: UserRequest => EssentialAction): EssentialAction =
@@ -16,12 +16,12 @@ class TestAuth extends LogAuth {
     }
 
   override def withAuthAsync(f: UserRequest => Future[Result]) =
-    Action.async { req =>
+    actions.async { req =>
       f(UserRequest(testUser, req))
     }
 
   override def withAuth(f: UserRequest => Result): EssentialAction =
-    Action { req =>
+    actions { req =>
       f(UserRequest(testUser, req))
     }
 

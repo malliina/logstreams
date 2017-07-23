@@ -8,7 +8,6 @@ import com.malliina.logstreams.db.Mappings.{password, username}
 import com.malliina.play.auth.BasicCredentials
 import com.malliina.play.models.{Password, Username}
 import org.apache.commons.codec.digest.DigestUtils
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import slick.jdbc.H2Profile.api._
 
 import scala.concurrent.Future
@@ -22,6 +21,7 @@ object DatabaseAuth {
 
 class DatabaseAuth(db: UserDB) extends UserService {
   import UserDB.users
+  implicit val ec = db.ec
 
   override def add(creds: BasicCredentials): Future[Either[AlreadyExists, Unit]] = {
     db.run(users += DataUser(creds.username, hash(creds))).map(_ => Right(())) recover {

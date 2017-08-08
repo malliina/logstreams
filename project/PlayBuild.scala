@@ -81,7 +81,7 @@ object PlayBuild {
 
   def basicSettings = Seq(
     organization := malliinaGroup,
-    scalaVersion := "2.12.2",
+    scalaVersion := "2.12.3",
     crossScalaVersions := Seq("2.11.11", scalaVersion.value),
     scalacOptions := Seq("-unchecked", "-deprecation")
   )

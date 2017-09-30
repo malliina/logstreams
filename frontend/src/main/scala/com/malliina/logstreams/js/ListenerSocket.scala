@@ -4,12 +4,21 @@ import java.util.UUID
 
 import org.scalajs.dom
 import org.scalajs.dom.raw.HTMLTableElement
-import org.scalajs.jquery.JQueryEventObject
+import org.scalajs.jquery.{JQuery, JQueryEventObject}
+import play.api.libs.json.JsValue
 
 import scalatags.Text.TypedTag
 import scalatags.Text.all._
 
-class ListenerSocket(wsPath: String) extends SocketJS(wsPath) {
+case class RowContent(content: Frag, cellId: String, linkId: String)
+
+object ListenerSocket {
+  def apply(wsPath: String) = new ListenerSocket(s"$wsPath?f=json")
+
+  def web = ListenerSocket("/ws/logs")
+}
+
+class ListenerSocket(wsPath: String) extends BaseSocket(wsPath) {
   val CellContent = "cell-content"
   val CellWide = "cell-wide"
   val ColumnCount = 6
@@ -22,38 +31,36 @@ class ListenerSocket(wsPath: String) extends SocketJS(wsPath) {
   lazy val jQueryTable = elem(TableId)
   lazy val table = dom.document.getElementById(TableId).asInstanceOf[HTMLTableElement]
 
-  override def handlePayload(payload: String): Unit = {
-    val parsed = validate[AppLogEvents](payload)
-    parsed.fold(onInvalidData(payload).lift, onLogEvents)
-  }
+  override def handlePayload(payload: JsValue): Unit =
+    handleValidated(payload)(onLogEvents)
 
   def onLogEvents(appLogEvents: AppLogEvents): Unit =
     appLogEvents.events foreach onLogEvent
 
-  def onLogEvent(event: AppLogEvent) = {
+  def onLogEvent(event: AppLogEvent): JQuery = {
     val entry = event.event
-    val (frag, msgCellId, linkId) = toRow(event)
-    val stackId = s"stack-$linkId"
+    val row: RowContent = toRow(event)
+    val stackId = s"stack-${row.linkId}"
     entry.stackTrace foreach { stackTrace =>
       val errorRow = tr(`class` := Hidden, id := stackId)(
         td(colspan := s"$ColumnCount")(pre(stackTrace))
       )
       jQueryTable prepend errorRow.render
     }
-    jQueryTable prepend frag.render
+    jQueryTable prepend row.content.render
     // Toggles text wrapping for long texts when clicked
-    elem(msgCellId) click { (_: JQueryEventObject) =>
-      elem(msgCellId) toggleClass CellContent
+    elem(row.cellId) click { (_: JQueryEventObject) =>
+      elem(row.cellId) toggleClass CellContent
       false
     }
-    elem(linkId) click { (_: JQueryEventObject) =>
+    elem(row.linkId) click { (_: JQueryEventObject) =>
       elem(stackId) toggleClass Hidden
       false
     }
   }
 
   // "App", "Time", "Message", "Logger", "Thread", "Level"
-  def toRow(event: AppLogEvent): (Frag, String, String) = {
+  def toRow(event: AppLogEvent): RowContent = {
     val entry = event.event
     val rowClass = entry.level match {
       case "ERROR" => Danger
@@ -75,7 +82,7 @@ class ListenerSocket(wsPath: String) extends SocketJS(wsPath) {
       cell(entry.threadName),
       td(levelCell)
     )
-    (frag, msgCellId, linkId)
+    RowContent(frag, msgCellId, linkId)
   }
 
 
@@ -87,10 +94,4 @@ class ListenerSocket(wsPath: String) extends SocketJS(wsPath) {
 
   def toCell(content: String, clazz: String): TypedTag[String] =
     td(`class` := clazz)(content)
-}
-
-object ListenerSocket {
-  def apply(wsPath: String) = new ListenerSocket(s"$wsPath?f=json")
-
-  def web = ListenerSocket("/ws/logs")
 }

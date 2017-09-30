@@ -6,12 +6,12 @@ import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
 
 object Frontend extends JSApp {
-  var app: Option[SocketJS] = None
+  var app: Option[BaseSocket] = None
 
   @JSExport
-  override def main() = {
+  override def main(): Unit = {
     val path = dom.window.location.pathname
-    val jsImpl: PartialFunction[String, SocketJS] = {
+    val jsImpl: PartialFunction[String, BaseSocket] = {
       case "/" => ListenerSocket.web
       case "/sources" => new SourcesSocket
     }

@@ -11,7 +11,9 @@ object LogEvents {
   implicit val json = Json.format[LogEvents]
 }
 
-case class AppName(name: String)
+case class AppName(name: String) {
+  override def toString = name
+}
 
 object AppName extends SimpleCompanion[String, AppName] {
   override def raw(t: AppName) = t.name

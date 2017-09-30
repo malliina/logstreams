@@ -4,7 +4,7 @@ import play.sbt.PlayImport
 import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 
-val serverVersion = "0.0.9"
+val serverVersion = "0.1.0"
 
 lazy val root = project.in(file("."))
   .settings(basicSettings: _*)
@@ -30,12 +30,11 @@ def frontSettings = Seq(
   scalaJSUseMainModuleInitializer := true,
   libraryDependencies ++= Seq(
     "com.lihaoyi" %%% "scalatags" % "0.6.7",
-    "com.lihaoyi" %%% "upickle" % "0.4.4",
-    "com.lihaoyi" %%% "utest" % "0.4.8" % Test,
     "be.doeraene" %%% "scalajs-jquery" % "0.9.2",
-    "com.typesafe.play" %%% "play-json" % "2.6.3"
-  ),
-  testFrameworks += new TestFramework("utest.runner.Framework")
+    "com.typesafe.play" %%% "play-json" % "2.6.3",
+    "com.malliina" %%% "primitives" % "1.3.2",
+    "org.scalatest" %%% "scalatest" % "3.0.4" % Test
+  )
 )
 
 def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
@@ -44,6 +43,7 @@ def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
   libraryDependencies ++= Seq(
     "com.h2database" % "h2" % "1.4.196",
     "com.typesafe.slick" %% "slick" % "3.2.1",
+    "com.malliina" %% "logstreams-client" % "0.0.9",
     utilPlayDep,
     utilPlayDep % Test classifier "tests"
   ) map (_.withSources().withJavadoc())

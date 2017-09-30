@@ -1,7 +1,5 @@
 package com.malliina.logstreams.client
 
-import java.net.URI
-
 import com.malliina.http.FullUrl
 import com.malliina.logbackrx.BasicPublishRxAppender
 import rx.lang.scala.Subscription

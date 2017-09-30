@@ -11,11 +11,18 @@
             <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
+    <appender name="LOGSTREAMS" class="com.malliina.logstreams.client.LogStreamsLogbackAppender">
+        <endpoint>${LOGSTREAMS_HOST:-logs.malliina.com}</endpoint>
+        <secure>true</secure>
+        <username>${LOGSTREAMS_USER:-logstreams}</username>
+        <password>${LOGSTREAMS_USER}</password>
+    </appender>
     <logger name="play" level="INFO"/>
     <logger name="application" level="INFO"/>
     <logger name="com" level="INFO"/>
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="FILE"/>
+        <appender-ref ref="LOGSTREAMS"/>
     </root>
 </configuration>

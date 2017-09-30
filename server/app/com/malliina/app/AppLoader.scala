@@ -15,7 +15,6 @@ import play.api.routing.Router
 import play.filters.HttpFiltersComponents
 import play.filters.headers.SecurityHeadersConfig
 import router.Routes
-
 import scala.concurrent.{ExecutionContext, Future}
 
 class AppLoader extends DefaultApp(new ProdAppComponents(_))
@@ -34,6 +33,7 @@ abstract class AppComponents(context: Context,
 
   val csp = "default-src 'self' 'unsafe-inline' *.bootstrapcdn.com *.googleapis.com; connect-src *"
   override lazy val securityHeadersConfig = SecurityHeadersConfig(contentSecurityPolicy = Option(csp))
+  override def httpFilters = Seq(securityHeadersFilter, allowedHostsFilter)
 
   implicit val ec = materializer.executionContext
 

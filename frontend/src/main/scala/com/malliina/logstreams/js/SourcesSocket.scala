@@ -1,19 +1,18 @@
 package com.malliina.logstreams.js
 
+import play.api.libs.json.JsValue
+
 import scalatags.Text.all._
 
-class SourcesSocket extends SocketJS("/ws/admins?f=json") {
+class SourcesSocket extends BaseSocket("/ws/admins?f=json") {
   val TableId = "source-table"
   val table = elem(s"$TableId tbody")
 
-  override def handlePayload(payload: String): Unit = {
-    val parsed = validate[LogSources](payload)
-    parsed.fold(onInvalidData(payload).lift, onParsed)
-  }
+  override def handlePayload(payload: JsValue): Unit =
+    handleValidated[LogSources](payload)(onParsed)
 
-  def onParsed(data: LogSources) = {
+  def onParsed(data: LogSources) =
     table.html(data.sources.map(toRow).render)
-  }
 
   def toRow(source: LogSource) =
     tr(

@@ -4,6 +4,7 @@ import akka.stream.Materializer
 import com.malliina.oauth.GoogleOAuthCredentials
 import com.malliina.play.auth._
 import com.malliina.play.controllers.{AuthBundle, BaseSecurity, OAuthControl}
+import com.malliina.play.http.Proxies
 import com.malliina.play.models.{AuthInfo, Email, Username}
 import play.api.mvc._
 
@@ -38,7 +39,9 @@ class WebAuth(oauth: OAuthCtrl) extends LogAuth {
 class OAuthCtrl(oauth: OAuth)
   extends BaseSecurity(oauth.actions, OAuth.authBundle(oauth), oauth.mat)
 
-case class UserRequest(user: Username, rh: RequestHeader) extends AuthInfo
+case class UserRequest(user: Username, rh: RequestHeader) extends AuthInfo {
+  def address = Proxies.realAddress(rh)
+}
 
 object OAuth {
   def sessionAuthenticator(oauth: OAuth): Authenticator[UserRequest] = {
@@ -65,7 +68,7 @@ class OAuth(actions: ActionBuilder[Request, AnyContent], creds: GoogleOAuthCrede
 
   override def isAuthorized(email: Email) = email == authorizedEmail
 
-  override def startOAuth = routes.OAuth.initiate()
+  override def startOAuth: Call = routes.OAuth.initiate()
 
   override def oAuthRedir = routes.OAuth.redirResponse()
 

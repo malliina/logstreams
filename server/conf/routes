@@ -9,4 +9,4 @@ GET         /ws/admins                 controllers.SocketsBundle.adminSocket
 GET         /ws/sources                controllers.SocketsBundle.sourceSocket
 GET         /oauth                     controllers.OAuth.initiate
 GET         /oauthcb                   controllers.OAuth.redirResponse
-GET         /assets/*file              controllers.Assets.at(path = "/public", file)
+GET         /assets/*file              controllers.Logs.versioned(path = "/public", file)

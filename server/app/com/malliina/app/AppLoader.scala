@@ -52,9 +52,9 @@ abstract class AppComponents(context: Context,
   lazy val deps = ActorExecution(actorSystem, materializer)
 
   // Controllers
-  lazy val home = new Logs(htmls, auth, users, deps, controllerComponents)
+  lazy val home = new Logs(htmls, auth, users, deps, assets, controllerComponents)
   lazy val sockets = new SocketsBundle(listenerAuth, sourceAuth, deps)
-  override lazy val router: Router = new Routes(httpErrorHandler, home, sockets, oauth, assets)
+  override lazy val router: Router = new Routes(httpErrorHandler, home, sockets, oauth)
 
   applicationLifecycle.addStopHook(() => Future.successful {
     database.close()

@@ -27,6 +27,7 @@ val utilPlayDep = malliinaGroup %% "util-play" % "4.3.5"
 
 def frontSettings = Seq(
   version := "0.0.1",
+  scalaVersion := "2.12.3",
   scalaJSUseMainModuleInitializer := true,
   libraryDependencies ++= Seq(
     "com.lihaoyi" %%% "scalatags" % "0.6.7",

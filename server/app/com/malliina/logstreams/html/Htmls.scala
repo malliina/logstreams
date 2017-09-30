@@ -25,9 +25,11 @@ object Htmls {
   }
 
   def withLauncher(jsFiles: String*) =
-    new Htmls(jsFiles.map(file => js(routes.Assets.at(file))): _*)
+    new Htmls(jsFiles.map(file => js(asset(file))): _*)
 
   def js[V: AttrValue](url: V) = script(src := url)
+
+  def asset(file: String): Call = routes.Logs.versioned(file)
 }
 
 class Htmls(scripts: Modifier*) {
@@ -113,7 +115,7 @@ class Htmls(scripts: Modifier*) {
           cssLink("//netdna.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css"),
           cssLink("//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css"),
           cssLink("//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css"),
-          cssLink(routes.Assets.at("css/custom.css")),
+          cssLink(Htmls.asset("css/custom.css")),
           extraHeader,
           js("//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"),
           js("//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"),

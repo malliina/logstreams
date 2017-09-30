@@ -16,6 +16,7 @@ import play.api.http.Writeable
 import play.api.libs.json.Json
 import play.api.mvc._
 import Logs.log
+import controllers.Assets.Asset
 
 import scala.concurrent.Future
 
@@ -32,6 +33,7 @@ class Logs(htmls: Htmls,
            oauth: LogAuth,
            users: UserService,
            dep: ActorExecution,
+           assets: AssetsBuilder,
            comps: ControllerComponents)
   extends AbstractController(comps) {
 
@@ -45,6 +47,10 @@ class Logs(htmls: Htmls,
   )(BasicCredentials.apply)(BasicCredentials.unapply))
 
   def ping = Action(Caching.NoCacheOk(Json.toJson(AppMeta.ThisApp)))
+
+  // Assets
+
+  def versioned(path: String, file: Asset) = assets.versioned(path, file)
 
   // HTML
 

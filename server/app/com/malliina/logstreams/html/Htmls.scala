@@ -1,6 +1,6 @@
-package com.malliina.logstreams.tags
+package com.malliina.logstreams.html
 
-import com.malliina.logstreams.tags.Htmls.{callAttr, js}
+import com.malliina.logstreams.html.Htmls.{callAttr, js}
 import com.malliina.play.models.Username
 import com.malliina.play.tags.Bootstrap._
 import com.malliina.play.tags.TagPage
@@ -21,7 +21,7 @@ object Htmls {
     */
   def forApp(appName: String, isProd: Boolean): Htmls = {
     val scripts = ScalaScripts.forApp(appName, isProd)
-    withLauncher(scripts.optimized, scripts.launcher)
+    withLauncher(scripts.optimized)
   }
 
   def withLauncher(jsFiles: String*) =
@@ -34,6 +34,8 @@ class Htmls(scripts: Modifier*) {
   val Status = "status"
   val LogTableId = "log-table"
   val SourceTableId = "source-table"
+
+  val reverse = controllers.routes.Logs
 
   def logs = baseIndex("logs")(
     headerRow()("Logs ", small(`class` := s"$PullRight $HiddenXs", id := Status)("Initializing...")),
@@ -56,12 +58,12 @@ class Htmls(scripts: Modifier*) {
           leadPara("No users.")
         } else {
           responsiveTable(us)("Username", "Actions") { user =>
-            Seq(td(user.name), td(postableForm(routes.Logs.removeUser(user))(button(`class` := s"$BtnDanger $BtnXs")(" Delete"))))
+            Seq(td(user.name), td(postableForm(reverse.removeUser(user))(button(`class` := s"$BtnDanger $BtnXs")(" Delete"))))
           }
         }
       ),
       div6(
-        postableForm(routes.Logs.addUser())(
+        postableForm(reverse.addUser())(
           inGroup(Logs.UsernameKey, Text, "Username"),
           passwordGroup(Logs.PasswordKey, "Password"),
           blockSubmitButton()("Add User")
@@ -84,21 +86,21 @@ class Htmls(scripts: Modifier*) {
 
     root("logstreams")(
       divClass(s"$Navbar $NavbarDefault")(
-        divContainer(
+        divClass("wide-content")(
           divClass(NavbarHeader)(
             hamburgerButton,
-            a(`class` := NavbarBrand, href := routes.Logs.index())("logstreams")
+            a(`class` := NavbarBrand, href := reverse.index())("logstreams")
           ),
           divClass(s"$NavbarCollapse $Collapse")(
             ulClass(s"$Nav $NavbarNav")(
-              navItem("Logs", "logs", routes.Logs.index(), "list"),
-              navItem("Sources", "sources", routes.Logs.sources(), "home"),
-              navItem("Users", "users", routes.Logs.allSources(), "user")
+              navItem("Logs", "logs", reverse.index(), "list"),
+              navItem("Sources", "sources", reverse.sources(), "home"),
+              navItem("Users", "users", reverse.allSources(), "user")
             )
           )
         )
       ),
-      divClass(Container)(inner)
+      divClass("wide-content")(inner)
     )
   }
 

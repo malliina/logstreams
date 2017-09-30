@@ -27,7 +27,7 @@ class ListenerSocket(wsPath: String) extends SocketJS(wsPath) {
     parsed.fold(onInvalidData(payload).lift, onLogEvents)
   }
 
-  def onLogEvents(appLogEvents: AppLogEvents) =
+  def onLogEvents(appLogEvents: AppLogEvents): Unit =
     appLogEvents.events foreach onLogEvent
 
   def onLogEvent(event: AppLogEvent) = {

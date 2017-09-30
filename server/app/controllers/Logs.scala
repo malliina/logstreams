@@ -2,13 +2,13 @@ package controllers
 
 import com.malliina.app.AppMeta
 import com.malliina.logstreams.auth.UserService
-import com.malliina.logstreams.tags.Htmls
+import com.malliina.logstreams.html.Htmls
 import com.malliina.play.ActorExecution
 import com.malliina.play.auth._
 import com.malliina.play.controllers.Caching
 import com.malliina.play.http.{AuthedRequest, CookiedRequest}
 import com.malliina.play.models.{Password, Username}
-import controllers.Logs.{LogRequest, PasswordKey, UsernameKey}
+import controllers.Logs.{PasswordKey, UsernameKey}
 import play.api.Logger
 import play.api.data.Form
 import play.api.data.Forms.mapping

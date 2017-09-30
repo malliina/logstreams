@@ -1,8 +1,8 @@
 package com.malliina.logstreams.client
 
-import java.net.URI
 import javax.net.ssl.SSLSocketFactory
 
+import com.malliina.http.FullUrl
 import com.malliina.logstreams.client.JsonSocket.log
 import play.api.libs.json.{JsValue, Json, Writes}
 
@@ -12,7 +12,7 @@ object JsonSocket {
   private val log = Logging(getClass)
 }
 
-class JsonSocket(uri: URI, socketFactory: SSLSocketFactory, headers: Seq[KeyValue])
+class JsonSocket(uri: FullUrl, socketFactory: SSLSocketFactory, headers: Seq[KeyValue])
   extends SocketClient(uri, socketFactory, headers) {
 
   def onMessage(message: JsValue): Unit = ()

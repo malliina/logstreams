@@ -1,7 +1,8 @@
 package com.malliina.logstreams.client
 
-import java.net.{URI, URL}
+import java.net.URL
 
+import com.malliina.http.FullUrl
 import org.scalatest.FunSuite
 
 import scala.concurrent.duration.DurationInt
@@ -19,7 +20,7 @@ class LogStreamTests extends FunSuite {
     val sf = CustomSSLSocketFactory.forHost(host)
     val headers: Seq[KeyValue] = Seq(HttpUtil.basicAuth(testUser, testPass))
     val scheme = if (true) "wss" else "ws"
-    val uri = new URI(s"$scheme://$host/ws/sources")
+    val uri = FullUrl(scheme, host, "/ws/sources")
     val socket = new JsonSocket(uri, sf, headers)
     await(socket.initialConnection)
   }

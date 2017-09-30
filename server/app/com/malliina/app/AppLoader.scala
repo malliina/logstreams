@@ -3,7 +3,7 @@ package com.malliina.app
 import buildinfo.BuildInfo
 import com.malliina.logstreams.auth.{Auths, UserService}
 import com.malliina.logstreams.db.{DatabaseAuth, UserDB}
-import com.malliina.logstreams.tags.Htmls
+import com.malliina.logstreams.html.Htmls
 import com.malliina.oauth.{GoogleOAuthCredentials, GoogleOAuthReader}
 import com.malliina.play.ActorExecution
 import com.malliina.play.app.DefaultApp
@@ -13,6 +13,7 @@ import play.api._
 import play.api.mvc.{ActionBuilder, AnyContent, Request}
 import play.api.routing.Router
 import play.filters.HttpFiltersComponents
+import play.filters.headers.SecurityHeadersConfig
 import router.Routes
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -30,6 +31,9 @@ abstract class AppComponents(context: Context,
   extends BuiltInComponentsFromContext(context)
     with HttpFiltersComponents
     with AssetsComponents {
+
+  val csp = "default-src 'self' 'unsafe-inline' *.bootstrapcdn.com *.googleapis.com; connect-src *"
+  override lazy val securityHeadersConfig = SecurityHeadersConfig(contentSecurityPolicy = Option(csp))
 
   implicit val ec = materializer.executionContext
 

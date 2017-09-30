@@ -2,6 +2,7 @@ package com.malliina.logstreams.client
 
 import java.net.URI
 
+import com.malliina.http.FullUrl
 import com.malliina.logbackrx.BasicPublishRxAppender
 import rx.lang.scala.Subscription
 
@@ -44,12 +45,12 @@ class LogStreamsLogbackAppender extends BasicPublishRxAppender {
 
   def getSecure: Boolean = secure
 
-  def setSecure(isSecure: Boolean) = {
+  def setSecure(isSecure: Boolean): Unit = {
     addInfo(s"Setting secure '$isSecure' for appender [$name].")
     secure = isSecure
   }
 
-  override def start() = {
+  override def start(): Unit = {
     val result = for {
       hostAndPort <- toMissing(endpoint, "endpoint")
       user <- toMissing(username, "username")
@@ -60,8 +61,8 @@ class LogStreamsLogbackAppender extends BasicPublishRxAppender {
       val host = hostAndPort.takeWhile(_ != ':')
       val sf = CustomSSLSocketFactory.forHost(host)
       val scheme = if (getSecure) "wss" else "ws"
-      val uri = new URI(s"$scheme://$hostAndPort/ws/sources")
-      addInfo(s"Connecting to logstreams URI ${uri.toString}...")
+      val uri = FullUrl(scheme, hostAndPort, "/ws/sources")
+      addInfo(s"Connecting to logstreams URI ${uri.url}...")
       val socket = new JsonSocket(uri, sf, headers)
       client = Option(socket)
       val sub = logEvents.subscribe(
@@ -83,7 +84,7 @@ class LogStreamsLogbackAppender extends BasicPublishRxAppender {
 
   def missing(fieldName: String) = s"No '$fieldName' is set for appender [$name]."
 
-  override def stop() = {
+  override def stop(): Unit = {
     subscription.foreach(_.unsubscribe())
     subscription = None
     client.foreach(_.close())

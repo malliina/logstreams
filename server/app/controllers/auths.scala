@@ -4,7 +4,7 @@ import akka.stream.Materializer
 import com.malliina.oauth.GoogleOAuthCredentials
 import com.malliina.play.auth._
 import com.malliina.play.controllers.{AuthBundle, BaseSecurity, OAuthControl}
-import com.malliina.play.models.{AuthInfo, Username}
+import com.malliina.play.models.{AuthInfo, Email, Username}
 import play.api.mvc._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -58,11 +58,12 @@ object OAuth {
   }
 }
 
-class OAuth(val actions: ActionBuilder[Request, AnyContent], creds: GoogleOAuthCredentials, mat: Materializer)
+class OAuth(actions: ActionBuilder[Request, AnyContent], creds: GoogleOAuthCredentials, val mat: Materializer)
   extends OAuthControl(actions, creds, mat) {
+  val authorizedEmail = Email("malliina123@gmail.com")
   override val sessionUserKey: String = "email"
 
-  override def isAuthorized(email: String) = email == "malliina123@gmail.com"
+  override def isAuthorized(email: Email) = email == authorizedEmail
 
   override def startOAuth = routes.OAuth.initiate()
 

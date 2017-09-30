@@ -1,8 +1,7 @@
 package it
 
-import java.net.URI
-
 import ch.qos.logback.classic.Level
+import com.malliina.http.FullUrl
 import com.malliina.logbackrx.LogEvent
 import com.malliina.logstreams.client.{HttpUtil, SocketClient}
 import com.malliina.logstreams.models.{AppLogEvents, AppName, LogEvents, LogSources}
@@ -112,14 +111,14 @@ class LogStreamsTest extends TestServerSuite {
     withWebSocket(controllers.routes.SocketsBundle.sourceSocket().url, _ => ())(code)
 
   def withWebSocket[T](path: String, onJson: JsValue => Any)(code: TestSocket => T) = {
-    val wsUri = new URI(s"ws://localhost:$port$path")
+    val wsUri = FullUrl("ws", s"localhost:$port", path)
     Utils.using(new TestSocket(wsUri, onJson)) { client =>
       await(client.initialConnection)
       code(client)
     }
   }
 
-  class TestSocket(wsUri: URI, onJson: JsValue => Any) extends SocketClient(
+  class TestSocket(wsUri: FullUrl, onJson: JsValue => Any) extends SocketClient(
     wsUri,
     SSLUtils.trustAllSslContext().getSocketFactory,
     Seq(HttpUtil.Authorization -> HttpUtil.authorizationValue(testUser, "p"))

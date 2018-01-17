@@ -31,14 +31,13 @@ abstract class AppComponents(context: Context,
     with HttpFiltersComponents
     with AssetsComponents {
 
-  val csp = "default-src 'self' 'unsafe-inline' *.bootstrapcdn.com *.googleapis.com; connect-src *"
-  override lazy val securityHeadersConfig = SecurityHeadersConfig(contentSecurityPolicy = Option(csp))
-  override def httpFilters = Seq(securityHeadersFilter, allowedHostsFilter)
-
-  implicit val ec = materializer.executionContext
-
   def auth: LogAuth
 
+  override def httpFilters = Seq(securityHeadersFilter, allowedHostsFilter)
+
+  val csp = "default-src 'self' 'unsafe-inline' *.bootstrapcdn.com *.googleapis.com; connect-src *"
+  override lazy val securityHeadersConfig = SecurityHeadersConfig(contentSecurityPolicy = Option(csp))
+  implicit val ec = materializer.executionContext
   val actions: ActionBuilder[Request, AnyContent] = controllerComponents.actionBuilder
   // Services
   lazy val isProd = environment.mode == Mode.Prod

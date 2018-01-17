@@ -62,7 +62,7 @@ object OAuth {
 }
 
 class OAuth(actions: ActionBuilder[Request, AnyContent], creds: GoogleOAuthCredentials, val mat: Materializer)
-  extends OAuthControl(actions, creds, mat) {
+  extends OAuthControl(actions, creds) {
   val authorizedEmail = Email("malliina123@gmail.com")
   override val sessionUserKey: String = "email"
 

@@ -23,17 +23,17 @@ lazy val it = Project("logstreams-test", file("logstreams-test"))
 addCommandAlias("web", ";logstreams/run")
 
 val malliinaGroup = "com.malliina"
-val utilPlayDep = malliinaGroup %% "util-play" % "4.3.5"
+val utilPlayDep = malliinaGroup %% "util-play" % "4.5.1"
 
 def frontSettings = Seq(
   version := "0.0.1",
-  scalaVersion := "2.12.3",
+  scalaVersion := "2.12.4",
   scalaJSUseMainModuleInitializer := true,
   libraryDependencies ++= Seq(
     "com.lihaoyi" %%% "scalatags" % "0.6.7",
     "be.doeraene" %%% "scalajs-jquery" % "0.9.2",
-    "com.typesafe.play" %%% "play-json" % "2.6.3",
-    "com.malliina" %%% "primitives" % "1.3.2",
+    "com.typesafe.play" %%% "play-json" % "2.6.8",
+    "com.malliina" %%% "primitives" % "1.3.5",
     "org.scalatest" %%% "scalatest" % "3.0.4" % Test
   )
 )
@@ -61,7 +61,7 @@ def clientSettings = basicSettings ++ mavenSettings ++ Seq(
   libraryDependencies ++= Seq(
     "com.neovisionaries" % "nv-websocket-client" % "2.3",
     "com.malliina" %% "logback-rx" % "1.2.0",
-    "com.malliina" %%% "primitives" % "1.3.2",
+    "com.malliina" %%% "primitives" % "1.3.5",
     "org.scalatest" %% "scalatest" % "3.0.4" % Test
   ),
   releaseCrossBuild := true
@@ -73,7 +73,7 @@ def testSettings = basicSettings ++ Seq(
 
 def basicSettings = Seq(
   organization := malliinaGroup,
-  scalaVersion := "2.12.3",
+  scalaVersion := "2.12.4",
   crossScalaVersions := Seq("2.11.11", scalaVersion.value),
   scalacOptions := Seq("-unchecked", "-deprecation")
 )

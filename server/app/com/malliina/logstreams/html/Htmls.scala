@@ -130,7 +130,7 @@ class Htmls(scripts: Modifier*) {
       )
     )
 
-  def feedbackDiv(feedback: UserFeedback): TypedTag[String] = {
+  def feedbackDiv(feedback: UserFeedback) = {
     val message = feedback.message
     if (feedback.isError) alertDanger(message)
     else alertSuccess(message)

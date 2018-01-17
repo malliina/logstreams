@@ -1,4 +1,4 @@
-scalaVersion := "2.10.6"
+scalaVersion := "2.12.4"
 resolvers ++= Seq(
   ivyRepo("bintray-sbt-plugin-releases",
     "http://dl.bintray.com/content/sbt/sbt-plugin-releases"),
@@ -9,11 +9,11 @@ resolvers ++= Seq(
 scalacOptions ++= Seq("-unchecked", "-deprecation")
 
 Seq(
-  "com.malliina" % "sbt-play" % "1.1.0",
-  "com.malliina" % "sbt-utils" % "0.6.3",
-  "org.scala-js" % "sbt-scalajs" % "0.6.20",
+  "com.malliina" % "sbt-play" % "1.2.1",
+  "com.malliina" % "sbt-utils" % "0.7.1",
+  "org.scala-js" % "sbt-scalajs" % "0.6.21",
   "com.vmunier" % "sbt-web-scalajs" % "1.0.6",
-  "com.eed3si9n" % "sbt-buildinfo" % "0.6.1"
+  // "com.eed3si9n" % "sbt-buildinfo" % "0.6.1"
 ) map addSbtPlugin
 
 def ivyRepo(name: String, urlString: String) =

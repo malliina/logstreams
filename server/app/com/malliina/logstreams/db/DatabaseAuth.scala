@@ -2,13 +2,12 @@ package com.malliina.logstreams.db
 
 import java.sql.SQLException
 
+import com.malliina.concurrent.ExecutionContexts.cached
 import com.malliina.logstreams.auth.UserError.{AlreadyExists, DoesNotExist}
 import com.malliina.logstreams.auth.UserService
-import com.malliina.logstreams.db.Mappings.{password, username}
 import com.malliina.play.auth.BasicCredentials
 import com.malliina.play.models.{Password, Username}
 import org.apache.commons.codec.digest.DigestUtils
-import slick.jdbc.H2Profile.api._
 
 import scala.concurrent.Future
 
@@ -19,16 +18,18 @@ object DatabaseAuth {
     Password(DigestUtils.md5Hex(username.name + ":" + password.pass))
 }
 
-class DatabaseAuth(db: UserDB) extends UserService {
-  import UserDB.users
-  implicit val ec = db.ec
+class DatabaseAuth(val db: UserDB) extends UserService {
 
-  override def add(creds: BasicCredentials): Future[Either[AlreadyExists, Unit]] = {
+  import db.impl.api._
+  import db.mappings._
+
+  val users = db.users
+
+  override def add(creds: BasicCredentials): Future[Either[AlreadyExists, Unit]] =
     db.run(users += DataUser(creds.username, hash(creds))).map(_ => Right(())) recover {
       case sqle: SQLException if sqle.getMessage contains "primary key violation" =>
         Left(AlreadyExists(creds.username))
     }
-  }
 
   override def update(creds: BasicCredentials): Future[Either[DoesNotExist, Unit]] =
     withUser(creds.username)(_.map(_.passHash).update(hash(creds)))
@@ -41,10 +42,10 @@ class DatabaseAuth(db: UserDB) extends UserService {
 
   override def all(): Future[Seq[Username]] = db.runQuery(users.map(_.user))
 
-  private def withUser[T](user: Username)(code: Query[Users, DataUser, Seq] => DBIOAction[Int, NoStream, _]) =
+  private def withUser[T](user: Username)(code: Query[db.Users, DataUser, Seq] => DBIOAction[Int, NoStream, _]) =
     db.run(code(userQuery(user))).map(c => analyzeRowCount(c, user))
 
-  private def userQuery(user: Username): Query[Users, DataUser, Seq] = users.filter(_.user === user)
+  private def userQuery(user: Username): Query[db.Users, DataUser, Seq] = users.filter(_.user === user)
 
   private def analyzeRowCount(rowCount: Int, username: Username): Either[DoesNotExist, Unit] =
     if (rowCount == 0) Left(DoesNotExist(username)) else Right(())

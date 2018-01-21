@@ -17,25 +17,27 @@ import play.filters.headers.SecurityHeadersConfig
 import play.filters.hosts.{AllowedHostsConfig, AllowedHostsFilter}
 import router.Routes
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 class AppLoader extends DefaultApp(new ProdAppComponents(_))
 
 class ProdAppComponents(ctx: Context)
-  extends AppComponents(ctx, GoogleOAuthReader.load, ec => UserDB.default()(ec)) {
+  extends AppComponents(ctx, GoogleOAuthReader.load, mode => UserDB.init(mode != Mode.Prod)) {
   override lazy val auth = new WebAuth(authImpl)
 }
 
 abstract class AppComponents(context: Context,
                              creds: GoogleOAuthCredentials,
-                             db: ExecutionContext => UserDB)
+                             db: Mode => UserDB)
   extends BuiltInComponentsFromContext(context)
     with HttpFiltersComponents
     with AssetsComponents {
 
   def auth: LogAuth
 
+  lazy val isProd = environment.mode == Mode.Prod
   val allowedHosts = AllowedHostsFilter(AllowedHostsConfig(Seq("localhost", "logs.malliina.com")), httpErrorHandler)
+
   override def httpFilters = Seq(securityHeadersFilter, allowedHosts)
 
   val csp = "default-src 'self' 'unsafe-inline' *.bootstrapcdn.com *.googleapis.com; connect-src *"
@@ -43,9 +45,8 @@ abstract class AppComponents(context: Context,
   implicit val ec = materializer.executionContext
   val actions: ActionBuilder[Request, AnyContent] = controllerComponents.actionBuilder
   // Services
-  lazy val isProd = environment.mode == Mode.Prod
+  lazy val database = db(environment.mode)
   lazy val htmls = Htmls.forApp(BuildInfo.frontName, isProd)
-  val database = db(ec)
   lazy val users: UserService = DatabaseAuth(database)
   lazy val listenerAuth = Auths.viewers(auth)
   lazy val sourceAuth = Auths.sources(users)

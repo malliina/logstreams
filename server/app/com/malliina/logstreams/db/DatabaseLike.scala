@@ -2,22 +2,28 @@ package com.malliina.logstreams.db
 
 import java.sql.SQLException
 
+import com.malliina.concurrent.ExecutionContexts.cached
 import com.malliina.logstreams.db.DatabaseLike.log
 import play.api.Logger
-import slick.jdbc.H2Profile.api._
+import slick.jdbc.JdbcProfile
 import slick.jdbc.meta.MTable
-import slick.lifted.{AbstractTable, TableQuery}
+import slick.lifted.AbstractTable
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, Future}
 import scala.language.higherKinds
 
-abstract class DatabaseLike(val database: Database)(implicit ec: ExecutionContext) {
+abstract class DatabaseLike(val impl: JdbcProfile, val database: JdbcProfile#API#Database) {
+
+  import impl.api._
+
   def tableQueries: Seq[TableQuery[_ <: Table[_]]]
 
-  def runQuery[A, B, C[_]](query: Query[A, B, C]): Future[C[B]] = run(query.result)
+  def runQuery[A, B, C[_]](query: Query[A, B, C]): Future[C[B]] =
+    run(query.result)
 
-  def run[R](a: DBIOAction[R, NoStream, Nothing]): Future[R] = database.run(a)
+  def run[R](a: DBIOAction[R, NoStream, Nothing]): Future[R] =
+    database.run(a)
 
   def init(): Unit = {
     log info s"Ensuring all tables exist..."
@@ -39,7 +45,7 @@ abstract class DatabaseLike(val database: Database)(implicit ec: ExecutionContex
   def createIfNotExists[T <: Table[_]](tables: TableQuery[T]*): Unit =
     tables.reverse.filter(t => !exists(t)).foreach(t => initTable(t))
 
-  def initTable[T <: Table[_]](table: TableQuery[T]) = {
+  def initTable[T <: Table[_]](table: TableQuery[T]): Unit = {
     await(database.run(table.schema.create))
     log info s"Created table: ${table.baseTableRow.tableName}"
   }
@@ -55,7 +61,7 @@ abstract class DatabaseLike(val database: Database)(implicit ec: ExecutionContex
         Future.successful(Nil)
     }
 
-  private def await[T](f: Future[T]): T = Await.result(f, 10.seconds)
+  private def await[T](f: Future[T]): T = Await.result(f, 20.seconds)
 }
 
 object DatabaseLike {

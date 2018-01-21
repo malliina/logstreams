@@ -43,13 +43,15 @@ def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
   buildInfoKeys += BuildInfoKey("frontName" -> (name in frontend).value),
   libraryDependencies ++= Seq(
     "com.h2database" % "h2" % "1.4.196",
+    "org.mariadb.jdbc" % "mariadb-java-client" % "2.2.1",
     "com.typesafe.slick" %% "slick" % "3.2.1",
+    "com.zaxxer" % "HikariCP" % "2.7.6",
     "com.malliina" %% "logstreams-client" % "0.0.9",
     utilPlayDep,
     utilPlayDep % Test classifier "tests"
   ) map (_.withSources().withJavadoc()),
   pipelineStages := Seq(digest, gzip)
-//  pipelineStages in Assets := Seq(digest, gzip)
+//  pipelineStages in Assets := Seq(scalaJSPipeline, digest, gzip)
 )
 
 def scalaJSSettings = Seq(

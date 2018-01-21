@@ -5,11 +5,12 @@ import com.malliina.play.models.Username
 import com.malliina.play.tags.Bootstrap._
 import com.malliina.play.tags.TagPage
 import com.malliina.play.tags.Tags._
+import controllers.Assets.Asset
 import controllers.{Logs, UserFeedback, routes}
 import play.api.mvc.Call
 
+import scalatags.Text.GenericAttr
 import scalatags.Text.all._
-import scalatags.Text.{GenericAttr, TypedTag}
 
 object Htmls {
   implicit val callAttr = new GenericAttr[Call]
@@ -20,19 +21,18 @@ object Htmls {
     * @return HTML templates with either prod or dev javascripts
     */
   def forApp(appName: String, isProd: Boolean): Htmls = {
-    val scripts = ScalaScripts.forApp(appName, isProd)
-    withLauncher(scripts.optimized)
+    val suffix = if (isProd) "opt" else "fastopt"
+    new Htmls(s"${appName.toLowerCase}-$suffix.js")
   }
 
-  def withLauncher(jsFiles: String*) =
-    new Htmls(jsFiles.map(file => js(asset(file))): _*)
+  def jsAsset(file: Asset) = js(asset(file))
 
   def js[V: AttrValue](url: V) = script(src := url)
 
-  def asset(file: String): Call = routes.Logs.versioned(file)
+  def asset(file: Asset): Call = routes.Logs.versioned(file)
 }
 
-class Htmls(scripts: Modifier*) {
+class Htmls(mainJs: Asset) {
   val Status = "status"
   val LogTableId = "log-table"
   val SourceTableId = "source-table"
@@ -124,7 +124,7 @@ class Htmls(scripts: Modifier*) {
         body(
           section(
             inner,
-            scripts
+            Htmls.jsAsset(mainJs)
           )
         )
       )

@@ -12,7 +12,10 @@ Seq(
   "com.malliina" % "sbt-play" % "1.2.1",
   "com.malliina" % "sbt-utils" % "0.7.1",
   "org.scala-js" % "sbt-scalajs" % "0.6.21",
-  "com.vmunier" % "sbt-web-scalajs" % "1.0.6"
+  "com.vmunier" % "sbt-web-scalajs" % "1.0.6",
+  "com.typesafe.sbt" % "sbt-gzip" % "1.0.2",
+  "com.typesafe.sbt" % "sbt-digest" % "1.1.4",
+  "com.typesafe.sbt" % "sbt-less" % "1.1.2"
 ) map addSbtPlugin
 
 def ivyRepo(name: String, urlString: String) =

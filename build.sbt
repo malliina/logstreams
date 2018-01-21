@@ -47,7 +47,9 @@ def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
     "com.malliina" %% "logstreams-client" % "0.0.9",
     utilPlayDep,
     utilPlayDep % Test classifier "tests"
-  ) map (_.withSources().withJavadoc())
+  ) map (_.withSources().withJavadoc()),
+  pipelineStages := Seq(digest, gzip)
+//  pipelineStages in Assets := Seq(digest, gzip)
 )
 
 def scalaJSSettings = Seq(

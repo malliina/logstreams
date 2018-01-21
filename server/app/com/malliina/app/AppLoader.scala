@@ -14,7 +14,9 @@ import play.api.mvc.{ActionBuilder, AnyContent, Request}
 import play.api.routing.Router
 import play.filters.HttpFiltersComponents
 import play.filters.headers.SecurityHeadersConfig
+import play.filters.hosts.{AllowedHostsConfig, AllowedHostsFilter}
 import router.Routes
+
 import scala.concurrent.{ExecutionContext, Future}
 
 class AppLoader extends DefaultApp(new ProdAppComponents(_))
@@ -33,7 +35,8 @@ abstract class AppComponents(context: Context,
 
   def auth: LogAuth
 
-  override def httpFilters = Seq(securityHeadersFilter, allowedHostsFilter)
+  val allowedHosts = AllowedHostsFilter(AllowedHostsConfig(Seq("localhost", "logs.malliina.com")), httpErrorHandler)
+  override def httpFilters = Seq(securityHeadersFilter, allowedHosts)
 
   val csp = "default-src 'self' 'unsafe-inline' *.bootstrapcdn.com *.googleapis.com; connect-src *"
   override lazy val securityHeadersConfig = SecurityHeadersConfig(contentSecurityPolicy = Option(csp))

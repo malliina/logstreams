@@ -4,7 +4,7 @@ import play.sbt.PlayImport
 import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 
-val serverVersion = "0.1.0"
+val serverVersion = "0.2.0"
 
 lazy val root = project.in(file("."))
   .settings(basicSettings: _*)
@@ -26,7 +26,7 @@ val malliinaGroup = "com.malliina"
 val utilPlayDep = malliinaGroup %% "util-play" % "4.5.1"
 
 def frontSettings = Seq(
-  version := "0.0.1",
+  version := "0.0.2",
   scalaVersion := "2.12.4",
   scalaJSUseMainModuleInitializer := true,
   libraryDependencies ++= Seq(

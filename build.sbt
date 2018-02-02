@@ -34,7 +34,7 @@ def frontSettings = Seq(
     "be.doeraene" %%% "scalajs-jquery" % "0.9.2",
     "com.typesafe.play" %%% "play-json" % "2.6.8",
     "com.malliina" %%% "primitives" % "1.3.5",
-    "org.scalatest" %%% "scalatest" % "3.0.4" % Test
+    "org.scalatest" %%% "scalatest" % "3.0.5" % Test
   )
 )
 
@@ -66,7 +66,7 @@ def clientSettings = basicSettings ++ mavenSettings ++ Seq(
     "com.neovisionaries" % "nv-websocket-client" % "2.3",
     "com.malliina" %% "logback-rx" % "1.2.0",
     "com.malliina" %%% "primitives" % "1.3.5",
-    "org.scalatest" %% "scalatest" % "3.0.4" % Test
+    "org.scalatest" %% "scalatest" % "3.0.5" % Test
   ),
   releaseCrossBuild := true
 )

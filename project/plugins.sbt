@@ -11,7 +11,7 @@ scalacOptions ++= Seq("-unchecked", "-deprecation")
 Seq(
   "com.malliina" % "sbt-play" % "1.2.1",
   "com.malliina" % "sbt-utils" % "0.7.1",
-  "org.scala-js" % "sbt-scalajs" % "0.6.21",
+  "org.scala-js" % "sbt-scalajs" % "0.6.22",
   "com.vmunier" % "sbt-web-scalajs" % "1.0.6",
   "com.typesafe.sbt" % "sbt-gzip" % "1.0.2",
   "com.typesafe.sbt" % "sbt-digest" % "1.1.4",

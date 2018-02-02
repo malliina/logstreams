@@ -15,7 +15,7 @@
         <endpoint>${LOGSTREAMS_HOST:-logs.malliina.com}</endpoint>
         <secure>true</secure>
         <username>${LOGSTREAMS_USER:-logstreams}</username>
-        <password>${LOGSTREAMS_USER}</password>
+        <password>${LOGSTREAMS_PASS}</password>
     </appender>
     <logger name="play" level="INFO"/>
     <logger name="application" level="INFO"/>

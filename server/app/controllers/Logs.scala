@@ -58,7 +58,7 @@ class Logs(htmls: Htmls,
 
   def sources = navigate(htmls.sources)
 
-  def allSources = async { req =>
+  def allUsers = async { req =>
     users.all() map { us =>
       Ok(htmls.users(us, UserFeedback.flashed(req.rh)))
     }
@@ -106,7 +106,7 @@ class Logs(htmls: Htmls,
   def buildMessage(req: UserRequest, message: String) = s"User '${req.user}' from '${req.address}' $message."
 
   private def redirectWith(feedback: UserFeedback) =
-    Redirect(routes.Logs.allSources()).flashing(feedback.toSeq: _*)
+    Redirect(routes.Logs.allUsers()).flashing(feedback.toSeq: _*)
 
   def async(result: UserRequest => Future[Result]) =
     oauth.withAuthAsync(result)

@@ -1,6 +1,6 @@
 package com.malliina.logstreams.html
 
-import com.malliina.logstreams.html.Htmls.{callAttr, js}
+import com.malliina.logstreams.html.Htmls._
 import com.malliina.play.models.Username
 import com.malliina.play.tags.Bootstrap._
 import com.malliina.play.tags.TagPage
@@ -15,6 +15,11 @@ import scalatags.Text.all._
 object Htmls {
   implicit val callAttr = new GenericAttr[Call]
 
+  val crossorigin = attr("crossorigin")
+  val integrity = attr("integrity")
+
+  val Anonymous = "anonymous"
+
   /**
     * @param appName typically the name of the Scala.js module
     * @param isProd  true if the app runs in production, false otherwise
@@ -27,9 +32,20 @@ object Htmls {
 
   def jsAsset(file: Asset) = js(asset(file))
 
-  def js[V: AttrValue](url: V) = script(src := url)
-
   def asset(file: Asset): Call = routes.Logs.versioned(file)
+
+  def jsHashed[V: AttrValue](url: V, integrityHash: String, more: Modifier*) =
+    script(src := url, integrity := integrityHash, crossorigin := Anonymous, more)
+
+  def js[V: AttrValue](url: V, more: Modifier*) = script(src := url, more)
+
+  def cssLinkHashed[V: AttrValue](url: V, integrityHash: String, more: Modifier*) =
+    cssLink2(url, integrity := integrityHash, crossorigin := Anonymous, more)
+
+  def cssLink2[V: AttrValue](url: V, more: Modifier*) =
+    link(rel := "stylesheet", href := url, more)
+
+  def iconic(iconicName: String) = spanClass(s"oi oi-$iconicName", title := iconicName, aria.hidden := "true")
 }
 
 class Htmls(mainJs: Asset) {
@@ -40,7 +56,7 @@ class Htmls(mainJs: Asset) {
   val reverse = controllers.routes.Logs
 
   def logs = baseIndex("logs")(
-    headerRow()("Logs ", small(`class` := s"$PullRight $HiddenXs", id := Status)("Initializing...")),
+    headerRow()("Logs "),
     defaultTable(LogTableId, Seq("App", "Time", "Message", "Logger", "Thread", "Level"))
   )
 
@@ -59,9 +75,9 @@ class Htmls(mainJs: Asset) {
         if (us.isEmpty) {
           leadPara("No users.")
         } else {
-          responsiveTable(us)("Username", "Actions") { user =>
-            Seq(td(user.name), td(postableForm(reverse.removeUser(user))(button(`class` := s"$BtnDanger $BtnXs")(" Delete"))))
-          }
+          headeredTable("table table-striped table-hover table-sm", Seq("Username", "Actions"))(
+            tbody(us.map(user => tr(td(user.name), td(postableForm(reverse.removeUser(user))(button(`class` := s"$BtnDanger $BtnSm")(" Delete"))))))
+          )
         }
       ),
       div6(
@@ -75,29 +91,36 @@ class Htmls(mainJs: Asset) {
   )
 
   def defaultTable(tableId: String, headers: Seq[String]) =
-    table(`class` := TableStripedHoverResponsive, id := tableId)(
+//    table(`class` := TableStripedHoverResponsive, id := tableId)(
+    table(`class` := "table table-striped table-hover table-sm", id := tableId)(
       thead(tr(headers.map(h => th(h)))),
       tbody
     )
 
+
   def baseIndex(tabName: String)(inner: Modifier*) = {
-    def navItem(thisTabName: String, tabId: String, url: Call, glyphiconName: String) = {
-      val maybeActive = if (tabId == tabName) Option(`class` := "active") else None
-      li(maybeActive)(a(href := url)(glyphIcon(glyphiconName), s" $thisTabName"))
+    def navItem(thisTabName: String, tabId: String, url: Call, iconicName: String) = {
+      val itemClass = if (tabId == tabName) "nav-item active" else "nav-item"
+      li(`class` := itemClass)(a(href := url, `class` := "nav-link")(iconic(iconicName), s" $thisTabName"))
     }
 
+    val navBarId = "navbarSupportedContent"
+
     root("logstreams")(
-      divClass(s"$Navbar $NavbarDefault")(
-        divClass("wide-content")(
+      nav(`class` := s"$Navbar navbar-expand-lg navbar-light bg-light")(
+        divClass(Container)(
           divClass(NavbarHeader)(
-            hamburgerButton,
-            a(`class` := NavbarBrand, href := reverse.index())("logstreams")
+            a(`class` := NavbarBrand, href := reverse.index())("logstreams"),
+            button(`class` := "navbar-toggler", dataToggle := Collapse, dataTarget := s".$NavbarCollapse",
+              aria.controls := navBarId, aria.expanded := "false", aria.label := "Toggle navigation")(
+              spanClass("navbar-toggler-icon")
+            )
           ),
-          divClass(s"$NavbarCollapse $Collapse")(
-            ulClass(s"$Nav $NavbarNav")(
+          div(`class` := s"$Collapse $NavbarCollapse", id := navBarId)(
+            ulClass(s"$NavbarNav mr-auto")(
               navItem("Logs", "logs", reverse.index(), "list"),
               navItem("Sources", "sources", reverse.sources(), "home"),
-              navItem("Users", "users", reverse.allSources(), "user")
+              navItem("Users", "users", reverse.allUsers(), "person")
             )
           )
         )
@@ -112,14 +135,13 @@ class Htmls(mainJs: Asset) {
         head(
           titleTag(titleLabel),
           deviceWidthViewport,
-          cssLink("//netdna.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css"),
-          cssLink("//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css"),
-          cssLink("//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css"),
-          cssLink(Htmls.asset("css/custom.css")),
+          cssLinkHashed("https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css", "sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"),
+          cssLink("https://use.fontawesome.com/releases/v5.0.6/css/all.css"),
+          cssLink(Htmls.asset("css/main.css")),
+          jsHashed("https://code.jquery.com/jquery-3.2.1.slim.min.js", "sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"),
+          jsHashed("https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js", "sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"),
+          jsHashed("https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js", "sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"),
           extraHeader,
-          js("//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"),
-          js("//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"),
-          js("//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js")
         ),
         body(
           section(

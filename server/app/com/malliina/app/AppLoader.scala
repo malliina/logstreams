@@ -14,7 +14,7 @@ import play.api.mvc.{ActionBuilder, AnyContent, Request}
 import play.api.routing.Router
 import play.filters.HttpFiltersComponents
 import play.filters.headers.SecurityHeadersConfig
-import play.filters.hosts.{AllowedHostsConfig, AllowedHostsFilter}
+import play.filters.hosts.AllowedHostsConfig
 import router.Routes
 
 import scala.concurrent.Future
@@ -36,12 +36,11 @@ abstract class AppComponents(context: Context,
   def auth: LogAuth
 
   lazy val isProd = environment.mode == Mode.Prod
-  val allowedHosts = AllowedHostsFilter(AllowedHostsConfig(Seq("localhost", "logs.malliina.com")), httpErrorHandler)
 
-  override def httpFilters = Seq(securityHeadersFilter, allowedHosts)
+  override lazy val allowedHostsConfig: AllowedHostsConfig = AllowedHostsConfig(Seq("localhost", "logs.malliina.com"))
+  val csp = "default-src 'self' 'unsafe-inline' *.bootstrapcdn.com *.googleapis.com cdnjs.cloudflare.com code.jquery.com use.fontawesome.com; connect-src *"
+  override lazy val securityHeadersConfig: SecurityHeadersConfig = SecurityHeadersConfig(contentSecurityPolicy = Option(csp))
 
-  val csp = "default-src 'self' 'unsafe-inline' *.bootstrapcdn.com *.googleapis.com; connect-src *"
-  override lazy val securityHeadersConfig = SecurityHeadersConfig(contentSecurityPolicy = Option(csp))
   implicit val ec = materializer.executionContext
   val actions: ActionBuilder[Request, AnyContent] = controllerComponents.actionBuilder
   // Services

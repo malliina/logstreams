@@ -1,10 +1,9 @@
 package com.malliina.logstreams.html
 
+import com.malliina.html.{Bootstrap, Tags}
 import com.malliina.logstreams.html.Htmls._
 import com.malliina.play.models.Username
-import com.malliina.play.tags.Bootstrap._
 import com.malliina.play.tags.TagPage
-import com.malliina.play.tags.Tags._
 import controllers.Assets.Asset
 import controllers.{Logs, UserFeedback, routes}
 import play.api.mvc.Call
@@ -14,11 +13,6 @@ import scalatags.Text.all._
 
 object Htmls {
   implicit val callAttr = new GenericAttr[Call]
-
-  val crossorigin = attr("crossorigin")
-  val integrity = attr("integrity")
-
-  val Anonymous = "anonymous"
 
   /**
     * @param appName typically the name of the Scala.js module
@@ -30,25 +24,13 @@ object Htmls {
     new Htmls(s"${appName.toLowerCase}-$suffix.js")
   }
 
-  def jsAsset(file: Asset) = js(asset(file))
-
   def asset(file: Asset): Call = routes.Logs.versioned(file)
-
-  def jsHashed[V: AttrValue](url: V, integrityHash: String, more: Modifier*) =
-    script(src := url, integrity := integrityHash, crossorigin := Anonymous, more)
-
-  def js[V: AttrValue](url: V, more: Modifier*) = script(src := url, more)
-
-  def cssLinkHashed[V: AttrValue](url: V, integrityHash: String, more: Modifier*) =
-    cssLink2(url, integrity := integrityHash, crossorigin := Anonymous, more)
-
-  def cssLink2[V: AttrValue](url: V, more: Modifier*) =
-    link(rel := "stylesheet", href := url, more)
-
-  def iconic(iconicName: String) = spanClass(s"oi oi-$iconicName", title := iconicName, aria.hidden := "true")
 }
 
-class Htmls(mainJs: Asset) {
+class Htmls(mainJs: Asset) extends Bootstrap(Tags) {
+
+  import tags._
+
   val Status = "status"
   val LogTableId = "log-table"
   val SourceTableId = "source-table"
@@ -56,27 +38,32 @@ class Htmls(mainJs: Asset) {
   val reverse = controllers.routes.Logs
 
   def logs = baseIndex("logs")(
-    headerRow()("Logs "),
+    headerRow("Logs "),
     defaultTable(LogTableId, Seq("App", "Time", "Message", "Logger", "Thread", "Level"))
   )
 
   def sources = baseIndex("sources")(
-    headerRow()("Servers"),
+    headerRow("Servers"),
     fullRow(
       defaultTable(SourceTableId, Seq("App", "Address"))
     )
   )
 
   def users(us: Seq[Username], feedback: Option[UserFeedback]) = baseIndex("users")(
-    headerRow()("Users"),
+    headerRow("Users"),
     fullRow(feedback.fold(empty)(feedbackDiv)),
     row(
       div6(
         if (us.isEmpty) {
           leadPara("No users.")
         } else {
-          headeredTable("table table-striped table-hover table-sm", Seq("Username", "Actions"))(
-            tbody(us.map(user => tr(td(user.name), td(postableForm(reverse.removeUser(user))(button(`class` := s"$BtnDanger $BtnSm")(" Delete"))))))
+          headeredTable(tables.defaultClass, Seq("Username", "Actions"))(
+            tbody(us.map { user =>
+              tr(
+                td(user.name),
+                td(postableForm(reverse.removeUser(user))(button(`class` := s"${btn.danger} ${btn.sm}")(" Delete")))
+              )
+            })
           )
         }
       ),
@@ -91,12 +78,10 @@ class Htmls(mainJs: Asset) {
   )
 
   def defaultTable(tableId: String, headers: Seq[String]) =
-//    table(`class` := TableStripedHoverResponsive, id := tableId)(
-    table(`class` := "table table-striped table-hover table-sm", id := tableId)(
+    table(`class` := tables.defaultClass, id := tableId)(
       thead(tr(headers.map(h => th(h)))),
       tbody
     )
-
 
   def baseIndex(tabName: String)(inner: Modifier*) = {
     def navItem(thisTabName: String, tabId: String, url: Call, iconicName: String) = {
@@ -104,25 +89,14 @@ class Htmls(mainJs: Asset) {
       li(`class` := itemClass)(a(href := url, `class` := "nav-link")(iconic(iconicName), s" $thisTabName"))
     }
 
-    val navBarId = "navbarSupportedContent"
-
     root("logstreams")(
-      nav(`class` := s"$Navbar navbar-expand-lg navbar-light bg-light")(
-        divClass(Container)(
-          divClass(NavbarHeader)(
-            a(`class` := NavbarBrand, href := reverse.index())("logstreams"),
-            button(`class` := "navbar-toggler", dataToggle := Collapse, dataTarget := s".$NavbarCollapse",
-              aria.controls := navBarId, aria.expanded := "false", aria.label := "Toggle navigation")(
-              spanClass("navbar-toggler-icon")
-            )
-          ),
-          div(`class` := s"$Collapse $NavbarCollapse", id := navBarId)(
-            ulClass(s"$NavbarNav mr-auto")(
-              navItem("Logs", "logs", reverse.index(), "list"),
-              navItem("Sources", "sources", reverse.sources(), "home"),
-              navItem("Users", "users", reverse.allUsers(), "person")
-            )
-          )
+      navbar.simple(
+        reverse.index(),
+        "logstreams",
+        modifier(
+          navItem("Logs", "logs", reverse.index(), "list"),
+          navItem("Sources", "sources", reverse.sources(), "home"),
+          navItem("Users", "users", reverse.allUsers(), "person")
         )
       ),
       divClass("wide-content")(inner)
@@ -144,10 +118,8 @@ class Htmls(mainJs: Asset) {
           extraHeader,
         ),
         body(
-          section(
-            inner,
-            Htmls.jsAsset(mainJs)
-          )
+          section(inner),
+          jsScript(asset(mainJs))
         )
       )
     )

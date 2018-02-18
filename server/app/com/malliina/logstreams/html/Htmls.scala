@@ -89,10 +89,6 @@ class Htmls(mainJs: Asset) extends Bootstrap(Tags) {
       li(`class` := itemClass)(a(href := url, `class` := "nav-link")(iconic(iconicName), s" $thisTabName"))
     }
 
-
-    val navBarId = "navbarSupportedContent"
-
-
     root("logstreams")(
       navbar.simple(
         reverse.index(),

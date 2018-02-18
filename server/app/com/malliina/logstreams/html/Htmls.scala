@@ -57,11 +57,11 @@ class Htmls(mainJs: Asset) extends Bootstrap(Tags) {
         if (us.isEmpty) {
           leadPara("No users.")
         } else {
-          headeredTable(tables.defaultClass, Seq("Username", "Actions"))(
+          headeredTable(tables.stripedHover, Seq("Username", "Actions"))(
             tbody(us.map { user =>
               tr(
                 td(user.name),
-                td(postableForm(reverse.removeUser(user))(button(`class` := s"${btn.danger} ${btn.sm}")(" Delete")))
+                td(`class` := "table-button")(postableForm(reverse.removeUser(user))(button(`class` := s"${btn.danger} ${btn.sm}")(" Delete")))
               )
             })
           )
@@ -88,6 +88,10 @@ class Htmls(mainJs: Asset) extends Bootstrap(Tags) {
       val itemClass = if (tabId == tabName) "nav-item active" else "nav-item"
       li(`class` := itemClass)(a(href := url, `class` := "nav-link")(iconic(iconicName), s" $thisTabName"))
     }
+
+
+    val navBarId = "navbarSupportedContent"
+
 
     root("logstreams")(
       navbar.simple(

@@ -6,7 +6,7 @@ import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 
 val serverVersion = "0.2.0"
 
-lazy val root = project.in(file("."))
+lazy val logstreamsRoot = project.in(file("."))
   .settings(basicSettings: _*)
   .aggregate(frontend, server, client, it)
 lazy val server = PlayProject.server("logstreams", file("server"))
@@ -23,7 +23,7 @@ lazy val it = Project("logstreams-test", file("logstreams-test"))
 addCommandAlias("web", ";logstreams/run")
 
 val malliinaGroup = "com.malliina"
-val utilPlayDep = malliinaGroup %% "util-play" % "4.6.0"
+val utilPlayDep = malliinaGroup %% "util-play" % "4.6.2"
 
 def frontSettings = Seq(
   version := "0.0.2",

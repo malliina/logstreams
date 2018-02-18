@@ -38,7 +38,7 @@ abstract class AppComponents(context: Context,
   lazy val isProd = environment.mode == Mode.Prod
 
   override lazy val allowedHostsConfig: AllowedHostsConfig = AllowedHostsConfig(Seq("localhost", "logs.malliina.com"))
-  val csp = "default-src 'self' 'unsafe-inline' *.bootstrapcdn.com *.googleapis.com cdnjs.cloudflare.com code.jquery.com use.fontawesome.com; connect-src *"
+  val csp = "default-src 'self' 'unsafe-inline' *.bootstrapcdn.com *.googleapis.com cdnjs.cloudflare.com code.jquery.com use.fontawesome.com; connect-src *; img-src 'self' data:;"
   override lazy val securityHeadersConfig: SecurityHeadersConfig = SecurityHeadersConfig(contentSecurityPolicy = Option(csp))
 
   implicit val ec = materializer.executionContext

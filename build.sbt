@@ -50,8 +50,9 @@ def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
     utilPlayDep,
     utilPlayDep % Test classifier "tests"
   ) map (_.withSources().withJavadoc()),
-  pipelineStages := Seq(digest, gzip)
-//  pipelineStages in Assets := Seq(scalaJSPipeline, digest, gzip)
+  pipelineStages := Seq(digest, gzip),
+//  pipelineStages in Assets := Seq(scalaJSPipeline, digest, gzip),
+  linuxPackageSymlinks := linuxPackageSymlinks.value.filterNot(_.link == "/usr/bin/starter")
 )
 
 def scalaJSSettings = Seq(

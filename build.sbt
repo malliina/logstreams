@@ -23,7 +23,7 @@ lazy val it = Project("logstreams-test", file("logstreams-test"))
 addCommandAlias("web", ";logstreams/run")
 
 val malliinaGroup = "com.malliina"
-val utilPlayDep = malliinaGroup %% "util-play" % "4.6.2"
+val utilPlayDep = malliinaGroup %% "util-play" % "4.8.0"
 
 def frontSettings = Seq(
   version := "0.0.2",
@@ -32,8 +32,8 @@ def frontSettings = Seq(
   libraryDependencies ++= Seq(
     "com.lihaoyi" %%% "scalatags" % "0.6.7",
     "be.doeraene" %%% "scalajs-jquery" % "0.9.2",
-    "com.typesafe.play" %%% "play-json" % "2.6.8",
-    "com.malliina" %%% "primitives" % "1.3.5",
+    "com.typesafe.play" %%% "play-json" % "2.6.9",
+    "com.malliina" %%% "primitives" % "1.4.0",
     "org.scalatest" %%% "scalatest" % "3.0.5" % Test
   )
 )
@@ -44,7 +44,7 @@ def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
   libraryDependencies ++= Seq(
     "com.h2database" % "h2" % "1.4.196",
     "org.mariadb.jdbc" % "mariadb-java-client" % "2.2.1",
-    "com.typesafe.slick" %% "slick" % "3.2.1",
+    "com.typesafe.slick" %% "slick" % "3.2.2",
     "com.zaxxer" % "HikariCP" % "2.7.6",
     "com.malliina" %% "logstreams-client" % "0.0.9",
     utilPlayDep,
@@ -66,7 +66,7 @@ def clientSettings = basicSettings ++ mavenSettings ++ Seq(
   libraryDependencies ++= Seq(
     "com.neovisionaries" % "nv-websocket-client" % "2.3",
     "com.malliina" %% "logback-rx" % "1.2.0",
-    "com.malliina" %%% "primitives" % "1.3.5",
+    "com.malliina" %%% "primitives" % "1.4.0",
     "org.scalatest" %% "scalatest" % "3.0.5" % Test
   ),
   releaseCrossBuild := true

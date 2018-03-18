@@ -1,9 +1,10 @@
 package controllers
 
 import akka.stream.Materializer
+import com.malliina.http.OkClient
 import com.malliina.oauth.GoogleOAuthCredentials
 import com.malliina.play.auth._
-import com.malliina.play.controllers.{AuthBundle, BaseSecurity, OAuthControl}
+import com.malliina.play.controllers.{AuthBundle, BaseSecurity}
 import com.malliina.play.http.Proxies
 import com.malliina.play.models.{AuthInfo, Email, Username}
 import play.api.mvc._
@@ -36,8 +37,8 @@ class WebAuth(oauth: OAuthCtrl) extends LogAuth {
     oauth.authenticate(rh)
 }
 
-class OAuthCtrl(oauth: OAuth)
-  extends BaseSecurity(oauth.actions, OAuth.authBundle(oauth), oauth.mat)
+class OAuthCtrl(oauth: OAuth, mat: Materializer)
+  extends BaseSecurity(oauth.actions, OAuth.authBundle(oauth), mat)
 
 case class UserRequest(user: Username, rh: RequestHeader) extends AuthInfo {
   def address = Proxies.realAddress(rh)
@@ -57,22 +58,19 @@ object OAuth {
     override val authenticator = sessionAuthenticator(oauth)
 
     override def onUnauthorized(failure: AuthFailure) =
-      Results.Redirect(oauth.startOAuth)
+      Results.Redirect(routes.OAuth.googleStart())
   }
 }
 
-class OAuth(actions: ActionBuilder[Request, AnyContent], creds: GoogleOAuthCredentials, val mat: Materializer)
-  extends OAuthControl(actions, creds) {
+class OAuth(val actions: ActionBuilder[Request, AnyContent], creds: GoogleOAuthCredentials) {
+  val http = OkClient.default
   val authorizedEmail = Email("malliina123@gmail.com")
-  override val sessionUserKey: String = "email"
+  val sessionUserKey: String = "email"
+  val handler = new BasicAuthHandler(routes.Logs.index(), sessionKey = sessionUserKey).filter(_ == authorizedEmail)
+  val conf = AuthConf(creds.clientId, creds.clientSecret)
+  val validator = StandardCodeValidator(CodeValidationConf.google(routes.OAuth.googleCallback(), handler, conf, http))
 
-  override def isAuthorized(email: Email) = email == authorizedEmail
+  def googleStart = actions.async(req => validator.start(req))
 
-  override def startOAuth: Call = routes.OAuth.initiate()
-
-  override def oAuthRedir = routes.OAuth.redirResponse()
-
-  override def ejectCall = routes.Logs.index()
-
-  override def onOAuthSuccess = routes.Logs.index()
+  def googleCallback = actions.async(req => validator.validateCallback(req))
 }

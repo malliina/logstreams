@@ -49,8 +49,8 @@ abstract class AppComponents(context: Context,
   lazy val users: UserService = DatabaseAuth(database)
   lazy val listenerAuth = Auths.viewers(auth)
   lazy val sourceAuth = Auths.sources(users)
-  lazy val oauth = new OAuth(actions, creds, materializer)
-  lazy val authImpl = new OAuthCtrl(oauth)
+  lazy val oauth = new OAuth(actions, creds)
+  lazy val authImpl = new OAuthCtrl(oauth, materializer)
   lazy val deps = ActorExecution(actorSystem, materializer)
 
   // Controllers

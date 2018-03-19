@@ -6,17 +6,17 @@ import com.malliina.logstreams.html.Htmls
 import com.malliina.play.ActorExecution
 import com.malliina.play.auth._
 import com.malliina.play.controllers.Caching
-import com.malliina.play.http.{AuthedRequest, CookiedRequest, Proxies}
+import com.malliina.play.http.{AuthedRequest, CookiedRequest}
 import com.malliina.play.models.{Password, Username}
-import controllers.Logs.{PasswordKey, UsernameKey}
+import controllers.Assets.Asset
+import controllers.Logs.{PasswordKey, UsernameKey, log}
 import play.api.Logger
 import play.api.data.Form
 import play.api.data.Forms.mapping
 import play.api.http.Writeable
 import play.api.libs.json.Json
 import play.api.mvc._
-import Logs.log
-import controllers.Assets.Asset
+import play.filters.csrf.CSRF
 
 import scala.concurrent.Future
 
@@ -59,8 +59,12 @@ class Logs(htmls: Htmls,
   def sources = navigate(htmls.sources)
 
   def allUsers = async { req =>
-    users.all() map { us =>
-      Ok(htmls.users(us, UserFeedback.flashed(req.rh)))
+    CSRF.getToken(req.rh).map { csrfToken =>
+      users.all() map { us =>
+        Ok(htmls.users(us, csrfToken, UserFeedback.flashed(req.rh)))
+      }
+    }.getOrElse {
+      Future.successful(failCSRF)
     }
   }
 
@@ -68,7 +72,11 @@ class Logs(htmls: Htmls,
     Action.async { request =>
       addUserForm.bindFromRequest()(request).fold(
         formWithErrors => users.all().map { us =>
-          BadRequest(htmls.users(us, UserFeedback.formed(formWithErrors)))
+          CSRF.getToken(request).map { csrfToken =>
+            BadRequest(htmls.users(us, csrfToken, UserFeedback.formed(formWithErrors)))
+          }.getOrElse {
+            failCSRF
+          }
         },
         newUser => users.add(newUser).map { result =>
           val user = newUser.username
@@ -87,6 +95,8 @@ class Logs(htmls: Htmls,
       )
     }
   }
+
+  def failCSRF = BadRequest("CSRF error.")
 
   def removeUser(user: Username) = async { req =>
     users.remove(user) map { res =>

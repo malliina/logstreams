@@ -7,7 +7,7 @@ import com.malliina.play.tags.TagPage
 import controllers.Assets.Asset
 import controllers.{Logs, UserFeedback, routes}
 import play.api.mvc.Call
-
+import play.filters.csrf.CSRF
 import scalatags.Text.GenericAttr
 import scalatags.Text.all._
 
@@ -49,33 +49,35 @@ class Htmls(mainJs: Asset) extends Bootstrap(Tags) {
     )
   )
 
-  def users(us: Seq[Username], feedback: Option[UserFeedback]) = baseIndex("users")(
-    headerRow("Users"),
-    fullRow(feedback.fold(empty)(feedbackDiv)),
-    row(
-      div6(
-        if (us.isEmpty) {
-          leadPara("No users.")
-        } else {
-          headeredTable(tables.stripedHover, Seq("Username", "Actions"))(
-            tbody(us.map { user =>
-              tr(
-                td(user.name),
-                td(`class` := "table-button")(postableForm(reverse.removeUser(user))(button(`class` := s"${btn.danger} ${btn.sm}")(" Delete")))
-              )
-            })
+  def users(us: Seq[Username], csrf: CSRF.Token, feedback: Option[UserFeedback]) =
+    baseIndex("users")(
+      headerRow("Users"),
+      fullRow(feedback.fold(empty)(feedbackDiv)),
+      row(
+        div6(
+          if (us.isEmpty) {
+            leadPara("No users.")
+          } else {
+            headeredTable(tables.stripedHover, Seq("Username", "Actions"))(
+              tbody(us.map { user =>
+                tr(
+                  td(user.name),
+                  td(`class` := "table-button")(postableForm(reverse.removeUser(user))(button(`class` := s"${btn.danger} ${btn.sm}")(" Delete")))
+                )
+              })
+            )
+          }
+        ),
+        div6(
+          postableForm(reverse.addUser())(
+            input(`type` := "hidden", name := csrf.name, value := raw(csrf.value).render),
+            inGroup(Logs.UsernameKey, Text, "Username"),
+            passwordGroup(Logs.PasswordKey, "Password"),
+            blockSubmitButton()("Add User")
           )
-        }
-      ),
-      div6(
-        postableForm(reverse.addUser())(
-          inGroup(Logs.UsernameKey, Text, "Username"),
-          passwordGroup(Logs.PasswordKey, "Password"),
-          blockSubmitButton()("Add User")
         )
       )
     )
-  )
 
   def defaultTable(tableId: String, headers: Seq[String]) =
     table(`class` := tables.defaultClass, id := tableId)(

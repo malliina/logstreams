@@ -49,7 +49,8 @@ class Htmls(mainJs: Asset) extends Bootstrap(Tags) {
     )
   )
 
-  def users(us: Seq[Username], csrf: CSRF.Token, feedback: Option[UserFeedback]) =
+  def users(us: Seq[Username], csrf: CSRF.Token, feedback: Option[UserFeedback]) = {
+    val csrfInput = input(`type` := "hidden", name := csrf.name, value := raw(csrf.value).render)
     baseIndex("users")(
       headerRow("Users"),
       fullRow(feedback.fold(empty)(feedbackDiv)),
@@ -62,7 +63,12 @@ class Htmls(mainJs: Asset) extends Bootstrap(Tags) {
               tbody(us.map { user =>
                 tr(
                   td(user.name),
-                  td(`class` := "table-button")(postableForm(reverse.removeUser(user))(button(`class` := s"${btn.danger} ${btn.sm}")(" Delete")))
+                  td(`class` := "table-button")(
+                    postableForm(reverse.removeUser(user))(
+                      csrfInput,
+                      button(`class` := s"${btn.danger} ${btn.sm}")(" Delete")
+                    )
+                  )
                 )
               })
             )
@@ -70,7 +76,7 @@ class Htmls(mainJs: Asset) extends Bootstrap(Tags) {
         ),
         div6(
           postableForm(reverse.addUser())(
-            input(`type` := "hidden", name := csrf.name, value := raw(csrf.value).render),
+            csrfInput,
             inGroup(Logs.UsernameKey, Text, "Username"),
             passwordGroup(Logs.PasswordKey, "Password"),
             blockSubmitButton()("Add User")
@@ -78,6 +84,8 @@ class Htmls(mainJs: Asset) extends Bootstrap(Tags) {
         )
       )
     )
+  }
+
 
   def defaultTable(tableId: String, headers: Seq[String]) =
     table(`class` := tables.defaultClass, id := tableId)(

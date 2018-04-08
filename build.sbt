@@ -23,7 +23,7 @@ lazy val it = Project("logstreams-test", file("logstreams-test"))
 addCommandAlias("web", ";logstreams/run")
 
 val malliinaGroup = "com.malliina"
-val utilPlayDep = malliinaGroup %% "util-play" % "4.8.0"
+val utilPlayDep = malliinaGroup %% "util-play" % "4.11.0"
 
 def frontSettings = Seq(
   version := "0.0.2",

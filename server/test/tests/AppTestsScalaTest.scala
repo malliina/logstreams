@@ -1,14 +1,14 @@
 package tests
 
 import com.malliina.app.AppComponents
-import com.malliina.logstreams.db.UserDB
+import com.malliina.logstreams.db.StreamsDB
 import com.malliina.oauth.GoogleOAuthCredentials
 import play.api.ApplicationLoader.Context
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 
 class TestComponents(ctx: Context)
-  extends AppComponents(ctx, GoogleOAuthCredentials("", "", ""), _ => UserDB.test()) {
+  extends AppComponents(ctx, GoogleOAuthCredentials("", "", ""), _ => StreamsDB.test()) {
   override lazy val auth = new TestAuth(controllerComponents.actionBuilder)
 }
 

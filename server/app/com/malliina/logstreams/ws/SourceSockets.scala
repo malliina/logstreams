@@ -16,6 +16,6 @@ class SourceSockets(mediatorProps: Props,
   override def props(conf: ActorConfig[Username]): Props = {
     val app = AppName(conf.user.name)
     val client = MediatorClient(conf, mediator)
-    Props(new SourceActor(app, client))
+    SourceActor.props(app, client)
   }
 }

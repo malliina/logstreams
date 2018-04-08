@@ -12,13 +12,13 @@ import org.apache.commons.codec.digest.DigestUtils
 import scala.concurrent.Future
 
 object DatabaseAuth {
-  def apply(userDB: UserDB): DatabaseAuth = new DatabaseAuth(userDB)
+  def apply(userDB: StreamsDB): DatabaseAuth = new DatabaseAuth(userDB)
 
   def hash(username: Username, password: Password): Password =
     Password(DigestUtils.md5Hex(username.name + ":" + password.pass))
 }
 
-class DatabaseAuth(val db: UserDB) extends UserService {
+class DatabaseAuth(val db: StreamsDB) extends UserService {
 
   import db.impl.api._
   import db.mappings._

@@ -20,7 +20,7 @@ object SourceMediator {
 
 }
 
-class SourceMediator(logViewers: ActorRef, sourceViewers: ActorRef)
+class SourceMediator(logViewers: ActorRef, sourceViewers: ActorRef, database: ActorRef)
   extends Actor {
 
   var sources: Set[SourceInfo] = Set.empty
@@ -29,7 +29,10 @@ class SourceMediator(logViewers: ActorRef, sourceViewers: ActorRef)
     updateSourceViewers()
   }
 
-  override def receive = {
+  override def receive: Receive = {
+    case AppLogEvents(events) =>
+      database ! AppLogEvents(events)
+      logViewers ! Broadcast(Json.toJson(AppLogEvents(events)))
     case ClientMessage(msg, _) =>
       logViewers ! Broadcast(msg)
     case SourceJoined(source) =>

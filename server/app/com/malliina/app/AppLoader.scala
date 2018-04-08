@@ -2,7 +2,7 @@ package com.malliina.app
 
 import buildinfo.BuildInfo
 import com.malliina.logstreams.auth.{Auths, UserService}
-import com.malliina.logstreams.db.{DatabaseAuth, UserDB}
+import com.malliina.logstreams.db.{DatabaseAuth, StreamsDB}
 import com.malliina.logstreams.html.Htmls
 import com.malliina.oauth.{GoogleOAuthCredentials, GoogleOAuthReader}
 import com.malliina.play.ActorExecution
@@ -10,7 +10,6 @@ import com.malliina.play.app.DefaultApp
 import controllers._
 import play.api.ApplicationLoader.Context
 import play.api._
-import play.api.mvc.{ActionBuilder, AnyContent, Request}
 import play.api.routing.Router
 import play.filters.HttpFiltersComponents
 import play.filters.headers.SecurityHeadersConfig
@@ -22,13 +21,13 @@ import scala.concurrent.Future
 class AppLoader extends DefaultApp(new ProdAppComponents(_))
 
 class ProdAppComponents(ctx: Context)
-  extends AppComponents(ctx, GoogleOAuthReader.load, mode => UserDB.init(mode != Mode.Prod)) {
+  extends AppComponents(ctx, GoogleOAuthReader.load, mode => StreamsDB.init(mode != Mode.Prod)) {
   override lazy val auth = new WebAuth(authImpl)
 }
 
 abstract class AppComponents(context: Context,
                              creds: GoogleOAuthCredentials,
-                             db: Mode => UserDB)
+                             db: Mode => StreamsDB)
   extends BuiltInComponentsFromContext(context)
     with HttpFiltersComponents
     with AssetsComponents {
@@ -37,7 +36,8 @@ abstract class AppComponents(context: Context,
 
   val isProd = environment.mode == Mode.Prod
 
-  override lazy val allowedHostsConfig: AllowedHostsConfig = AllowedHostsConfig(Seq("localhost", "logs.malliina.com"))
+  override lazy val allowedHostsConfig: AllowedHostsConfig =
+    AllowedHostsConfig(Seq("localhost", "logs.malliina.com"))
   val allowedDomains = Seq(
     "*.bootstrapcdn.com",
     "*.googleapis.com",
@@ -46,7 +46,8 @@ abstract class AppComponents(context: Context,
     "use.fontawesome.com"
   )
   val csp = s"default-src 'self' 'unsafe-inline' ${allowedDomains.mkString(" ")}; connect-src *; img-src 'self' data:;"
-  override lazy val securityHeadersConfig: SecurityHeadersConfig = SecurityHeadersConfig(contentSecurityPolicy = Option(csp))
+  override lazy val securityHeadersConfig: SecurityHeadersConfig =
+    SecurityHeadersConfig(contentSecurityPolicy = Option(csp))
 
   implicit val ec = materializer.executionContext
   val actions = controllerComponents.actionBuilder
@@ -62,7 +63,7 @@ abstract class AppComponents(context: Context,
 
   // Controllers
   lazy val home = new Logs(htmls, auth, users, deps, assets, controllerComponents)
-  lazy val sockets = new SocketsBundle(listenerAuth, sourceAuth, deps)
+  lazy val sockets = new SocketsBundle(listenerAuth, sourceAuth, database, deps)
   override lazy val router: Router = new Routes(httpErrorHandler, home, sockets, oauth)
 
   applicationLifecycle.addStopHook(() => Future.successful {

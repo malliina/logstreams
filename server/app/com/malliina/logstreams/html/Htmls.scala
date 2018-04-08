@@ -47,7 +47,7 @@ class Htmls(mainJs: Asset) extends Bootstrap(Tags) {
         input(`type` := "radio", name := "options", id := "option-compact", autocomplete := "off")(" Compact")
       )
     ),
-    logEntriesTable(LogTableId)
+    logEntriesTable(LogTableId)(thead(id := "table-head"), tbody(id := "table-body"))
   )
 
   def sources = baseIndex("sources")(

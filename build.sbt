@@ -4,7 +4,7 @@ import play.sbt.PlayImport
 import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 
-val serverVersion = "0.2.0"
+val serverVersion = "0.3.0"
 
 lazy val logstreamsRoot = project.in(file("."))
   .settings(basicSettings: _*)
@@ -51,7 +51,6 @@ def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
     utilPlayDep % Test classifier "tests"
   ) map (_.withSources().withJavadoc()),
   pipelineStages := Seq(digest, gzip),
-//  pipelineStages in Assets := Seq(scalaJSPipeline, digest, gzip),
   linuxPackageSymlinks := linuxPackageSymlinks.value.filterNot(_.link == "/usr/bin/starter")
 )
 

@@ -17,10 +17,6 @@ object BaseSocket {
 class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.noop)
   extends ScriptHelpers {
   val statusElem = elem("status")
-
-  //  val okStatus = elem(OkStatus)
-  //  val failStatus = elem(FailStatus)
-
   val socket: dom.WebSocket = openSocket(wsPath)
 
   def handlePayload(payload: JsValue): Unit = ()
@@ -30,14 +26,10 @@ class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.noop)
 
   def showConnected(): Unit = {
     setFeedback("Connected.")
-    //    okStatus removeClass hideClass
-    //    failStatus addClass hideClass
   }
 
   def showDisconnected(): Unit = {
     setFeedback("Connection closed.")
-    //    okStatus addClass hideClass
-    //    failStatus removeClass hideClass
   }
 
   def send[T: Writes](payload: T): Unit = {

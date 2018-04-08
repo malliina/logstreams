@@ -30,20 +30,23 @@ class ListenerSocket(wsPath: String, verboseSupport: Boolean) extends BaseSocket
   val VerboseKey = "verbose"
   val localStorage = dom.window.localStorage
 
-  lazy val jQueryTable = elem(TableId)
+  lazy val tableBody = elem("table-body")
   lazy val table = document.getElementById(TableId).asInstanceOf[HTMLTableElement]
 
   var isVerbose: Boolean = Option(localStorage.getItem(VerboseKey)).contains("true")
 
   if (verboseSupport) {
     val verboseClass = names("verbose", if (isVerbose) "" else "off")
-    table.appendChild(thead(tr(
-      th("App"),
-      th("Time"),
-      th("Message"),
-      th(`class` := verboseClass)("Logger"),
-      th(`class` := verboseClass)("Thread"),
-      th("Level"))).render)
+    getElem[HTMLElement]("table-head").appendChild(
+      tr(
+        th("App"),
+        th("Time"),
+        th("Message"),
+        th(`class` := verboseClass)("Logger"),
+        th(`class` := verboseClass)("Thread"),
+        th("Level")
+      ).render
+    )
     configureToggle("label-verbose", isVerbose)(_ => updateVerbose(true))
     configureToggle("label-compact", !isVerbose)(_ => updateVerbose(false))
   }
@@ -81,9 +84,9 @@ class ListenerSocket(wsPath: String, verboseSupport: Boolean) extends BaseSocket
       val errorRow = tr(`class` := Hidden, id := stackId)(
         td(colspan := s"$ColumnCount")(pre(stackTrace))
       )
-      jQueryTable prepend errorRow.render
+      tableBody prepend errorRow.render
     }
-    jQueryTable prepend row.content.render
+    tableBody prepend row.content.render
     // Toggles text wrapping for long texts when clicked
     elem(row.cellId) click { (_: JQueryEventObject) =>
       elem(row.cellId) toggleClass CellContent

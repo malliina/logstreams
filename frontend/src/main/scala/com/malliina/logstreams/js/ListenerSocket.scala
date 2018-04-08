@@ -3,22 +3,21 @@ package com.malliina.logstreams.js
 import java.util.UUID
 
 import org.scalajs.dom
-import org.scalajs.dom.raw.HTMLTableElement
+import org.scalajs.dom.document
+import org.scalajs.dom.raw.{Event, HTMLElement, HTMLTableElement}
 import org.scalajs.jquery.{JQuery, JQueryEventObject}
 import play.api.libs.json.JsValue
-
-import scalatags.Text.TypedTag
-import scalatags.Text.all._
+import scalatags.JsDom.all._
 
 case class RowContent(content: Frag, cellId: String, linkId: String)
 
 object ListenerSocket {
-  def apply(wsPath: String) = new ListenerSocket(s"$wsPath?f=json")
+  def apply(wsPath: String, verboseSupport: Boolean = false) = new ListenerSocket(s"$wsPath?f=json", verboseSupport)
 
-  def web = ListenerSocket("/ws/logs")
+  def web = ListenerSocket("/ws/logs", verboseSupport = true)
 }
 
-class ListenerSocket(wsPath: String) extends BaseSocket(wsPath) {
+class ListenerSocket(wsPath: String, verboseSupport: Boolean) extends BaseSocket(wsPath) {
   val CellContent = "cell-content"
   val CellWide = "cell-wide"
   val ColumnCount = 6
@@ -28,8 +27,45 @@ class ListenerSocket(wsPath: String) extends BaseSocket(wsPath) {
   val TableId = "log-table"
   val Warning = "warning"
 
+  val VerboseKey = "verbose"
+  val localStorage = dom.window.localStorage
+
   lazy val jQueryTable = elem(TableId)
-  lazy val table = dom.document.getElementById(TableId).asInstanceOf[HTMLTableElement]
+  lazy val table = document.getElementById(TableId).asInstanceOf[HTMLTableElement]
+
+  var isVerbose: Boolean = Option(localStorage.getItem(VerboseKey)).contains("true")
+
+  if (verboseSupport) {
+    val verboseClass = names("verbose", if (isVerbose) "" else "off")
+    table.appendChild(thead(tr(
+      th("App"),
+      th("Time"),
+      th("Message"),
+      th(`class` := verboseClass)("Logger"),
+      th(`class` := verboseClass)("Thread"),
+      th("Level"))).render)
+    configureToggle("label-verbose", isVerbose)(_ => updateVerbose(true))
+    configureToggle("label-compact", !isVerbose)(_ => updateVerbose(false))
+  }
+
+  updateVerbose(isVerbose)
+
+  def updateVerbose(newVerbose: Boolean) = {
+    isVerbose = newVerbose
+    localStorage.setItem(VerboseKey, if (newVerbose) "true" else "false")
+    document.getElementsByClassName("verbose").foreach { e =>
+      val classes = e.asInstanceOf[HTMLElement].classList
+      if (newVerbose) classes.remove("off") else classes.add("off")
+    }
+  }
+
+  def configureToggle(on: String, isActive: Boolean)(onClick: Event => Unit) = {
+    val e = getElem[HTMLElement](on)
+    if (isActive) {
+      e.classList.add("active")
+    }
+    e.addEventListener("click", onClick)
+  }
 
   override def handlePayload(payload: JsValue): Unit =
     handleValidated(payload)(onLogEvents)
@@ -78,20 +114,22 @@ class ListenerSocket(wsPath: String) extends BaseSocket(wsPath) {
       cell(event.source.name),
       cell(entry.timeFormatted),
       wideCell(entry.message, msgCellId),
-      cell(entry.loggerName),
-      cell(entry.threadName),
+      cell(entry.loggerName, hideable = true),
+      cell(entry.threadName, hideable = true),
       td(levelCell)
     )
     RowContent(frag, msgCellId, linkId)
   }
 
 
-  def cell(content: String) =
-    toCell(content, CellContent)
+  def cell(content: String, hideable: Boolean = false) =
+    toCell(content, names(CellContent, if (hideable) if (isVerbose) "verbose" else "verbose off" else ""))
 
   def wideCell(content: String, cellId: String) =
     td(`class` := s"$CellContent $CellWide", id := cellId)(content)
 
-  def toCell(content: String, clazz: String): TypedTag[String] =
+  def toCell(content: String, clazz: String) =
     td(`class` := clazz)(content)
+
+  def names(ns: String*): String = ns.map(_.trim).filter(_.nonEmpty).mkString(" ")
 }

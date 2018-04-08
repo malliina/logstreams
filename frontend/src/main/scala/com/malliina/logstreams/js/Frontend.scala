@@ -2,14 +2,10 @@ package com.malliina.logstreams.js
 
 import org.scalajs.dom
 
-import scala.scalajs.js.JSApp
-import scala.scalajs.js.annotation.JSExport
-
-object Frontend extends JSApp {
+object Frontend {
   var app: Option[BaseSocket] = None
 
-  @JSExport
-  override def main(): Unit = {
+  def main(args: Array[String]): Unit = {
     val path = dom.window.location.pathname
     val jsImpl: PartialFunction[String, BaseSocket] = {
       case "/" => ListenerSocket.web

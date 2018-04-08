@@ -38,8 +38,16 @@ class Htmls(mainJs: Asset) extends Bootstrap(Tags) {
   val reverse = controllers.routes.Logs
 
   def logs = baseIndex("logs")(
-    headerRow("Logs "),
-    defaultTable(LogTableId, Seq("App", "Time", "Message", "Logger", "Thread", "Level"))
+    headerRow("Logs"),
+    div(`class` := s"btn-group btn-group-toggle compact-group float-right", role := "group", data("toggle") := "buttons")(
+      label(`class` := "btn btn-info btn-sm", id := "label-verbose")(
+        input(`type` := "radio", name := "options", id := "option-verbose", autocomplete := "off")(" Verbose")
+      ),
+      label(`class` := "btn btn-info btn-sm ", id := "label-compact")(
+        input(`type` := "radio", name := "options", id := "option-compact", autocomplete := "off")(" Compact")
+      )
+    ),
+    logEntriesTable(LogTableId)
   )
 
   def sources = baseIndex("sources")(
@@ -86,10 +94,14 @@ class Htmls(mainJs: Asset) extends Bootstrap(Tags) {
     )
   }
 
+  def logEntriesTable(tableId: String) = table(`class` := tables.defaultClass, id := tableId)
 
   def defaultTable(tableId: String, headers: Seq[String]) =
+    defaultTableBase(tableId, headers.map(h => th(h)))
+
+  def defaultTableBase(tableId: String, headers: Modifier) =
     table(`class` := tables.defaultClass, id := tableId)(
-      thead(tr(headers.map(h => th(h)))),
+      thead(tr(headers)),
       tbody
     )
 
@@ -109,7 +121,7 @@ class Htmls(mainJs: Asset) extends Bootstrap(Tags) {
           navItem("Users", "users", reverse.allUsers(), "person")
         )
       ),
-      divClass("wide-content")(inner)
+      div(`class` := "wide-content", id := "page-content")(inner)
     )
   }
 

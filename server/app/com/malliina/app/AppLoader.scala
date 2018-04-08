@@ -35,23 +35,30 @@ abstract class AppComponents(context: Context,
 
   def auth: LogAuth
 
-  lazy val isProd = environment.mode == Mode.Prod
+  val isProd = environment.mode == Mode.Prod
 
   override lazy val allowedHostsConfig: AllowedHostsConfig = AllowedHostsConfig(Seq("localhost", "logs.malliina.com"))
-  val csp = "default-src 'self' 'unsafe-inline' *.bootstrapcdn.com *.googleapis.com cdnjs.cloudflare.com code.jquery.com use.fontawesome.com; connect-src *; img-src 'self' data:;"
+  val allowedDomains = Seq(
+    "*.bootstrapcdn.com",
+    "*.googleapis.com",
+    "cdnjs.cloudflare.com",
+    "code.jquery.com",
+    "use.fontawesome.com"
+  )
+  val csp = s"default-src 'self' 'unsafe-inline' ${allowedDomains.mkString(" ")}; connect-src *; img-src 'self' data:;"
   override lazy val securityHeadersConfig: SecurityHeadersConfig = SecurityHeadersConfig(contentSecurityPolicy = Option(csp))
 
   implicit val ec = materializer.executionContext
-  val actions: ActionBuilder[Request, AnyContent] = controllerComponents.actionBuilder
+  val actions = controllerComponents.actionBuilder
   // Services
-  lazy val database = db(environment.mode)
-  lazy val htmls = Htmls.forApp(BuildInfo.frontName, isProd)
-  lazy val users: UserService = DatabaseAuth(database)
+  val database = db(environment.mode)
+  val htmls = Htmls.forApp(BuildInfo.frontName, isProd)
+  val users: UserService = DatabaseAuth(database)
   lazy val listenerAuth = Auths.viewers(auth)
-  lazy val sourceAuth = Auths.sources(users)
-  lazy val oauth = new OAuth(actions, creds)
-  lazy val authImpl = new OAuthCtrl(oauth, materializer)
-  lazy val deps = ActorExecution(actorSystem, materializer)
+  val sourceAuth = Auths.sources(users)
+  val oauth = new OAuth(actions, creds)
+  val authImpl = new OAuthCtrl(oauth, materializer)
+  val deps = ActorExecution(actorSystem, materializer)
 
   // Controllers
   lazy val home = new Logs(htmls, auth, users, deps, assets, controllerComponents)

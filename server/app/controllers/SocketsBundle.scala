@@ -18,9 +18,10 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
   val sourceProps = Props(new SourceMediator(logs.mediator, admins.mediator, database))
   val sources = new SourceSockets(sourceProps, sourceAuth, deps)
 
-//  implicit val ec = deps.executionContext
+  //  implicit val ec = deps.executionContext
   //  val event = AppLogEvent(LogSource(AppName("test"), "remote"), TestData.dummyEvent("jee"))
-  //  deps.actorSystem.scheduler.schedule(1.seconds, 1.second, sources.mediator, AppLogEvents(Seq(event)))
+  //  val errorEvent = AppLogEvent(LogSource(AppName("test"), "remote"), TestData.failEvent("boom"))
+  //  deps.actorSystem.scheduler.schedule(1.seconds, 1.second, sources.mediator, AppLogEvents(Seq(event, errorEvent)))
 
   def listenerSocket = logs.newSocket
 

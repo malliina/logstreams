@@ -2,34 +2,27 @@ package com.malliina.logstreams.ws
 
 import akka.actor.{Actor, Props, Status}
 import akka.pattern.pipe
-import com.malliina.logstreams.db.StreamsDB
-import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents}
-import com.malliina.logstreams.ws.DatabaseActor.{EntriesWritten, log}
+import com.malliina.logstreams.db.StreamsDatabase
+import com.malliina.logstreams.models.{EntriesWritten, LogEntryInputs}
+import com.malliina.logstreams.ws.DatabaseActor.log
+import com.malliina.logstreams.ws.SourceMediator.EventsWritten
 import play.api.Logger
 
 object DatabaseActor {
   private val log = Logger(getClass)
 
-  def props(db: StreamsDB): Props = Props(new DatabaseActor(db))
-
-  case class EntriesWritten(rows: Int, input: Seq[AppLogEvent])
-
+  def props(db: StreamsDatabase): Props = Props(new DatabaseActor(db))
 }
 
-class DatabaseActor(db: StreamsDB) extends Actor {
-
-  import db.impl.api._
-
+class DatabaseActor(db: StreamsDatabase) extends Actor {
   implicit val ex = context.dispatcher
 
   override def receive: Receive = {
-    case AppLogEvents(events) =>
-      val action = db.logEntries.map(_.forInsert) ++= events.map(_.toInput)
-      db.run(action)
-        .map(maybeInt => EntriesWritten(maybeInt.getOrElse(0), events))
-        .pipeTo(self)(sender())
-    case EntriesWritten(rows, input) =>
-      log.debug(s"Wrote $rows rows for ${input.length} entries.")
+    case LogEntryInputs(events) =>
+      db.insert(events).pipeTo(self)(sender())
+    case EntriesWritten(inputs, rows) =>
+      log.debug(s"Wrote ${rows.length} rows for ${inputs.length} entries.")
+      sender() ! EventsWritten(rows)
     case Status.Failure(t) =>
       // Received if the Future used with pipeTo fails
       log.error(s"Failed to save log entries.", t)

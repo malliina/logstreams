@@ -2,9 +2,8 @@ package it
 
 import ch.qos.logback.classic.Level
 import com.malliina.http.FullUrl
-import com.malliina.logbackrx.LogEvent
 import com.malliina.logstreams.client.{HttpUtil, SocketClient}
-import com.malliina.logstreams.models.{AppLogEvents, AppName, LogEvents, LogSources}
+import com.malliina.logstreams.models._
 import com.malliina.play.auth.BasicCredentials
 import com.malliina.play.models.{Password, Username}
 import com.malliina.security.SSLUtils
@@ -55,7 +54,7 @@ class LogStreamsTest extends TestServerSuite {
       message,
       getClass.getName.stripSuffix("$"),
       "this thread",
-      Level.INFO,
+      Level.INFO.levelStr,
       None
     )
 

@@ -13,7 +13,7 @@ import javax.sql.DataSource
 import play.api.Logger
 import slick.jdbc.{H2Profile, JdbcProfile, MySQLProfile}
 
-class StreamsDB(ds: DataSource, override val impl: JdbcProfile)
+class StreamsSchema(ds: DataSource, override val impl: JdbcProfile)
   extends DatabaseLike(impl, impl.api.Database.forDataSource(ds, None))
     with Closeable {
 
@@ -92,7 +92,7 @@ class StreamsDB(ds: DataSource, override val impl: JdbcProfile)
   }
 }
 
-object StreamsDB {
+object StreamsSchema {
   private val log = Logger(getClass)
 
   val HomeKey = "logstreams.home"
@@ -125,7 +125,7 @@ object StreamsDB {
     def h2(conn: String) = DatabaseConf(s"jdbc:h2:$conn;DB_CLOSE_DELAY=-1", "", "", H2Driver, H2Profile)
   }
 
-  def init(allowFallback: Boolean): StreamsDB = {
+  def init(allowFallback: Boolean): StreamsSchema = {
     DatabaseConf.fromEnv().map(apply).fold(
       err =>
         if (allowFallback) {
@@ -138,9 +138,9 @@ object StreamsDB {
     )
   }
 
-  def h2(conn: String): StreamsDB = apply(DatabaseConf.h2(conn))
+  def h2(conn: String): StreamsSchema = apply(DatabaseConf.h2(conn))
 
-  def apply(conf: DatabaseConf): StreamsDB = {
+  def apply(conf: DatabaseConf): StreamsSchema = {
     val hikariConf = new HikariConfig()
     hikariConf.setJdbcUrl(conf.url)
     hikariConf.setDriverClassName(conf.driver)
@@ -148,10 +148,10 @@ object StreamsDB {
     hikariConf.setPassword(conf.pass)
     log.info(s"Connecting to '${conf.url}'...")
     val ds = new HikariDataSource(hikariConf)
-    new StreamsDB(ds, conf.impl)
+    new StreamsSchema(ds, conf.impl)
   }
 
-  def default(): StreamsDB = {
+  def default(): StreamsSchema = {
     val homeDir = (sys.props.get(HomeKey) orElse sys.env.get(HomeKey)).map(p => Paths.get(p))
       .getOrElse(FileUtilities.userHome / ".logstreams")
     file(homeDir / "db" / "logsdb")

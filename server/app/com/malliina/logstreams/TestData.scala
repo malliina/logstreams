@@ -1,8 +1,10 @@
 package com.malliina.logstreams
 
+import java.time.Instant
+
 import ch.qos.logback.classic.Level
 import com.malliina.logbackrx.LogEvent
-import com.malliina.logstreams.models.{AppLogEvent, AppName, LogSource}
+import com.malliina.logstreams.models._
 
 object TestData {
   // Dev purposes
@@ -26,5 +28,11 @@ object TestData {
     Option(new Exception("boom").getStackTraceString)
   )
 
-  def testEvent(e: LogEvent) = AppLogEvent(LogSource(AppName("test"), "localhost"), e)
+  def testEvent(e: models.LogEvent) = AppLogEvent(
+    LogEntryId(0),
+    LogSource(AppName("test"), "localhost"),
+    e,
+    Instant.now().toEpochMilli,
+    LogEntryRow.format(Instant.now())
+  )
 }

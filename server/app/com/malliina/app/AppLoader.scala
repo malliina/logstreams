@@ -2,7 +2,7 @@ package com.malliina.app
 
 import buildinfo.BuildInfo
 import com.malliina.logstreams.auth.{Auths, UserService}
-import com.malliina.logstreams.db.{DatabaseAuth, StreamsDB}
+import com.malliina.logstreams.db.{DatabaseAuth, StreamsDatabase, StreamsSchema}
 import com.malliina.logstreams.html.Htmls
 import com.malliina.oauth.{GoogleOAuthCredentials, GoogleOAuthReader}
 import com.malliina.play.ActorExecution
@@ -21,13 +21,13 @@ import scala.concurrent.Future
 class AppLoader extends DefaultApp(new ProdAppComponents(_))
 
 class ProdAppComponents(ctx: Context)
-  extends AppComponents(ctx, GoogleOAuthReader.load, mode => StreamsDB.init(mode != Mode.Prod)) {
+  extends AppComponents(ctx, GoogleOAuthReader.load, mode => StreamsSchema.init(mode != Mode.Prod)) {
   override lazy val auth = new WebAuth(authImpl)
 }
 
 abstract class AppComponents(context: Context,
                              creds: GoogleOAuthCredentials,
-                             db: Mode => StreamsDB)
+                             db: Mode => StreamsSchema)
   extends BuiltInComponentsFromContext(context)
     with HttpFiltersComponents
     with AssetsComponents {
@@ -52,9 +52,10 @@ abstract class AppComponents(context: Context,
   implicit val ec = materializer.executionContext
   val actions = controllerComponents.actionBuilder
   // Services
-  val database = db(environment.mode)
+  val databaseSchema = db(environment.mode)
+  val database = StreamsDatabase(databaseSchema)
   val htmls = Htmls.forApp(BuildInfo.frontName, isProd)
-  val users: UserService = DatabaseAuth(database)
+  val users: UserService = DatabaseAuth(databaseSchema)
   lazy val listenerAuth = Auths.viewers(auth)
   val sourceAuth = Auths.sources(users)
   val oauth = new OAuth(actions, creds)
@@ -67,6 +68,6 @@ abstract class AppComponents(context: Context,
   override lazy val router: Router = new Routes(httpErrorHandler, home, sockets, oauth)
 
   applicationLifecycle.addStopHook(() => Future.successful {
-    database.close()
+    databaseSchema.close()
   })
 }

@@ -1,9 +1,13 @@
 package com.malliina.logstreams.ws
 
-import akka.actor.ActorRef
+import akka.actor.{ActorRef, Props}
 import com.malliina.play.ws.Mediator
 import com.malliina.play.ws.Mediator.Broadcast
 import play.api.libs.json.JsValue
+
+object LatestMediator {
+  def props() = Props(new LatestMediator)
+}
 
 class LatestMediator extends Mediator {
   var latestBroadcast: Option[JsValue] = None

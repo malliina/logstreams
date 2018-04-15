@@ -2,7 +2,8 @@ package com.malliina.logstreams.ws
 
 import akka.actor.{Actor, ActorRef, Terminated}
 import com.malliina.logstreams.models._
-import com.malliina.logstreams.ws.SourceMediator.{SourceInfo, SourceJoined, SourceLeft, log}
+import com.malliina.logstreams.ws.LogsMediator.NewEvents
+import com.malliina.logstreams.ws.SourceMediator._
 import com.malliina.play.ws.Mediator.{Broadcast, ClientMessage}
 import play.api.Logger
 import play.api.libs.json.Json
@@ -18,9 +19,11 @@ object SourceMediator {
 
   case class SourceLeft(source: SourceInfo) extends ControlMessage
 
+  case class EventsWritten(events: Seq[LogEntryRow]) extends ControlMessage
+
 }
 
-class SourceMediator(logViewers: ActorRef, sourceViewers: ActorRef, database: ActorRef)
+class SourceMediator(logsMediator: ActorRef, sourceViewers: ActorRef, database: ActorRef)
   extends Actor {
 
   var sources: Set[SourceInfo] = Set.empty
@@ -30,11 +33,13 @@ class SourceMediator(logViewers: ActorRef, sourceViewers: ActorRef, database: Ac
   }
 
   override def receive: Receive = {
-    case AppLogEvents(events) =>
-      database ! AppLogEvents(events)
-      logViewers ! Broadcast(Json.toJson(AppLogEvents(events)))
+    case LogEntryInputs(events) =>
+      database ! LogEntryInputs(events)
+    case EventsWritten(rows) =>
+//      log.info(s"Broadcasting ${rows.length} written events.")
+      logsMediator ! NewEvents(rows.map(_.toEvent))
     case ClientMessage(msg, _) =>
-      logViewers ! Broadcast(msg)
+      logsMediator ! Broadcast(msg)
     case SourceJoined(source) =>
       context watch source.out
       sources += source

@@ -1,7 +1,7 @@
 package com.malliina.logstreams.js
 
+import com.malliina.logstreams.models.{LogSource, LogSources}
 import play.api.libs.json.JsValue
-
 import scalatags.Text.all._
 
 class SourcesSocket extends BaseSocket("/ws/admins?f=json") {
@@ -16,7 +16,7 @@ class SourcesSocket extends BaseSocket("/ws/admins?f=json") {
 
   def toRow(source: LogSource) =
     tr(
-      td(source.name),
+      td(source.name.name),
       td(source.remoteAddress)
     )
 }

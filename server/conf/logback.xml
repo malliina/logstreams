@@ -16,6 +16,7 @@
         <secure>true</secure>
         <username>${LOGSTREAMS_USER:-logstreams}</username>
         <password>${LOGSTREAMS_PASS}</password>
+        <enabled>${LOGSTREAMS_ENABLED:-false}</enabled>
     </appender>
     <logger name="play" level="INFO"/>
     <logger name="application" level="INFO"/>

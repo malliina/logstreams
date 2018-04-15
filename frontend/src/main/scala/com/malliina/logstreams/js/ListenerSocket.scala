@@ -2,6 +2,7 @@ package com.malliina.logstreams.js
 
 import java.util.UUID
 
+import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents}
 import org.scalajs.dom
 import org.scalajs.dom.document
 import org.scalajs.dom.raw.{Event, HTMLElement, HTMLTableElement}
@@ -53,7 +54,7 @@ class ListenerSocket(wsPath: String, verboseSupport: Boolean) extends BaseSocket
 
   updateVerbose(isVerbose)
 
-  def updateVerbose(newVerbose: Boolean) = {
+  def updateVerbose(newVerbose: Boolean): Unit = {
     isVerbose = newVerbose
     localStorage.setItem(VerboseKey, if (newVerbose) "true" else "false")
     document.getElementsByClassName("verbose").foreach { e =>
@@ -62,7 +63,7 @@ class ListenerSocket(wsPath: String, verboseSupport: Boolean) extends BaseSocket
     }
   }
 
-  def configureToggle(on: String, isActive: Boolean)(onClick: Event => Unit) = {
+  def configureToggle(on: String, isActive: Boolean)(onClick: Event => Unit): Unit = {
     val e = getElem[HTMLElement](on)
     if (isActive) {
       e.classList.add("active")
@@ -114,7 +115,7 @@ class ListenerSocket(wsPath: String, verboseSupport: Boolean) extends BaseSocket
       .map(_ => a(href := "#", id := linkId)(level))
       .getOrElse(level)
     val frag = tr(`class` := rowClass)(
-      cell(event.source.name),
+      cell(event.source.name.name),
       cell(entry.timeFormatted),
       wideCell(entry.message, msgCellId),
       cell(entry.loggerName, hideable = true),

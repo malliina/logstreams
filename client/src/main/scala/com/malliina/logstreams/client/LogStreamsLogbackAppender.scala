@@ -10,12 +10,14 @@ import rx.lang.scala.Subscription
   * <host>localhost:9000</host>
   * <username>${LOGSTREAMS_USER}</username>
   * <password>${LOGSTREAMS_PASS}</password>
+  * <enabled>${LOGSTREAMS_ENABLED}</enabled>
   * </appender>
   */
 class LogStreamsLogbackAppender extends BasicPublishRxAppender {
   private var endpoint: Option[String] = None
   private var username: Option[String] = None
   private var password: Option[String] = None
+  private var enabled: Boolean = false
   private var client: Option[JsonSocket] = None
   private var subscription: Option[Subscription] = None
   private var secure: Boolean = true
@@ -48,30 +50,41 @@ class LogStreamsLogbackAppender extends BasicPublishRxAppender {
     secure = isSecure
   }
 
+  def getEnabled: Boolean = enabled
+
+  def setEnabled(isEnabled: Boolean): Unit = {
+    addInfo(s"Setting enabled '$isEnabled' for appender [$name].")
+    enabled = isEnabled
+  }
+
   override def start(): Unit = {
-    val result = for {
-      hostAndPort <- toMissing(endpoint, "endpoint")
-      user <- toMissing(username, "username")
-      pass <- toMissing(password, "password")
-      _ <- validate(hostAndPort).right
-    } yield {
-      val headers: Seq[KeyValue] = Seq(HttpUtil.basicAuth(user, pass))
-      val host = hostAndPort.takeWhile(_ != ':')
-      val sf = CustomSSLSocketFactory.forHost(host)
-      val scheme = if (getSecure) "wss" else "ws"
-      val uri = FullUrl(scheme, hostAndPort, "/ws/sources")
-      addInfo(s"Connecting to logstreams URI ${uri.url}...")
-      val socket = new JsonSocket(uri, sf, headers)
-      client = Option(socket)
-      val sub = logEvents.subscribe(
-        next => socket.sendMessage(LogEvents(Seq(next))),
-        err => addError(s"Appender [$name] failed.", err),
-        () => addError(s"Appender [$name] completed.")
-      )
-      subscription = Option(sub)
-      super.start()
+    if (getEnabled) {
+      val result = for {
+        hostAndPort <- toMissing(endpoint, "endpoint")
+        user <- toMissing(username, "username")
+        pass <- toMissing(password, "password")
+        _ <- validate(hostAndPort).right
+      } yield {
+        val headers: Seq[KeyValue] = Seq(HttpUtil.basicAuth(user, pass))
+        val host = hostAndPort.takeWhile(_ != ':')
+        val sf = CustomSSLSocketFactory.forHost(host)
+        val scheme = if (getSecure) "wss" else "ws"
+        val uri = FullUrl(scheme, hostAndPort, "/ws/sources")
+        addInfo(s"Connecting to logstreams URL $uri...")
+        val socket = new JsonSocket(uri, sf, headers)
+        client = Option(socket)
+        val sub = logEvents.subscribe(
+          next => socket.sendMessage(LogEvents(Seq(next))),
+          err => addError(s"Appender [$name] failed.", err),
+          () => addError(s"Appender [$name] completed.")
+        )
+        subscription = Option(sub)
+        super.start()
+      }
+      result.left.toOption foreach addError
+    } else {
+      addInfo("Logstreams client is disabled.")
     }
-    result.left.toOption foreach addError
   }
 
   def toMissing[T](o: Option[T], fieldName: String) = o.toRight(missing(fieldName)).right

@@ -4,16 +4,22 @@ import play.sbt.PlayImport
 import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 
-val serverVersion = "0.3.0"
+val serverVersion = "0.4.0"
 
 lazy val logstreamsRoot = project.in(file("."))
   .settings(basicSettings: _*)
   .aggregate(frontend, server, client, it)
 lazy val server = PlayProject.server("logstreams", file("server"))
   .settings(serverSettings: _*)
+  .dependsOn(crossJvm)
 lazy val frontend = project.in(file("frontend"))
   .settings(frontSettings: _*)
   .enablePlugins(ScalaJSPlugin, ScalaJSWeb)
+  .dependsOn(crossJs)
+lazy val cross = crossProject.in(file("shared"))
+  .settings(sharedSettings: _*)
+lazy val crossJvm = cross.jvm
+lazy val crossJs = cross.js
 lazy val client = Project("logstreams-client", file("client"))
   .settings(clientSettings: _*)
 lazy val it = Project("logstreams-test", file("logstreams-test"))
@@ -23,17 +29,17 @@ lazy val it = Project("logstreams-test", file("logstreams-test"))
 addCommandAlias("web", ";logstreams/run")
 
 val malliinaGroup = "com.malliina"
-val utilPlayDep = malliinaGroup %% "util-play" % "4.11.0"
+val utilPlayDep = malliinaGroup %% "util-play" % "4.11.1"
 
 def frontSettings = Seq(
-  version := "0.0.2",
-  scalaVersion := "2.12.4",
+  version := "1.0.0",
+  scalaVersion := "2.12.5",
   scalaJSUseMainModuleInitializer := true,
   libraryDependencies ++= Seq(
     "com.lihaoyi" %%% "scalatags" % "0.6.7",
     "be.doeraene" %%% "scalajs-jquery" % "0.9.2",
     "com.typesafe.play" %%% "play-json" % "2.6.9",
-    "com.malliina" %%% "primitives" % "1.4.0",
+    "com.malliina" %%% "primitives" % "1.5.2",
     "org.scalatest" %%% "scalatest" % "3.0.5" % Test
   )
 )
@@ -44,14 +50,25 @@ def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
   libraryDependencies ++= Seq(
     "com.h2database" % "h2" % "1.4.196",
     "org.mariadb.jdbc" % "mariadb-java-client" % "2.2.1",
-    "com.typesafe.slick" %% "slick" % "3.2.2",
-    "com.zaxxer" % "HikariCP" % "2.7.6",
+    "com.typesafe.slick" %% "slick" % "3.2.3",
+    "com.zaxxer" % "HikariCP" % "3.1.0",
     "com.malliina" %% "logstreams-client" % "0.0.9",
     utilPlayDep,
     utilPlayDep % Test classifier "tests"
   ) map (_.withSources().withJavadoc()),
+  dependencyOverrides ++= Seq(
+    "com.typesafe.akka" %% "akka-stream" % "2.5.8",
+    "com.typesafe.akka" %% "akka-actor" % "2.5.8"
+  ),
   pipelineStages := Seq(digest, gzip),
   linuxPackageSymlinks := linuxPackageSymlinks.value.filterNot(_.link == "/usr/bin/starter")
+)
+
+def sharedSettings = basicSettings ++ Seq(
+  libraryDependencies ++= Seq(
+    "com.typesafe.play" %%% "play-json" % "2.6.9",
+    "com.malliina" %%% "primitives" % "1.5.2"
+  )
 )
 
 def scalaJSSettings = Seq(
@@ -65,7 +82,7 @@ def clientSettings = basicSettings ++ mavenSettings ++ Seq(
   libraryDependencies ++= Seq(
     "com.neovisionaries" % "nv-websocket-client" % "2.3",
     "com.malliina" %% "logback-rx" % "1.2.0",
-    "com.malliina" %%% "primitives" % "1.4.0",
+    "com.malliina" %%% "primitives" % "1.5.2",
     "org.scalatest" %% "scalatest" % "3.0.5" % Test
   ),
   releaseCrossBuild := true
@@ -77,7 +94,6 @@ def testSettings = basicSettings ++ Seq(
 
 def basicSettings = Seq(
   organization := malliinaGroup,
-  scalaVersion := "2.12.4",
-  crossScalaVersions := Seq("2.11.11", scalaVersion.value),
+  scalaVersion := "2.12.5",
   scalacOptions := Seq("-unchecked", "-deprecation")
 )

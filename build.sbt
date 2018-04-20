@@ -4,7 +4,7 @@ import play.sbt.PlayImport
 import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 
-val serverVersion = "0.4.0"
+val serverVersion = "0.5.0"
 
 lazy val logstreamsRoot = project.in(file("."))
   .settings(basicSettings: _*)
@@ -61,6 +61,14 @@ def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
     "com.typesafe.akka" %% "akka-actor" % "2.5.8"
   ),
   pipelineStages := Seq(digest, gzip),
+  javaOptions in Universal ++= {
+    val linuxName = (name in Linux).value
+    Seq(
+      s"-Dconfig.file=/etc/$linuxName/production.conf",
+      s"-Dlogger.file=/etc/$linuxName/logback-prod.xml",
+      "-Dhttp.port=8563"
+    )
+  },
   linuxPackageSymlinks := linuxPackageSymlinks.value.filterNot(_.link == "/usr/bin/starter")
 )
 

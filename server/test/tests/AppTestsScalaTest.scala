@@ -7,8 +7,7 @@ import play.api.ApplicationLoader.Context
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 
-class TestComponents(ctx: Context)
-  extends AppComponents(ctx, GoogleOAuthCredentials("", "", ""), _ => StreamsSchema.test()) {
+class TestComponents(ctx: Context) extends AppComponents(ctx) {
   override lazy val auth = new TestAuth(controllerComponents.actionBuilder)
 }
 

@@ -2,7 +2,7 @@ package com.malliina.app
 
 import buildinfo.BuildInfo
 import com.malliina.logstreams.auth.{Auths, UserService}
-import com.malliina.logstreams.db.{DatabaseAuth, StreamsDatabase, StreamsSchema}
+import com.malliina.logstreams.db.{DatabaseAuth, DatabaseConf, StreamsDatabase, StreamsSchema}
 import com.malliina.logstreams.html.Htmls
 import com.malliina.oauth.{GoogleOAuthCredentials, GoogleOAuthReader}
 import com.malliina.play.ActorExecution
@@ -20,21 +20,23 @@ import scala.concurrent.Future
 
 class AppLoader extends DefaultApp(new ProdAppComponents(_))
 
-class ProdAppComponents(ctx: Context)
-  extends AppComponents(ctx, GoogleOAuthReader.load, mode => StreamsSchema.init(mode != Mode.Prod)) {
+class ProdAppComponents(ctx: Context) extends AppComponents(ctx) {
   override lazy val auth = new WebAuth(authImpl)
 }
 
-abstract class AppComponents(context: Context,
-                             creds: GoogleOAuthCredentials,
-                             db: Mode => StreamsSchema)
+abstract class AppComponents(context: Context)
   extends BuiltInComponentsFromContext(context)
     with HttpFiltersComponents
     with AssetsComponents {
 
   def auth: LogAuth
 
+  val mode = environment.mode
   val isProd = environment.mode == Mode.Prod
+
+  val creds =
+    if (mode != Mode.Test) GoogleOAuthReader.load
+    else GoogleOAuthCredentials("", "", "")
 
   override lazy val allowedHostsConfig: AllowedHostsConfig =
     AllowedHostsConfig(Seq("localhost", "logs.malliina.com"))
@@ -45,14 +47,13 @@ abstract class AppComponents(context: Context,
     "code.jquery.com",
     "use.fontawesome.com"
   )
+  val databaseSchema = StreamsSchema(DatabaseConf(configuration, mode))
   val csp = s"default-src 'self' 'unsafe-inline' ${allowedDomains.mkString(" ")}; connect-src *; img-src 'self' data:;"
   override lazy val securityHeadersConfig: SecurityHeadersConfig =
     SecurityHeadersConfig(contentSecurityPolicy = Option(csp))
-
   implicit val ec = materializer.executionContext
   val actions = controllerComponents.actionBuilder
   // Services
-  val databaseSchema = db(environment.mode)
   val database = StreamsDatabase(databaseSchema)
   val htmls = Htmls.forApp(BuildInfo.frontName, isProd)
   val users: UserService = DatabaseAuth(databaseSchema)

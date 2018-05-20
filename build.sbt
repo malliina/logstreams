@@ -52,7 +52,7 @@ def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
     "org.mariadb.jdbc" % "mariadb-java-client" % "2.2.1",
     "com.typesafe.slick" %% "slick" % "3.2.3",
     "com.zaxxer" % "HikariCP" % "3.1.0",
-    "com.malliina" %% "logstreams-client" % "0.0.9",
+    "com.malliina" %% "logstreams-client" % "1.0.0",
     utilPlayDep,
     utilPlayDep % Test classifier "tests"
   ) map (_.withSources().withJavadoc()),

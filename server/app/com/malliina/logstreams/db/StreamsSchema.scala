@@ -4,15 +4,37 @@ import java.io.Closeable
 import java.time.Instant
 
 import ch.qos.logback.classic.Level
+import com.malliina.logstreams.db.StreamsSchema.NumThreads
 import com.malliina.logstreams.models.{LogEntryId, LogEntryInput, LogEntryRow}
 import com.malliina.play.models.{Password, Username}
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import javax.sql.DataSource
 import play.api.Logger
 import slick.jdbc.JdbcProfile
+import slick.util.AsyncExecutor
+
+object StreamsSchema {
+  private val log = Logger(getClass)
+
+  val NumThreads = 40
+
+  def apply(conf: DatabaseConf): StreamsSchema = {
+    val hikariConf = new HikariConfig()
+    hikariConf.setJdbcUrl(conf.url)
+    hikariConf.setDriverClassName(conf.driver)
+    hikariConf.setUsername(conf.user)
+    hikariConf.setPassword(conf.pass)
+    log.info(s"Connecting to '${conf.url}'...")
+    val ds = new HikariDataSource(hikariConf)
+    new StreamsSchema(ds, conf.impl)
+  }
+
+  // https://github.com/slick/slick/issues/1614#issuecomment-284730145
+  def executor(threads: Int = NumThreads) = AsyncExecutor("AsyncExecutor.logstreams", numThreads = threads, queueSize = 20000)
+}
 
 class StreamsSchema(ds: DataSource, override val impl: JdbcProfile)
-  extends DatabaseLike(impl, impl.api.Database.forDataSource(ds, None))
+  extends DatabaseLike(impl, impl.api.Database.forDataSource(ds, Option(NumThreads), executor = StreamsSchema.executor(NumThreads)))
     with Closeable {
 
   import impl.api._
@@ -86,19 +108,4 @@ class StreamsSchema(ds: DataSource, override val impl: JdbcProfile)
   }
 
   override def close(): Unit = database.close()
-}
-
-object StreamsSchema {
-  private val log = Logger(getClass)
-
-  def apply(conf: DatabaseConf): StreamsSchema = {
-    val hikariConf = new HikariConfig()
-    hikariConf.setJdbcUrl(conf.url)
-    hikariConf.setDriverClassName(conf.driver)
-    hikariConf.setUsername(conf.user)
-    hikariConf.setPassword(conf.pass)
-    log.info(s"Connecting to '${conf.url}'...")
-    val ds = new HikariDataSource(hikariConf)
-    new StreamsSchema(ds, conf.impl)
-  }
 }

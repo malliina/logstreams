@@ -1,8 +1,6 @@
 package tests
 
 import com.malliina.app.AppComponents
-import com.malliina.logstreams.db.StreamsSchema
-import com.malliina.oauth.GoogleOAuthCredentials
 import play.api.ApplicationLoader.Context
 import play.api.test.FakeRequest
 import play.api.test.Helpers._

@@ -77,10 +77,11 @@ class LogStreamsTest extends TestServerSuite {
     }
   }
 
-  test("admin receives status on connect, and update when a source connects") {
+  test("admin receives status on connect and updates when a source connects and disconnects") {
     val status = Promise[JsValue]()
     val update = Promise[JsValue]()
-    withAdmin(json => if (!status.trySuccess(json)) update.trySuccess(json)) { client =>
+    val disconnectedPromise = Promise[JsValue]()
+    withAdmin(json => if (!status.trySuccess(json)) if(!update.trySuccess(json)) disconnectedPromise.trySuccess(json)) { client =>
       assert(client.isConnected)
       val msg = await(status.future).validate[LogSources]
       assert(msg.isSuccess)
@@ -88,14 +89,17 @@ class LogStreamsTest extends TestServerSuite {
       withSource { _ =>
         val upd = await(update.future).validate[LogSources]
         assert(upd.isSuccess)
-        val sources = upd.get
-        assert(sources.sources.size === 1)
-        assert(sources.sources.head.name.name === testUser)
+        val sources = upd.get.sources
+        assert(sources.size === 1)
+        assert(sources.head.name.name === testUser)
       }
+      val disconnectUpdate = await(disconnectedPromise.future).validate[LogSources]
+      assert(disconnectUpdate.isSuccess)
+      assert(disconnectUpdate.get.sources.isEmpty)
     }
   }
 
-  test("logback appender") {
+  ignore("logback appender") {
     Logger("test").error("This is a test event")
     Thread sleep 100
   }

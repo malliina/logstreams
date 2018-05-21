@@ -25,10 +25,29 @@ object LogSource {
   implicit val json = Json.format[LogSource]
 }
 
-case class LogSources(sources: Seq[LogSource])
+case class SimpleEvent(event: String) extends FrontEvent with AdminEvent
+
+object SimpleEvent {
+  implicit val json = Json.format[SimpleEvent]
+  val ping = SimpleEvent("ping")
+}
+
+case class LogSources(sources: Seq[LogSource]) extends AdminEvent
 
 object LogSources {
   implicit val json = Json.format[LogSources]
+}
+
+sealed trait AdminEvent
+
+object AdminEvent {
+  implicit val reader = Reads[AdminEvent] { json =>
+    LogSources.json.reads(json).orElse(SimpleEvent.json.reads(json))
+  }
+  implicit val writer = Writes[AdminEvent] {
+    case ls@LogSources(_) => LogSources.json.writes(ls)
+    case se@SimpleEvent(_) => SimpleEvent.json.writes(se)
+  }
 }
 
 case class LogEvent(timeStamp: Long,
@@ -49,10 +68,22 @@ object AppLogEvent {
   implicit val json = Json.format[AppLogEvent]
 }
 
-case class AppLogEvents(events: Seq[AppLogEvent])
+case class AppLogEvents(events: Seq[AppLogEvent]) extends FrontEvent
 
 object AppLogEvents {
   implicit val json = Json.format[AppLogEvents]
+}
+
+sealed trait FrontEvent
+
+object FrontEvent {
+  implicit val reader = Reads[FrontEvent] { json =>
+    AppLogEvents.json.reads(json).orElse(SimpleEvent.json.reads(json))
+  }
+  implicit val writer = Writes[FrontEvent] {
+    case ale@AppLogEvents(_) => AppLogEvents.json.writes(ale)
+    case se@SimpleEvent(_) => SimpleEvent.json.writes(se)
+  }
 }
 
 abstract class Companion[Raw, T](implicit jsonFormat: Format[Raw], o: Ordering[Raw]) {

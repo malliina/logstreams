@@ -3,7 +3,7 @@ package com.malliina.logstreams.ws
 import akka.actor.{Actor, ActorRef, Terminated}
 import com.malliina.logstreams.models._
 import com.malliina.logstreams.ws.LogsMediator.NewEvents
-import com.malliina.logstreams.ws.SourceMediator._
+import com.malliina.logstreams.ws.SourceMediator.{log, _}
 import com.malliina.play.ws.Mediator.{Broadcast, ClientMessage}
 import play.api.Logger
 import play.api.libs.json.Json
@@ -36,7 +36,7 @@ class SourceMediator(logsMediator: ActorRef, sourceViewers: ActorRef, database: 
     case LogEntryInputs(events) =>
       database ! LogEntryInputs(events)
     case EventsWritten(rows) =>
-//      log.info(s"Broadcasting ${rows.length} written events.")
+      //      log.info(s"Broadcasting ${rows.length} written events.")
       logsMediator ! NewEvents(rows.map(_.toEvent))
     case ClientMessage(msg, _) =>
       logsMediator ! Broadcast(msg)
@@ -66,3 +66,4 @@ class SourceMediator(logsMediator: ActorRef, sourceViewers: ActorRef, database: 
     sourceViewers ! Broadcast(json)
   }
 }
+

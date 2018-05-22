@@ -18,7 +18,7 @@ import com.malliina.play.http.Proxies
 import com.malliina.play.models.Username
 import controllers.SocketsBundle.log
 import play.api.Logger
-import play.api.libs.json.JsValue
+import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.WebSocket.MessageFlowTransformer.jsonMessageFlowTransformer
 import play.api.mvc.{RequestHeader, Result, Results, WebSocket}
 
@@ -98,7 +98,9 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
           }.getOrElse(throw new Exception),
           out => out
         )
-        transformer.transform(Flow.fromSinkAndSource(appsSink, Source.maybe[JsValue])).watchTermination() { (_, termination) =>
+        val typedFlow = Flow.fromSinkAndSource(appsSink, Source.maybe[JsValue])
+          .keepAlive(10.seconds, () => Json.toJson(SimpleEvent.ping))
+        transformer.transform(typedFlow).watchTermination() { (_, termination) =>
           termination.foreach { _ => serverManager ! AppLeft(server) }
           NotUsed
         }

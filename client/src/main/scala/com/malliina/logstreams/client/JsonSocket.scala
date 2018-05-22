@@ -18,7 +18,7 @@ class JsonSocket(uri: FullUrl, socketFactory: SSLSocketFactory, headers: Seq[Key
   def onMessage(message: JsValue): Unit = ()
 
   override def onText(message: String): Unit =
-    Try(Json.parse(message)).map(onMessage) recover {
+    Try(Json.parse(message)).map(onMessage).recover {
       case t => log.error(s"Received non-JSON text: '$message'.", t)
     }
 

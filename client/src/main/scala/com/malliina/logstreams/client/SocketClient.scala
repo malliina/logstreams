@@ -36,7 +36,7 @@ class SocketClient(val uri: FullUrl,
   // polls for connectivity, reconnects if necessary
   private val loopExecutor = Executors.newSingleThreadScheduledExecutor()
   private val loop = loopExecutor.scheduleWithFixedDelay(new Runnable {
-    override def run() = ensureConnected()
+    override def run(): Unit = ensureConnected()
   }, 30, 30, TimeUnit.SECONDS)
 
   private val sf = new WebSocketFactory

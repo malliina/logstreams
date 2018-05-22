@@ -18,6 +18,10 @@ object SourceManager {
 
 }
 
+/** Keeps track of currently connected servers.
+  *
+  * @param sourcesOut sink for updates
+  */
 class SourceManager(sourcesOut: ActorRef) extends Actor {
 
   var sources: Set[LogSource] = Set.empty

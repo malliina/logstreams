@@ -116,7 +116,7 @@ class Logs(htmls: Htmls,
   def buildMessage(req: UserRequest, message: String) = s"User '${req.user}' from '${req.address}' $message."
 
   private def redirectWith(feedback: UserFeedback) =
-    Redirect(routes.Logs.allUsers()).flashing(feedback.toSeq: _*)
+    Redirect(routes.Logs.allUsers()).flashing(feedback.flash)
 
   def async(result: UserRequest => Future[Result]) =
     oauth.withAuthAsync(result)

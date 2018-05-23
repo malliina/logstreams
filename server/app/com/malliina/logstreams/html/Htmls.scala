@@ -2,6 +2,7 @@ package com.malliina.logstreams.html
 
 import com.malliina.html.{Bootstrap, Tags}
 import com.malliina.logstreams.html.Htmls._
+import com.malliina.logstreams.models.{AppName, FrontStrings}
 import com.malliina.play.models.Username
 import com.malliina.play.tags.TagPage
 import controllers.Assets.Asset
@@ -27,27 +28,38 @@ object Htmls {
   def asset(file: Asset): Call = routes.Logs.versioned(file)
 }
 
-class Htmls(mainJs: Asset) extends Bootstrap(Tags) {
+class Htmls(mainJs: Asset) extends Bootstrap(Tags) with FrontStrings {
 
   import tags._
 
   val Status = "status"
-  val LogTableId = "log-table"
-  val SourceTableId = "source-table"
 
   val reverse = controllers.routes.Logs
 
-  def logs = baseIndex("logs")(
+  def logs(apps: Seq[AppName]) = baseIndex("logs")(
     headerRow("Logs"),
-    div(`class` := s"btn-group btn-group-toggle compact-group float-right", role := "group", data("toggle") := "buttons")(
-      label(`class` := "btn btn-info btn-sm", id := "label-verbose")(
-        input(`type` := "radio", name := "options", id := "option-verbose", autocomplete := "off")(" Verbose")
+    row(
+      divClass(col.sm.eight)(
+        div(id := AppsDropdown, `class` := "dropdown")(
+          button(`class` := "btn btn-secondary btn-sm dropdown-toggle", `type` := "button", dataToggle := "dropdown", aria.haspopup := "true", aria.expanded := "false")("Apps"),
+          div(`class` := DropdownMenu, id := DropdownMenuId)(
+            apps.map(app => a(`class` := DropdownItemId, href := "#")(app.name))
+          )
+        ),
+        div(id := AppsFiltered)
       ),
-      label(`class` := "btn btn-info btn-sm ", id := "label-compact")(
-        input(`type` := "radio", name := "options", id := "option-compact", autocomplete := "off")(" Compact")
+      div(`class` := s"${col.sm.four} mt-1 mt-sm-0")(
+        div(`class` := s"btn-group btn-group-toggle compact-group float-right", role := "group", data("toggle") := "buttons")(
+          label(`class` := "btn btn-info btn-sm", id := LabelVerbose)(
+            input(`type` := "radio", name := "options", id := "option-verbose", autocomplete := "off")(" Verbose")
+          ),
+          label(`class` := "btn btn-info btn-sm ", id := LabelCompact)(
+            input(`type` := "radio", name := "options", id := "option-compact", autocomplete := "off")(" Compact")
+          )
+        )
       )
     ),
-    logEntriesTable(LogTableId)(thead(id := "table-head"), tbody(id := "table-body"))
+    logEntriesTable(LogTableId)(thead(id := TableHeadId), tbody(id := TableBodyId))
   )
 
   def sources = baseIndex("sources")(

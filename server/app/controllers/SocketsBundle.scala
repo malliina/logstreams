@@ -8,7 +8,7 @@ import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, MergeHub, Sink, Source}
 import akka.util.Timeout
 import ch.qos.logback.classic.Level
-import com.malliina.logstreams.db.StreamsDatabase
+import com.malliina.logstreams.db.{StreamsDatabase, StreamsQuery}
 import com.malliina.logstreams.models._
 import com.malliina.logstreams.ws.SourceManager.{AppJoined, AppLeft, GetApps}
 import com.malliina.logstreams.ws._
@@ -19,6 +19,7 @@ import com.malliina.play.models.Username
 import controllers.SocketsBundle.log
 import play.api.Logger
 import play.api.libs.json.{JsValue, Json}
+import play.api.mvc.Results.BadRequest
 import play.api.mvc.WebSocket.MessageFlowTransformer.jsonMessageFlowTransformer
 import play.api.mvc.{RequestHeader, Result, Results, WebSocket}
 
@@ -41,7 +42,7 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
     .toMat(BroadcastHub.sink(bufferSize = 256))(Keep.both)
     .run()
 
-  val savedEvents: Source[FrontEvent, NotUsed] = logsSource
+  val savedEvents: Source[AppLogEvents, NotUsed] = logsSource
     .mapAsync(parallelism = 10)(ins => db.insert(ins.events).map(written => AppLogEvents(written.rows.map(_.toEvent))))
 
   val _ = logsSource.runWith(Sink.ignore)
@@ -55,10 +56,24 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
 
   def listenerSocket = WebSocket.acceptOrResult[JsValue, FrontEvent] { rh =>
     listenerAuth.authenticate(rh).map { e =>
-      e.left.map(onUnauthorized(rh, _)).map { _ =>
-        Flow.fromSinkAndSource(Sink.ignore, Source.fromFuture(db.events()).filter(_.events.nonEmpty).concat(savedEvents))
-          .keepAlive(10.seconds, () => SimpleEvent.ping)
-          .backpressureTimeout(5.seconds)
+      e.left.map(onUnauthorized(rh, _)).flatMap { _ =>
+        StreamsQuery(rh).map { query =>
+          val filteredEvents =
+            if (query.apps.isEmpty) {
+              savedEvents
+            } else {
+              savedEvents.map { es =>
+                AppLogEvents(es.events.filter(e => query.apps.exists(app => app.name == e.source.name.name)))
+              }
+            }
+          val concatEvents = Source.fromFuture(db.events(query)).concat(filteredEvents).filter(_.events.nonEmpty)
+          Flow.fromSinkAndSource(Sink.ignore, concatEvents)
+            .keepAlive(10.seconds, () => SimpleEvent.ping)
+            .backpressureTimeout(5.seconds)
+        }.left.map { err =>
+          log.error(s"${err.message} - $rh")
+          BadRequest(err.message)
+        }
       }
     }
   }

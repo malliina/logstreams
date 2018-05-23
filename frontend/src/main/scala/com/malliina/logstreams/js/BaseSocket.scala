@@ -78,4 +78,11 @@ class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.noop)
   protected def onJsonFailure(value: JsValue, result: JsError): Unit = {
     log info s"JSON error for '$value': '$result'."
   }
+
+  def clear(): Unit = {
+    e(TableHeadId).innerHTML = ""
+    e(TableBodyId).innerHTML = ""
+  }
+
+  def close(): Unit = socket.close()
 }

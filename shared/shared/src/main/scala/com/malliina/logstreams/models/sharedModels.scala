@@ -25,6 +25,8 @@ object LogSource {
   implicit val json = Json.format[LogSource]
 }
 
+sealed trait GenericEvent
+
 case class SimpleEvent(event: String) extends FrontEvent with AdminEvent
 
 object SimpleEvent {
@@ -38,7 +40,7 @@ object LogSources {
   implicit val json = Json.format[LogSources]
 }
 
-sealed trait AdminEvent
+sealed trait AdminEvent extends GenericEvent
 
 object AdminEvent {
   implicit val reader = Reads[AdminEvent] { json =>
@@ -74,7 +76,7 @@ object AppLogEvents {
   implicit val json = Json.format[AppLogEvents]
 }
 
-sealed trait FrontEvent
+sealed trait FrontEvent extends GenericEvent
 
 object FrontEvent {
   implicit val reader = Reads[FrontEvent] { json =>

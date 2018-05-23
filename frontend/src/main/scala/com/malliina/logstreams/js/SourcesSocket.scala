@@ -5,8 +5,7 @@ import play.api.libs.json.JsValue
 import scalatags.Text.all._
 
 class SourcesSocket extends BaseSocket("/ws/admins?f=json") {
-  val TableId = "source-table"
-  val table = elem(s"$TableId tbody")
+  val table = elem(s"$SourceTableId tbody")
 
   override def handlePayload(payload: JsValue): Unit =
     handleValidated[LogSources](payload)(onParsed)

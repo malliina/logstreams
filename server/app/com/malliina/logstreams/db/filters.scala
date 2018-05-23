@@ -1,26 +1,33 @@
 package com.malliina.logstreams.db
 
+import com.malliina.play.models.Username
 import com.malliina.values.{ErrorMessage, ValidatingCompanion}
 import play.api.mvc.{QueryStringBindable, RequestHeader}
 
-case class StreamsQuery(limit: Int, offset: Int, order: SortOrder)
+case class StreamsQuery(apps: Seq[Username], limit: Int, offset: Int, order: SortOrder)
 
 object StreamsQuery {
+  val AppKey = "app"
   val Limit = "limit"
   val Offset = "offset"
 
-  val default = StreamsQuery(1000, 0, SortOrder.default)
+  val default = StreamsQuery(Nil, 1000, 0, SortOrder.default)
+
+  val bindableUser = QueryStringBindable.bindableString.transform[Username](Username.apply, _.name)
+  val bindableUsers = QueryStringBindable.bindableSeq[Username](bindableUser)
 
   def apply(rh: RequestHeader): Either[ErrorMessage, StreamsQuery] = {
     def readIntOrElse(key: String, default: Int): Either[ErrorMessage, Int] =
       QueryStringBindable.bindableInt.bind(key, rh.queryString).getOrElse(Right(default))
         .left.map(ErrorMessage.apply)
 
+    val bindApps = bindableUsers.bind(AppKey, rh.queryString).getOrElse(Right(Nil)).left.map(ErrorMessage.apply)
     for {
+      apps <- bindApps
       limit <- readIntOrElse(Limit, 500)
       offset <- readIntOrElse(Offset, 0)
       order <- SortOrder(rh)
-    } yield StreamsQuery(limit, offset, order)
+    } yield StreamsQuery(apps, limit, offset, order)
   }
 }
 

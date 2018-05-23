@@ -3,6 +3,7 @@ package controllers
 import com.malliina.app.AppMeta
 import com.malliina.logstreams.auth.UserService
 import com.malliina.logstreams.html.Htmls
+import com.malliina.logstreams.models.AppName
 import com.malliina.play.ActorExecution
 import com.malliina.play.auth._
 import com.malliina.play.controllers.Caching
@@ -54,7 +55,7 @@ class Logs(htmls: Htmls,
 
   // HTML
 
-  def index = navigate(htmls.logs)
+  def index = async { _ => users.all().map { us => Ok(htmls.logs(us.map(u => AppName(u.name)))) } }
 
   def sources = navigate(htmls.sources)
 

@@ -48,10 +48,28 @@ h1, h2 {
 .compact-group {
   margin-bottom: 8px;
   display: inline-block;
+  min-width: 150px;
 }
 
 .verbose {
   &.off {
     display: none;
+  }
+}
+
+#apps-dropdown {
+  display: inline-block;
+  margin-right: 8px;
+}
+
+#apps-filtered {
+  display: inline-block;
+
+  > button {
+    margin-right: 4px;
+
+    &:last-child {
+      margin-right: 0;
+    }
   }
 }

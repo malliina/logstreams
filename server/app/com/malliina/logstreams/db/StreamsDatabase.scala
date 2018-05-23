@@ -29,7 +29,8 @@ class StreamsDatabase(db: StreamsSchema) {
     * @return events
     */
   def events(query: StreamsQuery = StreamsQuery.default): Future[AppLogEvents] = {
-    val q = logEntries
+    val filtered = if (query.apps.isEmpty) logEntries else logEntries.filter(_.app.inSet(query.apps))
+    val q = filtered
       .sortBy(r => if (query.order == SortOrder.asc) r.added.asc else r.added.desc)
       .drop(query.offset)
       .take(query.limit)

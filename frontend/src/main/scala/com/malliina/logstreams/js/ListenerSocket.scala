@@ -13,32 +13,31 @@ import scalatags.JsDom.all._
 case class RowContent(content: Frag, cellId: String, linkId: String)
 
 object ListenerSocket {
-  def apply(wsPath: String, verboseSupport: Boolean = false) = new ListenerSocket(s"$wsPath?f=json", verboseSupport)
-
-  def web = ListenerSocket("/ws/logs", verboseSupport = true)
+  def apply(wsPath: String, settings: Settings, verboseSupport: Boolean = false) =
+    new ListenerSocket(wsPath, settings, verboseSupport)
 }
 
-class ListenerSocket(wsPath: String, verboseSupport: Boolean) extends BaseSocket(wsPath) {
+class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean) extends BaseSocket(wsPath) {
   val CellContent = "cell-content"
   val CellWide = "cell-wide"
   val ColumnCount = 6
   val Danger = "danger"
   val Hidden = "hidden"
   val NoWrap = "no-wrap"
-  val TableId = "log-table"
   val Warning = "warning"
 
-  val VerboseKey = "verbose"
+  val Off = "off"
+
   val localStorage = dom.window.localStorage
 
-  lazy val tableBody = elem("table-body")
-  lazy val table = document.getElementById(TableId).asInstanceOf[HTMLTableElement]
+  lazy val tableBody = elem(TableBodyId)
+  lazy val table = getElem[HTMLTableElement](LogTableId)
 
-  var isVerbose: Boolean = Option(localStorage.getItem(VerboseKey)).contains("true")
+  def isVerbose: Boolean = settings.isVerbose
 
   if (verboseSupport) {
-    val verboseClass = names("verbose", if (isVerbose) "" else "off")
-    getElem[HTMLElement]("table-head").appendChild(
+    val verboseClass = names(VerboseKey, if (isVerbose) "" else Off)
+    getElem[HTMLElement](TableHeadId).appendChild(
       tr(
         th("App"),
         th("Time"),
@@ -48,18 +47,17 @@ class ListenerSocket(wsPath: String, verboseSupport: Boolean) extends BaseSocket
         th("Level")
       ).render
     )
-    configureToggle("label-verbose", isVerbose)(_ => updateVerbose(true))
-    configureToggle("label-compact", !isVerbose)(_ => updateVerbose(false))
+    configureToggle(LabelVerbose, isVerbose)(_ => updateVerbose(true))
+    configureToggle(LabelCompact, !isVerbose)(_ => updateVerbose(false))
   }
 
   updateVerbose(isVerbose)
 
   def updateVerbose(newVerbose: Boolean): Unit = {
-    isVerbose = newVerbose
-    localStorage.setItem(VerboseKey, if (newVerbose) "true" else "false")
-    document.getElementsByClassName("verbose").foreach { e =>
+    settings.saveVerbose(newVerbose)
+    document.getElementsByClassName(VerboseKey).foreach { e =>
       val classes = e.asInstanceOf[HTMLElement].classList
-      if (newVerbose) classes.remove("off") else classes.add("off")
+      if (newVerbose) classes.remove(Off) else classes.add(Off)
     }
   }
 
@@ -81,7 +79,7 @@ class ListenerSocket(wsPath: String, verboseSupport: Boolean) extends BaseSocket
     val entry = event.event
     val row: RowContent = toRow(event)
     val stackId = s"stack-${row.linkId}"
-    entry.stackTrace foreach { stackTrace =>
+    entry.stackTrace.foreach { stackTrace =>
       val errorRow = tr(`class` := Hidden, id := stackId)(
         td(colspan := s"$ColumnCount")(pre(stackTrace))
       )
@@ -89,11 +87,11 @@ class ListenerSocket(wsPath: String, verboseSupport: Boolean) extends BaseSocket
     }
     tableBody prepend row.content.render
     // Toggles text wrapping for long texts when clicked
-    elem(row.cellId) click { (_: JQueryEventObject) =>
+    elem(row.cellId).click { _: JQueryEventObject =>
       elem(row.cellId) toggleClass CellContent
       false
     }
-    elem(row.linkId) click { (_: JQueryEventObject) =>
+    elem(row.linkId).click { _: JQueryEventObject =>
       elem(stackId) toggleClass Hidden
       false
     }
@@ -127,7 +125,7 @@ class ListenerSocket(wsPath: String, verboseSupport: Boolean) extends BaseSocket
 
 
   def cell(content: String, hideable: Boolean = false) =
-    toCell(content, names(CellContent, if (hideable) if (isVerbose) "verbose" else "verbose off" else ""))
+    toCell(content, names(CellContent, if (hideable) if (isVerbose) VerboseKey else s"$VerboseKey $Off" else ""))
 
   def wideCell(content: String, cellId: String) =
     td(`class` := s"$CellContent $CellWide", id := cellId)(content)

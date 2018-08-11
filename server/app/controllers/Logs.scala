@@ -7,8 +7,9 @@ import com.malliina.logstreams.models.AppName
 import com.malliina.play.ActorExecution
 import com.malliina.play.auth._
 import com.malliina.play.controllers.Caching
-import com.malliina.play.http.{AuthedRequest, CookiedRequest}
-import com.malliina.play.models.{Password, Username}
+import com.malliina.play.forms.FormMappings
+import com.malliina.play.http.{AuthedRequest, Bindables, CookiedRequest}
+import com.malliina.values.Username
 import controllers.Assets.Asset
 import controllers.Logs.{PasswordKey, UsernameKey, log}
 import play.api.Logger
@@ -43,8 +44,8 @@ class Logs(htmls: Htmls,
   implicit val ec = dep.executionContext
 
   val addUserForm = Form(mapping(
-    UsernameKey -> Username.mapping,
-    PasswordKey -> Password.mapping
+    UsernameKey -> FormMappings.username,
+    PasswordKey -> FormMappings.password
   )(BasicCredentials.apply)(BasicCredentials.unapply))
 
   def ping = Action(Caching.NoCacheOk(Json.toJson(AppMeta.ThisApp)))

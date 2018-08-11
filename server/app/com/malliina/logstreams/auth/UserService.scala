@@ -2,7 +2,7 @@ package com.malliina.logstreams.auth
 
 import com.malliina.logstreams.auth.UserError.{AlreadyExists, DoesNotExist}
 import com.malliina.play.auth.BasicCredentials
-import com.malliina.play.models.Username
+import com.malliina.values.Username
 
 import scala.concurrent.Future
 

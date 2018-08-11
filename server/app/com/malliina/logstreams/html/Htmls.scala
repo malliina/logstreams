@@ -3,7 +3,7 @@ package com.malliina.logstreams.html
 import com.malliina.html.{Bootstrap, Tags}
 import com.malliina.logstreams.html.Htmls._
 import com.malliina.logstreams.models.{AppName, FrontStrings}
-import com.malliina.play.models.Username
+import com.malliina.values.Username
 import com.malliina.play.tags.TagPage
 import controllers.Assets.Asset
 import controllers.{Logs, UserFeedback, routes}

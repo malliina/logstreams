@@ -1,7 +1,7 @@
 package tests
 
 import com.malliina.play.auth.InvalidCredentials
-import com.malliina.play.models.Username
+import com.malliina.values.Username
 import controllers.{LogAuth, UserRequest}
 import play.api.mvc.{ActionBuilder, _}
 

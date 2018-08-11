@@ -4,7 +4,7 @@ import java.time.Instant
 
 import ch.qos.logback.classic.Level
 import com.malliina.logbackrx.RxLogback
-import com.malliina.play.models.Username
+import com.malliina.values.Username
 import play.api.libs.json.Json
 
 case class LogEvents(events: Seq[LogEvent])

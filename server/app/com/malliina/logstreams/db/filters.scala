@@ -1,7 +1,6 @@
 package com.malliina.logstreams.db
 
-import com.malliina.play.models.Username
-import com.malliina.values.{ErrorMessage, ValidatingCompanion}
+import com.malliina.values.{ErrorMessage, Username, ValidatingCompanion}
 import play.api.mvc.{QueryStringBindable, RequestHeader}
 
 case class StreamsQuery(apps: Seq[Username], limit: Int, offset: Int, order: SortOrder)

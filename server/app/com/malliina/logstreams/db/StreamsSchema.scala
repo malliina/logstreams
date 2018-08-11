@@ -6,7 +6,7 @@ import java.time.Instant
 import ch.qos.logback.classic.Level
 import com.malliina.logstreams.db.StreamsSchema.NumThreads
 import com.malliina.logstreams.models.{LogEntryId, LogEntryInput, LogEntryRow}
-import com.malliina.play.models.{Password, Username}
+import com.malliina.values.{Password, Username}
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import javax.sql.DataSource
 import play.api.Logger
@@ -30,7 +30,13 @@ object StreamsSchema {
   }
 
   // https://github.com/slick/slick/issues/1614#issuecomment-284730145
-  def executor(threads: Int = NumThreads) = AsyncExecutor("AsyncExecutor.logstreams", numThreads = threads, queueSize = 20000)
+  def executor(threads: Int = NumThreads) = AsyncExecutor(
+    name = "AsyncExecutor.boat",
+    minThreads = threads,
+    maxThreads = threads,
+    queueSize = 20000,
+    maxConnections = threads
+  )
 }
 
 class StreamsSchema(ds: DataSource, override val impl: JdbcProfile)

@@ -15,7 +15,7 @@ import com.malliina.logstreams.ws._
 import com.malliina.play.ActorExecution
 import com.malliina.play.auth.{AuthFailure, Authenticator}
 import com.malliina.play.http.Proxies
-import com.malliina.play.models.Username
+import com.malliina.values.Username
 import controllers.SocketsBundle.log
 import play.api.Logger
 import play.api.libs.json.{JsValue, Json}

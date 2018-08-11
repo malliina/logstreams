@@ -5,9 +5,9 @@ import com.malliina.http.FullUrl
 import com.malliina.logstreams.client.{HttpUtil, SocketClient}
 import com.malliina.logstreams.models._
 import com.malliina.play.auth.BasicCredentials
-import com.malliina.play.models.{Password, Username}
 import com.malliina.security.SSLUtils
 import com.malliina.util.Utils
+import com.malliina.values.{Password, Username}
 import org.scalatest.FunSuite
 import play.api.ApplicationLoader.Context
 import play.api.libs.json.{JsValue, Json}
@@ -81,7 +81,12 @@ class LogStreamsTest extends TestServerSuite {
     val status = Promise[JsValue]()
     val update = Promise[JsValue]()
     val disconnectedPromise = Promise[JsValue]()
-    withAdmin(json => if (!status.trySuccess(json)) if(!update.trySuccess(json)) disconnectedPromise.trySuccess(json)) { client =>
+
+    def onJson(json: JsValue) = {
+      if (!status.trySuccess(json)) if (!update.trySuccess(json)) if (!disconnectedPromise.trySuccess(json)) ()
+    }
+
+    withAdmin(onJson) { client =>
       assert(client.isConnected)
       val msg = await(status.future).validate[LogSources]
       assert(msg.isSuccess)

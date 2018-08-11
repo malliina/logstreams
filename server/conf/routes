@@ -3,7 +3,7 @@ GET         /ping                      controllers.Logs.ping
 GET         /sources                   controllers.Logs.sources
 GET         /users                     controllers.Logs.allUsers
 POST        /users                     controllers.Logs.addUser
-POST        /users/:user/delete        controllers.Logs.removeUser(user: com.malliina.play.models.Username)
+POST        /users/:user/delete        controllers.Logs.removeUser(user: com.malliina.values.Username)
 GET         /ws/logs                   controllers.SocketsBundle.listenerSocket
 GET         /ws/admins                 controllers.SocketsBundle.adminSocket
 GET         /ws/sources                controllers.SocketsBundle.sourceSocket

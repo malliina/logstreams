@@ -6,7 +6,8 @@ import com.malliina.oauth.GoogleOAuthCredentials
 import com.malliina.play.auth._
 import com.malliina.play.controllers.{AuthBundle, BaseSecurity}
 import com.malliina.play.http.Proxies
-import com.malliina.play.models.{AuthInfo, Email, Username}
+import com.malliina.play.models.AuthInfo
+import com.malliina.values.{Email, Username}
 import play.api.mvc._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -66,7 +67,12 @@ class OAuth(val actions: ActionBuilder[Request, AnyContent], creds: GoogleOAuthC
   val http = OkClient.default
   val authorizedEmail = Email("malliina123@gmail.com")
   val sessionUserKey: String = "email"
-  val handler = new BasicAuthHandler(routes.Logs.index(), sessionKey = sessionUserKey).filter(_ == authorizedEmail)
+  val handler = new BasicAuthHandler(
+    routes.Logs.index(),
+    BasicAuthHandler.LastIdCookie,
+    sessionKey = sessionUserKey,
+    authorize = email => if (email == authorizedEmail) Right(email) else Left(PermissionError(s"Unauthorized: '$email'."))
+  )
   val conf = AuthConf(creds.clientId, creds.clientSecret)
   val validator = StandardCodeValidator(CodeValidationConf.google(routes.OAuth.googleCallback(), handler, conf, http))
 

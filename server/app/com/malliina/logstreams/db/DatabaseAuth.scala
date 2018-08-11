@@ -6,7 +6,7 @@ import com.malliina.concurrent.ExecutionContexts.cached
 import com.malliina.logstreams.auth.UserError.{AlreadyExists, DoesNotExist}
 import com.malliina.logstreams.auth.UserService
 import com.malliina.play.auth.BasicCredentials
-import com.malliina.play.models.{Password, Username}
+import com.malliina.values.{Password, Username}
 import org.apache.commons.codec.digest.DigestUtils
 
 import scala.concurrent.Future

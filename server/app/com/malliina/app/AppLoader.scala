@@ -16,7 +16,7 @@ import play.filters.headers.SecurityHeadersConfig
 import play.filters.hosts.AllowedHostsConfig
 import router.Routes
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContextExecutor, Future}
 
 class AppLoader extends DefaultApp(new ProdAppComponents(_))
 
@@ -51,7 +51,7 @@ abstract class AppComponents(context: Context)
   val csp = s"default-src 'self' 'unsafe-inline' ${allowedDomains.mkString(" ")}; connect-src *; img-src 'self' data:;"
   override lazy val securityHeadersConfig: SecurityHeadersConfig =
     SecurityHeadersConfig(contentSecurityPolicy = Option(csp))
-  implicit val ec = materializer.executionContext
+  implicit val ec: ExecutionContextExecutor = materializer.executionContext
   val actions = controllerComponents.actionBuilder
   // Services
   val database = StreamsDatabase(databaseSchema)

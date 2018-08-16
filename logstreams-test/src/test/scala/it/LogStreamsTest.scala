@@ -28,7 +28,9 @@ abstract class ServerSuite[T <: BuiltInComponents](build: Context => T)
 class LogStreamsTest extends TestServerSuite {
   val testUser = "u"
   val testPass = "p"
-  val testCreds = BasicCredentials(Username(testUser), Password(testPass))
+  val testCreds = creds(testUser)
+
+  def creds(u: String) = BasicCredentials(Username(u), Password(testPass))
 
   test("can ping server") {
     Utils.using(AhcWSClient()(components.materializer)) { client =>
@@ -39,8 +41,9 @@ class LogStreamsTest extends TestServerSuite {
   }
 
   test("can open socket") {
-    await(components.users.add(testCreds))
-    withSource { client =>
+    val c = creds("u1")
+    await(components.users.add(c))
+    withSource(c.username.name) { client =>
       val uri = await(client.initialConnection)
       assert(uri.toString.nonEmpty)
     }
@@ -58,8 +61,10 @@ class LogStreamsTest extends TestServerSuite {
       None
     )
 
+    val user = "u2"
+    await(components.users.add(creds(user)))
     await(components.users.add(testCreds))
-    withSource { source =>
+    withSource(user) { source =>
       await(source.initialConnection)
       val p = Promise[JsValue]()
       withListener(p.success) { listener =>
@@ -71,7 +76,7 @@ class LogStreamsTest extends TestServerSuite {
         val events = jsonResult.get
         assert(events.events.size === 1)
         val event = events.events.head
-        assert(event.source.name === AppName(testUser))
+        assert(event.source.name === AppName(user))
         assert(event.event.message === message)
       }
     }
@@ -82,6 +87,9 @@ class LogStreamsTest extends TestServerSuite {
     val update = Promise[JsValue]()
     val disconnectedPromise = Promise[JsValue]()
 
+    val user = "u3"
+    await(components.users.add(creds(user)))
+
     def onJson(json: JsValue) = {
       if (!status.trySuccess(json)) if (!update.trySuccess(json)) if (!disconnectedPromise.trySuccess(json)) ()
     }
@@ -91,12 +99,12 @@ class LogStreamsTest extends TestServerSuite {
       val msg = await(status.future).validate[LogSources]
       assert(msg.isSuccess)
       assert(msg.get.sources.size === 0)
-      withSource { _ =>
+      withSource(user) { _ =>
         val upd = await(update.future).validate[LogSources]
         assert(upd.isSuccess)
         val sources = upd.get.sources
         assert(sources.size === 1)
-        assert(sources.head.name.name === testUser)
+        assert(sources.head.name.name === user)
       }
       val disconnectUpdate = await(disconnectedPromise.future).validate[LogSources]
       assert(disconnectUpdate.isSuccess)
@@ -109,29 +117,31 @@ class LogStreamsTest extends TestServerSuite {
     Thread sleep 100
   }
 
+  val bundle = controllers.routes.SocketsBundle
+
   def withAdmin[T](onJson: JsValue => Any)(code: SocketClient => T) =
-    withWebSocket(controllers.routes.SocketsBundle.adminSocket().url, onJson)(code)
+    withWebSocket(testUser, bundle.adminSocket().url, onJson)(code)
 
   def withListener[T](onJson: JsValue => Any)(code: SocketClient => T) =
-    withWebSocket(controllers.routes.SocketsBundle.listenerSocket().url, onJson)(code)
+    withWebSocket(testUser, bundle.listenerSocket().url, onJson)(code)
 
-  def withSource[T](code: SocketClient => T) =
-    withWebSocket(controllers.routes.SocketsBundle.sourceSocket().url, _ => ())(code)
+  def withSource[T](username: String)(code: SocketClient => T) =
+    withWebSocket(username, bundle.sourceSocket().url, _ => ())(code)
 
-  def withWebSocket[T](path: String, onJson: JsValue => Any)(code: TestSocket => T) = {
+  def withWebSocket[T](username: String, path: String, onJson: JsValue => Any)(code: TestSocket => T) = {
     val wsUri = FullUrl("ws", s"localhost:$port", path)
-    Utils.using(new TestSocket(wsUri, onJson)) { client =>
+    Utils.using(new TestSocket(wsUri, onJson, username)) { client =>
       await(client.initialConnection)
       code(client)
     }
   }
 
-  class TestSocket(wsUri: FullUrl, onJson: JsValue => Any) extends SocketClient(
+  class TestSocket(wsUri: FullUrl, onJson: JsValue => Any, username: String = testUser) extends SocketClient(
     wsUri,
     SSLUtils.trustAllSslContext().getSocketFactory,
-    Seq(HttpUtil.Authorization -> HttpUtil.authorizationValue(testUser, "p"))
+    Seq(HttpUtil.Authorization -> HttpUtil.authorizationValue(username, "p"))
   ) {
-    override def onText(message: String) = onJson(Json.parse(message))
+    override def onText(message: String): Unit = onJson(Json.parse(message))
   }
 
 }

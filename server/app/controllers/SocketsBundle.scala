@@ -4,7 +4,7 @@ import java.time.Instant
 
 import akka.NotUsed
 import akka.pattern.ask
-import akka.stream.OverflowStrategy
+import akka.stream.{Materializer, OverflowStrategy}
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, MergeHub, Sink, Source}
 import akka.util.Timeout
 import ch.qos.logback.classic.Level
@@ -22,7 +22,10 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Results.BadRequest
 import play.api.mvc.WebSocket.MessageFlowTransformer.jsonMessageFlowTransformer
 import play.api.mvc.{RequestHeader, Result, Results, WebSocket}
+import WebSocket.MessageFlowTransformer
+import akka.actor.ActorRef
 
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.concurrent.duration.DurationInt
 
 object SocketsBundle {
@@ -33,8 +36,8 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
                     sourceAuth: Authenticator[Username],
                     db: StreamsDatabase,
                     deps: ActorExecution) {
-  implicit val mat = deps.materializer
-  implicit val ec = deps.executionContext
+  implicit val mat: Materializer = deps.materializer
+  implicit val ec: ExecutionContextExecutor = deps.executionContext
 
   // Publish-Subscribe Akka Streams
   // https://doc.akka.io/docs/akka/2.5/stream/stream-dynamic.html
@@ -47,16 +50,18 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
 
   val _ = logsSource.runWith(Sink.ignore)
 
-  implicit val listenerTransformer = jsonMessageFlowTransformer[JsValue, FrontEvent]
-  implicit val adminTransformer = jsonMessageFlowTransformer[JsValue, AdminEvent]
+  implicit val listenerTransformer: MessageFlowTransformer[JsValue, FrontEvent] = jsonMessageFlowTransformer[JsValue, FrontEvent]
+  implicit val adminTransformer: MessageFlowTransformer[JsValue, AdminEvent] = jsonMessageFlowTransformer[JsValue, AdminEvent]
 
   val (ref, pub) = Source.actorRef[AdminEvent](10, OverflowStrategy.dropHead).toMat(Sink.asPublisher(fanout = true))(Keep.both).run()
   val adminSource: Source[AdminEvent, NotUsed] = Source.fromPublisher(pub)
-  val serverManager = deps.actorSystem.actorOf(SourceManager.props(ref))
+  // drains admin events for situations where no admin is subscribed
+  adminSource.runWith(Sink.ignore)
+  val serverManager: ActorRef = deps.actorSystem.actorOf(SourceManager.props(ref))
 
   def listenerSocket = WebSocket.acceptOrResult[JsValue, FrontEvent] { rh =>
-    listenerAuth.authenticate(rh).map { e =>
-      e.left.map(onUnauthorized(rh, _)).flatMap { _ =>
+    auth(rh, listenerAuth) { _ =>
+      Future.successful {
         StreamsQuery(rh).map { query =>
           val filteredEvents =
             if (query.apps.isEmpty) {
@@ -79,10 +84,10 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
   }
 
   def adminSocket = WebSocket.acceptOrResult[JsValue, AdminEvent] { rh =>
-    listenerAuth.authenticate(rh).flatMap { e =>
-      implicit val timeout = Timeout(5.seconds)
+    auth(rh, listenerAuth) { _ =>
+      implicit val timeout: Timeout = Timeout(5.seconds)
       (serverManager ? GetApps).mapTo[LogSources].map { sources =>
-        e.left.map(onUnauthorized(rh, _)).map { _ =>
+        Right {
           Flow.fromSinkAndSource(Sink.ignore, Source.single(sources).concat(adminSource))
             .keepAlive(10.seconds, () => SimpleEvent.ping)
             .backpressureTimeout(5.seconds)
@@ -92,29 +97,29 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
   }
 
   def sourceSocket = WebSocket { rh =>
-    sourceAuth.authenticate(rh).map { e =>
-      e.left.map(onUnauthorized(rh, _)).map { user =>
-        val server = LogSource(AppName(user.name), Proxies.realAddress(rh))
-        serverManager ! AppJoined(server)
-        val transformer = jsonMessageFlowTransformer.map[LogEntryInputs, JsValue](
-          json => json.validate[LogEvents].map { es =>
-            LogEntryInputs(es.events.map { event =>
-              LogEntryInput(
-                user,
-                Proxies.realAddress(rh),
-                Instant.ofEpochMilli(event.timeStamp),
-                event.message,
-                event.loggerName,
-                event.threadName,
-                Level.toLevel(event.level),
-                event.stackTrace
-              )
-            })
-          }.getOrElse(throw new Exception),
-          out => out
-        )
-        val typedFlow = Flow.fromSinkAndSource(appsSink, Source.maybe[JsValue])
-          .keepAlive(10.seconds, () => Json.toJson(SimpleEvent.ping))
+    auth(rh, sourceAuth) { user =>
+      val server = LogSource(AppName(user.name), Proxies.realAddress(rh))
+      serverManager ! AppJoined(server)
+      val transformer = jsonMessageFlowTransformer.map[LogEntryInputs, JsValue](
+        json => json.validate[LogEvents].map { es =>
+          LogEntryInputs(es.events.map { event =>
+            LogEntryInput(
+              user,
+              Proxies.realAddress(rh),
+              Instant.ofEpochMilli(event.timeStamp),
+              event.message,
+              event.loggerName,
+              event.threadName,
+              Level.toLevel(event.level),
+              event.stackTrace
+            )
+          })
+        }.getOrElse(throw new Exception),
+        out => out
+      )
+      val typedFlow = Flow.fromSinkAndSource(appsSink, Source.maybe[JsValue])
+        .keepAlive(10.seconds, () => Json.toJson(SimpleEvent.ping))
+      right {
         transformer.transform(typedFlow).watchTermination() { (_, termination) =>
           termination.foreach { _ => serverManager ! AppLeft(server) }
           NotUsed
@@ -122,6 +127,11 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
       }
     }
   }
+
+  def right[T](t: => T): Future[Right[Nothing, T]] = Future.successful(Right(t))
+
+  def auth[T](rh: RequestHeader, impl: Authenticator[Username])(code: Username => Future[Either[Result, T]]): Future[Either[Result, T]] =
+    impl.authenticate(rh).flatMap(e => e.fold(f => Future.successful(Left(onUnauthorized(rh, f))), u => code(u)))
 
   def onUnauthorized(rh: RequestHeader, failure: AuthFailure): Result = {
     log warn s"Unauthorized request $rh"

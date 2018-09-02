@@ -2,7 +2,7 @@ package com.malliina.logstreams.db
 
 import java.sql.SQLException
 
-import com.malliina.concurrent.ExecutionContexts.cached
+import com.malliina.concurrent.Execution.cached
 import com.malliina.logstreams.auth.UserError.{AlreadyExists, DoesNotExist}
 import com.malliina.logstreams.auth.UserService
 import com.malliina.play.auth.BasicCredentials

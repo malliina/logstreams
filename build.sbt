@@ -32,7 +32,7 @@ lazy val it = Project("logstreams-test", file("logstreams-test"))
 addCommandAlias("web", ";logstreams/run")
 
 val malliinaGroup = "com.malliina"
-val utilPlayVersion = "4.13.0"
+val utilPlayVersion = "4.14.0"
 val primitivesVersion = "1.6.0"
 val utilPlayDep = malliinaGroup %% "util-play" % utilPlayVersion
 
@@ -43,7 +43,7 @@ def frontSettings = Seq(
   libraryDependencies ++= Seq(
     "com.lihaoyi" %%% "scalatags" % "0.6.7",
     "be.doeraene" %%% "scalajs-jquery" % "0.9.4",
-    "com.typesafe.play" %%% "play-json" % "2.6.9",
+    "com.typesafe.play" %%% "play-json" % "2.6.10",
     "org.scalatest" %%% "scalatest" % "3.0.5" % Test
   )
 )
@@ -53,10 +53,10 @@ def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
   buildInfoKeys += BuildInfoKey("frontName" -> (name in frontend).value),
   libraryDependencies ++= Seq(
     "com.h2database" % "h2" % "1.4.196",
-    "mysql" % "mysql-connector-java" % "5.1.46",
+    "mysql" % "mysql-connector-java" % "5.1.47",
     "com.typesafe.slick" %% "slick" % "3.2.3",
     "com.zaxxer" % "HikariCP" % "3.2.0",
-    "com.malliina" %% "logstreams-client" % "1.0.0",
+    "com.malliina" %% "logstreams-client" % "1.1.0",
     "com.malliina" %% "play-social" % utilPlayVersion,
     utilPlayDep,
     utilPlayDep % Test classifier "tests"
@@ -80,7 +80,7 @@ def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
 
 def sharedSettings = basicSettings ++ Seq(
   libraryDependencies ++= Seq(
-    "com.typesafe.play" %%% "play-json" % "2.6.9",
+    "com.typesafe.play" %%% "play-json" % "2.6.10",
     "com.malliina" %%% "primitives" % primitivesVersion
   )
 )

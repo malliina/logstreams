@@ -1,6 +1,6 @@
 package com.malliina.logstreams.db
 
-import com.malliina.concurrent.ExecutionContexts.cached
+import com.malliina.concurrent.Execution.cached
 import com.malliina.logstreams.models._
 
 import scala.concurrent.Future

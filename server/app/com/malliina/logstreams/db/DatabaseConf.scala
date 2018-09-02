@@ -2,7 +2,6 @@ package com.malliina.logstreams.db
 
 import java.nio.file.{Files, Path, Paths}
 
-import com.malliina.file.{FileUtilities, StorageFile}
 import com.malliina.values.ErrorMessage
 import play.api.{Configuration, Mode}
 import slick.jdbc.{H2Profile, JdbcProfile, MySQLProfile}
@@ -10,12 +9,15 @@ import slick.jdbc.{H2Profile, JdbcProfile, MySQLProfile}
 case class DatabaseConf(url: String, user: String, pass: String, driver: String, impl: JdbcProfile)
 
 object DatabaseConf {
+  val userHome = Paths.get(sys.props("user.home"))
   val HomeKey = "logstreams.home"
 
-  val UrlKey = "db_url"
-  val UserKey = "db_user"
-  val PassKey = "db_pass"
-  val DriverKey = "db_driver"
+  val UrlKey = dbKey("url")
+  val UserKey = dbKey("user")
+  val PassKey = dbKey("pass")
+  val DriverKey = dbKey("driver")
+
+  def dbKey(key: String) = s"logstreams.db.$key"
 
   val H2Driver = "org.h2.Driver"
   val MariaDriver = "org.mariadb.jdbc.Driver"
@@ -26,17 +28,14 @@ object DatabaseConf {
     else if (mode == Mode.Test) test()
     else localFile()
 
-  def fromEnv(): Either[ErrorMessage, DatabaseConf] = {
+  def fromEnv(): Either[ErrorMessage, DatabaseConf] =
     build(key => sys.env.get(key).orElse(sys.props.get(key)))
-  }
 
-  def fromConfOrFail(conf: Configuration): DatabaseConf = {
+  def fromConfOrFail(conf: Configuration): DatabaseConf =
     build(key => conf.getOptional[String](key)).fold(err => throw new Exception(err.message), identity)
-  }
 
-  def fromConf(conf: Configuration): Either[ErrorMessage, DatabaseConf] = {
+  def fromConf(conf: Configuration): Either[ErrorMessage, DatabaseConf] =
     build(key => conf.getOptional[String](key))
-  }
 
   def build(readKey: String => Option[String]) = {
     def read(key: String) = readKey(key).toRight(ErrorMessage(s"Key missing: '$key'."))
@@ -54,8 +53,8 @@ object DatabaseConf {
 
   def localFile(): DatabaseConf = {
     val homeDir = (sys.props.get(HomeKey) orElse sys.env.get(HomeKey)).map(p => Paths.get(p))
-      .getOrElse(FileUtilities.userHome / ".logstreams")
-    file(homeDir / "db" / "logsdb")
+      .getOrElse(userHome.resolve(".logstreams"))
+    file(homeDir.resolve("db/logsdb"))
   }
 
   /**

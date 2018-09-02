@@ -6,7 +6,6 @@ import com.malliina.logstreams.client.{HttpUtil, SocketClient}
 import com.malliina.logstreams.models._
 import com.malliina.play.auth.BasicCredentials
 import com.malliina.security.SSLUtils
-import com.malliina.util.Utils
 import com.malliina.values.{Password, Username}
 import org.scalatest.FunSuite
 import play.api.ApplicationLoader.Context
@@ -33,7 +32,7 @@ class LogStreamsTest extends TestServerSuite {
   def creds(u: String) = BasicCredentials(Username(u), Password(testPass))
 
   test("can ping server") {
-    Utils.using(AhcWSClient()(components.materializer)) { client =>
+    using(AhcWSClient()(components.materializer)) { client =>
       val res = await(client.url(s"http://localhost:$port/ping").get())
       assert(res.status === 200)
       client.close()
@@ -130,10 +129,16 @@ class LogStreamsTest extends TestServerSuite {
 
   def withWebSocket[T](username: String, path: String, onJson: JsValue => Any)(code: TestSocket => T) = {
     val wsUri = FullUrl("ws", s"localhost:$port", path)
-    Utils.using(new TestSocket(wsUri, onJson, username)) { client =>
+    using(new TestSocket(wsUri, onJson, username)) { client =>
       await(client.initialConnection)
       code(client)
     }
+  }
+
+  def using[T <: AutoCloseable, U](res: T)(code: T => U) = try {
+    code(res)
+  } finally {
+    res.close()
   }
 
   class TestSocket(wsUri: FullUrl, onJson: JsValue => Any, username: String = testUser) extends SocketClient(

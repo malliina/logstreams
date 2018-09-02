@@ -1,6 +1,6 @@
 package com.malliina.logstreams.auth
 
-import com.malliina.concurrent.ExecutionContexts.cached
+import com.malliina.concurrent.Execution.cached
 import com.malliina.play.auth.{Auth, InvalidCredentials, UserAuthenticator}
 import controllers.LogAuth
 

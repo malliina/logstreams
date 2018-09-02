@@ -2,7 +2,7 @@ package com.malliina.logstreams.db
 
 import java.sql.SQLException
 
-import com.malliina.concurrent.ExecutionContexts.cached
+import com.malliina.concurrent.Execution.cached
 import com.malliina.logstreams.db.DatabaseLike.log
 import play.api.Logger
 import slick.jdbc.JdbcProfile

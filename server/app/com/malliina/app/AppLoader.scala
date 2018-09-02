@@ -4,7 +4,7 @@ import buildinfo.BuildInfo
 import com.malliina.logstreams.auth.{Auths, UserService}
 import com.malliina.logstreams.db.{DatabaseAuth, DatabaseConf, StreamsDatabase, StreamsSchema}
 import com.malliina.logstreams.html.Htmls
-import com.malliina.oauth.{GoogleOAuthCredentials, GoogleOAuthReader}
+import com.malliina.oauth.GoogleOAuthCredentials
 import com.malliina.play.ActorExecution
 import com.malliina.play.app.DefaultApp
 import controllers._
@@ -34,8 +34,8 @@ abstract class AppComponents(context: Context)
   val mode = environment.mode
   val isProd = environment.mode == Mode.Prod
 
-  val creds =
-    if (mode != Mode.Test) GoogleOAuthReader.load
+  val creds: GoogleOAuthCredentials =
+    if (mode != Mode.Test) GoogleOAuthCredentials(configuration).fold(err => throw new Exception(err.message), identity)
     else GoogleOAuthCredentials("", "", "")
 
   override lazy val allowedHostsConfig: AllowedHostsConfig =

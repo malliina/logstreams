@@ -51,16 +51,17 @@ def frontSettings = Seq(
 def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
   version := serverVersion,
   buildInfoKeys += BuildInfoKey("frontName" -> (name in frontend).value),
+  resolvers += "Sonatype releases" at "https://oss.sonatype.org/content/repositories/releases/",
   libraryDependencies ++= Seq(
     "com.h2database" % "h2" % "1.4.196",
     "mysql" % "mysql-connector-java" % "5.1.47",
     "com.typesafe.slick" %% "slick" % "3.2.3",
     "com.zaxxer" % "HikariCP" % "3.2.0",
-    "com.malliina" %% "logstreams-client" % "1.1.0",
+    "com.malliina" %% "logstreams-client" % "1.2.0",
     "com.malliina" %% "play-social" % utilPlayVersion,
     utilPlayDep,
     utilPlayDep % Test classifier "tests"
-  ) map (_.withSources().withJavadoc()),
+  ).map(_.withSources().withJavadoc()),
   dependencyOverrides ++= Seq(
     "com.typesafe.akka" %% "akka-stream" % "2.5.8",
     "com.typesafe.akka" %% "akka-actor" % "2.5.8"
@@ -75,7 +76,10 @@ def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
     )
   },
   linuxPackageSymlinks := linuxPackageSymlinks.value.filterNot(_.link == "/usr/bin/starter"),
-  routesImport ++= Seq("com.malliina.play.http.Bindables.username")
+  routesImport ++= Seq(
+    "com.malliina.values.Username",
+    "com.malliina.play.http.Bindables.username"
+  )
 )
 
 def sharedSettings = basicSettings ++ Seq(

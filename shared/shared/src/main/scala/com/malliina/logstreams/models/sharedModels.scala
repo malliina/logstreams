@@ -1,6 +1,6 @@
 package com.malliina.logstreams.models
 
-import play.api.libs.json.{Format, Json, Reads, Writes}
+import play.api.libs.json._
 
 case class AppName(name: String) {
   override def toString: String = name
@@ -52,7 +52,21 @@ object AdminEvent {
   }
 }
 
-case class LogEvent(timeStamp: Long,
+case class LogEventOld(timeStamp: Long,
+                       timeFormatted: String,
+                       message: String,
+                       loggerName: String,
+                       threadName: String,
+                       level: String,
+                       stackTrace: Option[String] = None) {
+  def toEvent = LogEvent(timeStamp, timeFormatted, message, loggerName, threadName, level, stackTrace)
+}
+
+object LogEventOld {
+  implicit val json = Json.format[LogEventOld]
+}
+
+case class LogEvent(timestamp: Long,
                     timeFormatted: String,
                     message: String,
                     loggerName: String,
@@ -61,7 +75,8 @@ case class LogEvent(timeStamp: Long,
                     stackTrace: Option[String] = None)
 
 object LogEvent {
-  implicit val json = Json.format[LogEvent]
+  val reader = Json.reads[LogEvent].orElse(LogEventOld.json.map(_.toEvent))
+  implicit val json: OFormat[LogEvent] = OFormat(reader, Json.writes[LogEvent])
 }
 
 case class AppLogEvent(id: LogEntryId, source: LogSource, event: LogEvent, added: Long, addedFormatted: String)

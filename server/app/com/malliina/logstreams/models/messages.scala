@@ -5,12 +5,12 @@ import java.time.Instant
 import ch.qos.logback.classic.Level
 import com.malliina.logbackrx.RxLogback
 import com.malliina.values.Username
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 
 case class LogEvents(events: Seq[LogEvent])
 
 object LogEvents {
-  implicit val json = Json.format[LogEvents]
+  implicit val json: OFormat[LogEvents] = Json.format[LogEvents]
 }
 
 case class LogEntryInput(appName: Username,

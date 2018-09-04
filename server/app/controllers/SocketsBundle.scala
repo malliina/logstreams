@@ -106,7 +106,7 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
             LogEntryInput(
               user,
               Proxies.realAddress(rh),
-              Instant.ofEpochMilli(event.timeStamp),
+              Instant.ofEpochMilli(event.timestamp),
               event.message,
               event.loggerName,
               event.threadName,

@@ -89,7 +89,7 @@ class LogStreamsTest extends TestServerSuite {
     val user = "u3"
     await(components.users.add(creds(user)))
 
-    def onJson(json: JsValue) = {
+    def onJson(json: JsValue): Unit = {
       if (!status.trySuccess(json)) if (!update.trySuccess(json)) if (!disconnectedPromise.trySuccess(json)) ()
     }
 

@@ -93,9 +93,10 @@ def scalaJSSettings = Seq(
 def clientSettings = basicSettings ++ mavenSettings ++ Seq(
   gitUserName := "malliina",
   developerName := "Michael Skogberg",
+  resolvers += "Sonatype releases" at "https://oss.sonatype.org/content/repositories/releases/",
   libraryDependencies ++= Seq(
     "com.neovisionaries" % "nv-websocket-client" % "2.5",
-    "com.malliina" %% "logback-rx" % "1.2.0",
+    "com.malliina" %% "logback-rx" % "1.3.0",
     "com.malliina" %%% "primitives" % primitivesVersion,
     "org.scalatest" %% "scalatest" % "3.0.5" % Test
   ),

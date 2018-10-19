@@ -55,7 +55,7 @@ object OAuth {
     }
   }
 
-  def authBundle(oauth: OAuth) = new AuthBundle[UserRequest] {
+  def authBundle(oauth: OAuth): AuthBundle[UserRequest] = new AuthBundle[UserRequest] {
     override val authenticator = sessionAuthenticator(oauth)
 
     override def onUnauthorized(failure: AuthFailure) =
@@ -66,17 +66,17 @@ object OAuth {
 class OAuth(val actions: ActionBuilder[Request, AnyContent], creds: GoogleOAuthCredentials) {
   val http = OkClient.default
   val authorizedEmail = Email("malliina123@gmail.com")
-  val sessionUserKey: String = "email"
-  val handler = new BasicAuthHandler(
+  val handler = BasicAuthHandler(
     routes.Logs.index(),
-    BasicAuthHandler.LastIdCookie,
-    sessionKey = sessionUserKey,
+    sessionKey = "email",
     authorize = email => if (email == authorizedEmail) Right(email) else Left(PermissionError(s"Unauthorized: '$email'."))
   )
-  val conf = AuthConf(creds.clientId, creds.clientSecret)
-  val validator = StandardCodeValidator(CodeValidationConf.google(routes.OAuth.googleCallback(), handler, conf, http))
+  val sessionUserKey: String = handler.sessionKey
 
-  def googleStart = actions.async(req => validator.start(req))
+  val conf = AuthConf(creds.clientId, creds.clientSecret)
+  val validator = GoogleCodeValidator(OAuthConf(routes.OAuth.googleCallback(), handler, conf, http))
+
+  def googleStart = actions.async(req => validator.startHinted(req, req.cookies.get(handler.lastIdKey).map(_.value)))
 
   def googleCallback = actions.async(req => validator.validateCallback(req))
 }

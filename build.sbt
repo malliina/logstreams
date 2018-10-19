@@ -32,13 +32,13 @@ lazy val it = Project("logstreams-test", file("logstreams-test"))
 addCommandAlias("web", ";logstreams/run")
 
 val malliinaGroup = "com.malliina"
-val utilPlayVersion = "4.14.0"
-val primitivesVersion = "1.6.0"
+val utilPlayVersion = "4.16.0"
+val primitivesVersion = "1.6.1"
 val utilPlayDep = malliinaGroup %% "util-play" % utilPlayVersion
 
 def frontSettings = Seq(
   version := "1.0.0",
-  scalaVersion := "2.12.6",
+  scalaVersion := "2.12.7",
   scalaJSUseMainModuleInitializer := true,
   libraryDependencies ++= Seq(
     "com.lihaoyi" %%% "scalatags" % "0.6.7",
@@ -99,7 +99,7 @@ def clientSettings = basicSettings ++ mavenSettings ++ Seq(
   developerName := "Michael Skogberg",
   resolvers += "Sonatype releases" at "https://oss.sonatype.org/content/repositories/releases/",
   libraryDependencies ++= Seq(
-    "com.neovisionaries" % "nv-websocket-client" % "2.5",
+    "com.neovisionaries" % "nv-websocket-client" % "2.6",
     "com.malliina" %% "logback-rx" % "1.3.0",
     "com.malliina" %%% "primitives" % primitivesVersion,
     "org.scalatest" %% "scalatest" % "3.0.5" % Test
@@ -113,6 +113,6 @@ def testSettings = basicSettings ++ Seq(
 
 def basicSettings = Seq(
   organization := malliinaGroup,
-  scalaVersion := "2.12.6",
+  scalaVersion := "2.12.7",
   scalacOptions := Seq("-unchecked", "-deprecation")
 )

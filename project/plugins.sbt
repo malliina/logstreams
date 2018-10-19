@@ -1,4 +1,4 @@
-scalaVersion := "2.12.6"
+scalaVersion := "2.12.7"
 resolvers ++= Seq(
   ivyRepo("bintray-sbt-plugin-releases",
     "http://dl.bintray.com/content/sbt/sbt-plugin-releases"),
@@ -10,7 +10,7 @@ classpathTypes += "maven-plugin"
 scalacOptions ++= Seq("-unchecked", "-deprecation")
 
 Seq(
-  "com.malliina" % "sbt-play" % "1.3.1",
+  "com.malliina" % "sbt-play" % "1.4.1",
   "com.malliina" % "sbt-utils" % "0.9.0",
   "org.scala-js" % "sbt-scalajs" % "0.6.25",
   "org.portable-scala" % "sbt-scalajs-crossproject" % "0.5.0",

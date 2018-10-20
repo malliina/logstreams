@@ -1,7 +1,7 @@
 <configuration>
     <conversionRule conversionWord="coloredLevel" converterClass="play.api.Logger$ColoredLevel"/>
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>${application.home}/logs/application.log</file>
+        <file>${application.home}/logs/logstreams.log</file>
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
         </encoder>
@@ -11,7 +11,7 @@
             <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
-    <appender name="LOGSTREAMS" class="com.malliina.logstreams.client.LogstreamsLogbackAkkaAppender">
+    <appender name="LOGSTREAMS" class="com.malliina.logstreams.client.AkkaHttpAppender">
         <endpoint>${LOGSTREAMS_HOST:-logs.malliina.com}</endpoint>
         <secure>true</secure>
         <username>${LOGSTREAMS_USER:-logstreams}</username>

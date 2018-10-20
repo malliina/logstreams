@@ -57,7 +57,7 @@ def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
     "mysql" % "mysql-connector-java" % "5.1.47",
     "com.typesafe.slick" %% "slick" % "3.2.3",
     "com.zaxxer" % "HikariCP" % "3.2.0",
-    "com.malliina" %% "logstreams-client" % "1.2.0",
+    "com.malliina" %% "logstreams-client" % "1.3.0",
     "com.malliina" %% "play-social" % utilPlayVersion,
     utilPlayDep,
     utilPlayDep % Test classifier "tests"

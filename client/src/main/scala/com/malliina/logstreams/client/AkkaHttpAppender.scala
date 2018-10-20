@@ -1,10 +1,8 @@
 package com.malliina.logstreams.client
 
-import akka.stream.scaladsl.Sink
 import com.malliina.http.FullUrl
-import com.malliina.logbackrx.LogEvent
 
-class LogstreamsLogbackAkkaAppender extends SocketAppender[JsonSocket] {
+class AkkaHttpAppender extends SocketAppender[WebSocketClient] {
   override def start(): Unit = {
     if (getEnabled) {
       val result = for {
@@ -13,18 +11,14 @@ class LogstreamsLogbackAkkaAppender extends SocketAppender[JsonSocket] {
         pass <- toMissing(password, "password")
         _ <- validate(hostAndPort).right
       } yield {
-        val headers: Seq[KeyValue] = Seq(HttpUtil.basicAuth(user, pass))
-        val host = hostAndPort.takeWhile(_ != ':')
-        val sf = CustomSSLSocketFactory.forHost(host)
+        val headers: List[KeyValue] = List(HttpUtil.basicAuth(user, pass))
         val scheme = if (getSecure) "wss" else "ws"
         val uri = FullUrl(scheme, hostAndPort, "/ws/sources")
         addInfo(s"Connecting to logstreams URL '$uri' with Akka Streams for Logback...")
-        val socket = new JsonSocket(uri, sf, headers)
-        client = Option(socket)
-        val socketSink = Sink.foreach[LogEvent] { event =>
-          socket.sendMessage(LogEvents(Seq(event)))
-        }
-        val task = logEvents.runWith(socketSink)
+        //        val socket = new JsonSocket(uri, sf, headers)
+        val webSocket = WebSocketClient(uri, headers, as, mat)
+        client = Option(webSocket)
+        val task = webSocket.connect(logEvents.map(e => LogEvents(Seq(e))))
         task.onComplete { t =>
           t.fold(err => addError(s"Appender [$name] failed.", err),
             _ => addError(s"Appender [$name] completed."))

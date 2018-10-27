@@ -41,17 +41,20 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
 
   // Publish-Subscribe Akka Streams
   // https://doc.akka.io/docs/akka/2.5/stream/stream-dynamic.html
-  val (appsSink, logsSource) = MergeHub.source[LogEntryInputs](perProducerBufferSize = 16)
+  val (appsSink, logsSource) = MergeHub.source[LogEntryInputs](perProducerBufferSize = 256)
     .toMat(BroadcastHub.sink(bufferSize = 256))(Keep.both)
     .run()
 
-  val savedEvents: Source[AppLogEvents, NotUsed] = logsSource
-    .mapAsync(parallelism = 10)(ins => db.insert(ins.events).map(written => AppLogEvents(written.rows.map(_.toEvent))))
+  val savedEvents: Source[AppLogEvents, NotUsed] = logsSource.mapAsync(parallelism = 10) { ins =>
+    db.insert(ins.events).map(written => AppLogEvents(written.rows.map(_.toEvent)))
+  }
 
-  val _ = logsSource.runWith(Sink.ignore)
+  val _ = savedEvents.runWith(Sink.ignore)
 
-  implicit val listenerTransformer: MessageFlowTransformer[JsValue, FrontEvent] = jsonMessageFlowTransformer[JsValue, FrontEvent]
-  implicit val adminTransformer: MessageFlowTransformer[JsValue, AdminEvent] = jsonMessageFlowTransformer[JsValue, AdminEvent]
+  implicit val listenerTransformer: MessageFlowTransformer[JsValue, FrontEvent] =
+    jsonMessageFlowTransformer[JsValue, FrontEvent]
+  implicit val adminTransformer: MessageFlowTransformer[JsValue, AdminEvent] =
+    jsonMessageFlowTransformer[JsValue, AdminEvent]
 
   val (ref, pub) = Source.actorRef[AdminEvent](10, OverflowStrategy.dropHead).toMat(Sink.asPublisher(fanout = true))(Keep.both).run()
   val adminSource: Source[AdminEvent, NotUsed] = Source.fromPublisher(pub)

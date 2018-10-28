@@ -75,7 +75,7 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
             }
           val concatEvents: Source[AppLogEvents, NotUsed] =
             Source.fromFuture(db.events(query))
-              .flatMapConcat(history => Source.single(history).concat(filteredEvents.map(_.filter(e => history.events.exists(_.id != e.id)))))
+              .flatMapConcat(history => Source.single(history).concat(filteredEvents.map(_.filter(e => !history.events.exists(_.id == e.id)))))
               .filter(_.events.nonEmpty)
           Flow.fromSinkAndSource(Sink.ignore, concatEvents)
             .keepAlive(10.seconds, () => SimpleEvent.ping)

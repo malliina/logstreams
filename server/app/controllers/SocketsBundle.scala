@@ -56,7 +56,8 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
   implicit val adminTransformer: MessageFlowTransformer[JsValue, AdminEvent] =
     jsonMessageFlowTransformer[JsValue, AdminEvent]
 
-  val (ref, pub) = Source.actorRef[AdminEvent](10, OverflowStrategy.dropHead).toMat(Sink.asPublisher(fanout = true))(Keep.both).run()
+  val (ref, pub) = Source.actorRef[AdminEvent](10, OverflowStrategy.dropHead)
+    .toMat(Sink.asPublisher(fanout = true))(Keep.both).run()
   val adminSource: Source[AdminEvent, NotUsed] = Source.fromPublisher(pub)
   // drains admin events for situations where no admin is subscribed
   adminSource.runWith(Sink.ignore)
@@ -70,11 +71,12 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
             if (query.apps.isEmpty) {
               savedEvents
             } else {
-              savedEvents.map { es =>
-                AppLogEvents(es.events.filter(e => query.apps.exists(app => app.name == e.source.name.name)))
-              }
+              savedEvents.map(es => es.filter(e => query.apps.exists(app => app.name == e.source.name.name)))
             }
-          val concatEvents = Source.fromFuture(db.events(query)).concat(filteredEvents).filter(_.events.nonEmpty)
+          val concatEvents: Source[AppLogEvents, NotUsed] =
+            Source.fromFuture(db.events(query))
+              .flatMapConcat(history => Source.single(history).concat(filteredEvents.map(_.filter(e => history.events.exists(_.id != e.id)))))
+              .filter(_.events.nonEmpty)
           Flow.fromSinkAndSource(Sink.ignore, concatEvents)
             .keepAlive(10.seconds, () => SimpleEvent.ping)
             .backpressureTimeout(5.seconds)
@@ -103,7 +105,7 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
     auth(rh, sourceAuth) { user =>
       val server = LogSource(AppName(user.name), Proxies.realAddress(rh))
       serverManager ! AppJoined(server)
-      val transformer = jsonMessageFlowTransformer.map[LogEntryInputs, JsValue](
+      val transformer = jsonMessageFlowTransformer.map[LogEntryInputs](
         json => json.validate[LogEvents].map { es =>
           LogEntryInputs(es.events.map { event =>
             LogEntryInput(
@@ -117,8 +119,7 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
               event.stackTrace
             )
           })
-        }.getOrElse(throw new Exception),
-        out => out
+        }.getOrElse(throw new Exception)
       )
       val typedFlow = Flow.fromSinkAndSource(appsSink, Source.maybe[JsValue])
         .keepAlive(10.seconds, () => Json.toJson(SimpleEvent.ping))

@@ -15,6 +15,7 @@ import play.api.ApplicationLoader.Context
 import play.api._
 import play.api.routing.Router
 import play.filters.HttpFiltersComponents
+import play.filters.gzip.GzipFilter
 import play.filters.headers.SecurityHeadersConfig
 import play.filters.hosts.AllowedHostsConfig
 import router.Routes
@@ -37,17 +38,17 @@ abstract class AppComponents(context: Context)
     with HttpFiltersComponents
     with AssetsComponents {
 
+
   def auth: LogAuth
 
   val mode = environment.mode
   val isProd = environment.mode == Mode.Prod
 
   override val configuration = context.initialConfiguration ++ LocalConf.localConf
-
+  override lazy val httpFilters = Seq(new GzipFilter(), csrfFilter, securityHeadersFilter, allowedHostsFilter)
   val creds: GoogleOAuthCredentials =
     if (mode != Mode.Test) GoogleOAuthCredentials(configuration).fold(err => throw new Exception(err.message), identity)
     else GoogleOAuthCredentials("", "", "")
-
   override lazy val allowedHostsConfig: AllowedHostsConfig =
     AllowedHostsConfig(Seq("localhost", "logs.malliina.com"))
   val allowedDomains = Seq(

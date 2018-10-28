@@ -85,7 +85,9 @@ object AppLogEvent {
   implicit val json = Json.format[AppLogEvent]
 }
 
-case class AppLogEvents(events: Seq[AppLogEvent]) extends FrontEvent
+case class AppLogEvents(events: Seq[AppLogEvent]) extends FrontEvent {
+  def filter(p: AppLogEvent => Boolean): AppLogEvents = copy(events = events.filter(p))
+}
 
 object AppLogEvents {
   implicit val json = Json.format[AppLogEvents]

@@ -3,11 +3,13 @@ package controllers
 import java.time.Instant
 
 import akka.NotUsed
+import akka.actor.ActorRef
 import akka.pattern.ask
-import akka.stream.{Materializer, OverflowStrategy}
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, MergeHub, Sink, Source}
+import akka.stream.{Materializer, OverflowStrategy}
 import akka.util.Timeout
 import ch.qos.logback.classic.Level
+import com.malliina.logstreams.Streams.onlyOnce
 import com.malliina.logstreams.db.{StreamsDatabase, StreamsQuery}
 import com.malliina.logstreams.models._
 import com.malliina.logstreams.ws.SourceManager.{AppJoined, AppLeft, GetApps}
@@ -20,13 +22,12 @@ import controllers.SocketsBundle.log
 import play.api.Logger
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Results.BadRequest
+import play.api.mvc.WebSocket.MessageFlowTransformer
 import play.api.mvc.WebSocket.MessageFlowTransformer.jsonMessageFlowTransformer
 import play.api.mvc.{RequestHeader, Result, Results, WebSocket}
-import WebSocket.MessageFlowTransformer
-import akka.actor.ActorRef
 
-import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ExecutionContextExecutor, Future}
 
 object SocketsBundle {
   private val log = Logger(getClass)
@@ -45,9 +46,9 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
     .toMat(BroadcastHub.sink(bufferSize = 256))(Keep.both)
     .run()
 
-  val savedEvents: Source[AppLogEvents, NotUsed] = logsSource.mapAsync(parallelism = 10) { ins =>
+  val savedEvents: Source[AppLogEvents, NotUsed] = onlyOnce(logsSource.mapAsync(parallelism = 10) { ins =>
     db.insert(ins.events).map(written => AppLogEvents(written.rows.map(_.toEvent)))
-  }
+  })
 
   val _ = savedEvents.runWith(Sink.ignore)
 

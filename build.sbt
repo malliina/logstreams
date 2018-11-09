@@ -32,7 +32,7 @@ lazy val it = Project("logstreams-test", file("logstreams-test"))
 addCommandAlias("web", ";logstreams/run")
 
 val malliinaGroup = "com.malliina"
-val utilPlayVersion = "4.16.0"
+val utilPlayVersion = "4.16.1"
 val primitivesVersion = "1.6.1"
 val utilPlayDep = malliinaGroup %% "util-play" % utilPlayVersion
 

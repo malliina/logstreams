@@ -102,7 +102,6 @@ def clientSettings = basicSettings ++ mavenSettings ++ Seq(
     "com.neovisionaries" % "nv-websocket-client" % "2.6",
     "com.malliina" %% "logback-rx" % "1.4.0",
     "com.malliina" %%% "primitives" % primitivesVersion,
-//    "com.typesafe.akka" %% "akka-stream" % akkaStreamsVersion,
     "com.typesafe.akka" %% "akka-http" % "10.1.5",
     "com.typesafe.akka" %% "akka-http-spray-json" % "10.1.5",
     "org.scalatest" %% "scalatest" % "3.0.5" % Test

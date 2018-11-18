@@ -8,6 +8,7 @@ import com.malliina.play.controllers.{AuthBundle, BaseSecurity}
 import com.malliina.play.http.Proxies
 import com.malliina.play.models.AuthInfo
 import com.malliina.values.{Email, Username}
+import play.api.Logger
 import play.api.mvc._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -46,6 +47,8 @@ case class UserRequest(user: Username, rh: RequestHeader) extends AuthInfo {
 }
 
 object OAuth {
+  private val log = Logger(getClass)
+
   def sessionAuthenticator(oauth: OAuth): Authenticator[UserRequest] = {
     Authenticator { rh =>
       val result = Auth.authenticateFromSession(rh, oauth.sessionUserKey)
@@ -64,6 +67,7 @@ object OAuth {
 }
 
 class OAuth(val actions: ActionBuilder[Request, AnyContent], creds: GoogleOAuthCredentials) {
+  val log = OAuth.log
   val http = OkClient.default
   val authorizedEmail = Email("malliina123@gmail.com")
   val handler = BasicAuthHandler(
@@ -76,7 +80,14 @@ class OAuth(val actions: ActionBuilder[Request, AnyContent], creds: GoogleOAuthC
   val conf = AuthConf(creds.clientId, creds.clientSecret)
   val validator = GoogleCodeValidator(OAuthConf(routes.OAuth.googleCallback(), handler, conf, http))
 
-  def googleStart = actions.async(req => validator.startHinted(req, req.cookies.get(handler.lastIdKey).map(_.value)))
+  //  def googleStart = actions.async(req => validator.startHinted(req, req.cookies.get(handler.lastIdKey).map(_.value)))
+  def googleStart = actions.async { req =>
+    log.info(s"Starting OAuth flow.")
+    validator.start(req)
+  }
 
-  def googleCallback = actions.async(req => validator.validateCallback(req))
+  def googleCallback = actions.async { req =>
+    log.info(s"Validating OAuth callback...")
+    validator.validateCallback(req)
+  }
 }

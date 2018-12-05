@@ -13,6 +13,7 @@ import com.typesafe.config.ConfigFactory
 import controllers._
 import play.api.ApplicationLoader.Context
 import play.api._
+import play.api.http.HttpConfiguration
 import play.api.routing.Router
 import play.filters.HttpFiltersComponents
 import play.filters.gzip.GzipFilter
@@ -62,6 +63,11 @@ abstract class AppComponents(context: Context)
   val csp = s"default-src 'self' 'unsafe-inline' ${allowedDomains.mkString(" ")}; connect-src *; img-src 'self' data:;"
   override lazy val securityHeadersConfig: SecurityHeadersConfig =
     SecurityHeadersConfig(contentSecurityPolicy = Option(csp))
+  val defaultHttpConf = HttpConfiguration.fromConfiguration(configuration, environment)
+  // Sets sameSite = None, otherwise the Google auth redirect will wipe out the session state
+  override lazy val httpConfiguration =
+    defaultHttpConf.copy(session = defaultHttpConf.session.copy(cookieName = "logsSession", sameSite = None))
+
   implicit val ec: ExecutionContextExecutor = materializer.executionContext
   val actions = controllerComponents.actionBuilder
   // Services

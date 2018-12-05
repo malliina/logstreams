@@ -11,6 +11,7 @@ import com.malliina.values.{Email, Username}
 import play.api.Logger
 import play.api.mvc._
 
+import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{ExecutionContext, Future}
 
 trait LogAuth {
@@ -67,12 +68,14 @@ object OAuth {
 }
 
 class OAuth(val actions: ActionBuilder[Request, AnyContent], creds: GoogleOAuthCredentials) {
+  val LoginCookieDuration: Duration = 3650.days
   val log = OAuth.log
   val http = OkClient.default
   val authorizedEmail = Email("malliina123@gmail.com")
   val handler = BasicAuthHandler(
     routes.Logs.index(),
-    sessionKey = "email",
+    sessionKey = "logsEmail",
+    lastIdKey = "logsLastId",
     authorize = email => if (email == authorizedEmail) Right(email) else Left(PermissionError(s"Unauthorized: '$email'."))
   )
   val sessionUserKey: String = handler.sessionKey
@@ -80,14 +83,16 @@ class OAuth(val actions: ActionBuilder[Request, AnyContent], creds: GoogleOAuthC
   val conf = AuthConf(creds.clientId, creds.clientSecret)
   val validator = GoogleCodeValidator(OAuthConf(routes.OAuth.googleCallback(), handler, conf, http))
 
-  //  def googleStart = actions.async(req => validator.startHinted(req, req.cookies.get(handler.lastIdKey).map(_.value)))
   def googleStart = actions.async { req =>
-    log.info(s"Starting OAuth flow.")
-    validator.start(req)
+    val lastId = req.cookies.get(handler.lastIdKey).map(_.value)
+    val described = lastId.fold("without login hint")(h => s"with login hint '$h'")
+    log.info(s"Starting OAuth flow $described.")
+    validator.startHinted(req, lastId)
   }
 
   def googleCallback = actions.async { req =>
-    log.info(s"Validating OAuth callback...")
+    val describe = req.session.get(CodeValidator.State).fold("without state")(s => s"with a state of '$s'")
+    log.info(s"Validating OAuth callback $describe...")
     validator.validateCallback(req)
   }
 }

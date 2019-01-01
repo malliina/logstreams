@@ -1,12 +1,10 @@
-.idea/
-.idea/*
-*.iml
-lib_managed/
+.idea
 target/
-.idea_modules/
 *.test
 *.jks
 *.pem
 credentials.txt
 logs
 dist
+.hydra
+.bloop

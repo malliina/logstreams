@@ -32,23 +32,33 @@ lazy val it = Project("logstreams-test", file("logstreams-test"))
 addCommandAlias("web", ";logstreams/run")
 
 val malliinaGroup = "com.malliina"
-val utilPlayVersion = "4.16.1"
-val primitivesVersion = "1.6.1"
+val utilPlayVersion = "4.18.1"
+val primitivesVersion = "1.7.1"
+val playJsonVersion = "2.6.13"
+val akkaHttpVersion = "10.1.5"
 val utilPlayDep = malliinaGroup %% "util-play" % utilPlayVersion
+
+val basicSettings = Seq(
+  organization := malliinaGroup,
+  scalaVersion := "2.12.8",
+  scalacOptions := Seq("-unchecked", "-deprecation")
+)
 
 def frontSettings = Seq(
   version := "1.0.0",
-  scalaVersion := "2.12.7",
+  scalaVersion := "2.12.8",
   scalaJSUseMainModuleInitializer := true,
   libraryDependencies ++= Seq(
     "com.lihaoyi" %%% "scalatags" % "0.6.7",
     "be.doeraene" %%% "scalajs-jquery" % "0.9.4",
-    "com.typesafe.play" %%% "play-json" % "2.6.10",
+    "com.typesafe.play" %%% "play-json" % playJsonVersion,
     "org.scalatest" %%% "scalatest" % "3.0.5" % Test
   )
 )
 
-def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
+def serverSettings = basicSettings ++ Seq(
+  scalaJSProjects := Seq(frontend),
+  pipelineStages in Assets := Seq(scalaJSPipeline),
   version := serverVersion,
   buildInfoKeys += BuildInfoKey("frontName" -> (name in frontend).value),
   resolvers += "Sonatype releases" at "https://oss.sonatype.org/content/repositories/releases/",
@@ -62,10 +72,6 @@ def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
     utilPlayDep,
     utilPlayDep % Test classifier "tests"
   ).map(_.withSources().withJavadoc()),
-  dependencyOverrides ++= Seq(
-    "com.typesafe.akka" %% "akka-stream" % "2.5.8",
-    "com.typesafe.akka" %% "akka-actor" % "2.5.8"
-  ),
   pipelineStages := Seq(digest, gzip),
   javaOptions in Universal ++= {
     val linuxName = (name in Linux).value
@@ -84,14 +90,9 @@ def serverSettings = basicSettings ++ scalaJSSettings ++ Seq(
 
 def sharedSettings = basicSettings ++ Seq(
   libraryDependencies ++= Seq(
-    "com.typesafe.play" %%% "play-json" % "2.6.10",
+    "com.typesafe.play" %%% "play-json" % playJsonVersion,
     "com.malliina" %%% "primitives" % primitivesVersion
   )
-)
-
-def scalaJSSettings = Seq(
-  scalaJSProjects := Seq(frontend),
-  pipelineStages in Assets := Seq(scalaJSPipeline)
 )
 
 def clientSettings = basicSettings ++ mavenSettings ++ Seq(
@@ -102,8 +103,8 @@ def clientSettings = basicSettings ++ mavenSettings ++ Seq(
     "com.neovisionaries" % "nv-websocket-client" % "2.6",
     "com.malliina" %% "logback-rx" % "1.4.0",
     "com.malliina" %%% "primitives" % primitivesVersion,
-    "com.typesafe.akka" %% "akka-http" % "10.1.5",
-    "com.typesafe.akka" %% "akka-http-spray-json" % "10.1.5",
+    "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
+    "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
     "org.scalatest" %% "scalatest" % "3.0.5" % Test
   ),
   releaseCrossBuild := true
@@ -111,10 +112,4 @@ def clientSettings = basicSettings ++ mavenSettings ++ Seq(
 
 def testSettings = basicSettings ++ Seq(
   libraryDependencies += PlayImport.ws
-)
-
-def basicSettings = Seq(
-  organization := malliinaGroup,
-  scalaVersion := "2.12.7",
-  scalacOptions := Seq("-unchecked", "-deprecation")
 )

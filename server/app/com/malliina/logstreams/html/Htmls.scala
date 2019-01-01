@@ -21,14 +21,15 @@ object Htmls {
     * @return HTML templates with either prod or dev javascripts
     */
   def forApp(appName: String, isProd: Boolean): Htmls = {
-    val suffix = if (isProd) "opt" else "fastopt"
-    new Htmls(s"${appName.toLowerCase}-$suffix.js")
+    val name = appName.toLowerCase
+    val opt = if (isProd) "opt" else "fastopt"
+    new Htmls(Seq(s"$name-$opt-library.js", s"$name-$opt-loader.js", s"$name-$opt.js"))
   }
 
   def asset(file: Asset): Call = routes.Logs.versioned(file)
 }
 
-class Htmls(mainJs: Asset) extends Bootstrap(Tags) with FrontStrings {
+class Htmls(scripts: Seq[Asset]) extends Bootstrap(Tags) with FrontStrings {
 
   import tags._
 
@@ -143,17 +144,17 @@ class Htmls(mainJs: Asset) extends Bootstrap(Tags) with FrontStrings {
         head(
           titleTag(titleLabel),
           deviceWidthViewport,
-          cssLinkHashed("https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css", "sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"),
+          cssLinkHashed(
+            "https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css",
+            "sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+          ),
           cssLink("https://use.fontawesome.com/releases/v5.0.6/css/all.css"),
           cssLink(Htmls.asset("css/main.css")),
-          jsHashed("https://code.jquery.com/jquery-3.2.1.slim.min.js", "sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"),
-          jsHashed("https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js", "sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"),
-          jsHashed("https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js", "sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"),
           extraHeader,
         ),
         body(
           section(inner),
-          jsScript(asset(mainJs))
+          scripts.map { js => jsScript(asset(js), attr("defer").empty) }
         )
       )
     )

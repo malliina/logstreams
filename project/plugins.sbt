@@ -15,6 +15,7 @@ Seq(
   "org.scala-js" % "sbt-scalajs" % "0.6.26",
   "org.portable-scala" % "sbt-scalajs-crossproject" % "0.6.0",
   "com.vmunier" % "sbt-web-scalajs" % "1.0.6",
+  "ch.epfl.scala" % "sbt-web-scalajs-bundler" % "0.14.0",
   "com.typesafe.sbt" % "sbt-gzip" % "1.0.2",
   "com.typesafe.sbt" % "sbt-digest" % "1.1.4",
   "com.typesafe.sbt" % "sbt-less" % "1.1.2"

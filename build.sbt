@@ -6,17 +6,31 @@ import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject => portableProject, CrossType => PortableType}
 
 val serverVersion = "0.5.0"
+val malliinaGroup = "com.malliina"
+val utilPlayVersion = "4.18.1"
+val primitivesVersion = "1.7.1"
+val playJsonVersion = "2.6.13"
+val akkaHttpVersion = "10.1.5"
+val utilPlayDep = malliinaGroup %% "util-play" % utilPlayVersion
+
+val basicSettings = Seq(
+  organization := malliinaGroup,
+  scalaVersion := "2.12.8",
+  scalacOptions := Seq("-unchecked", "-deprecation")
+)
 
 lazy val logstreamsRoot = project.in(file("."))
-  .settings(basicSettings: _*)
   .aggregate(frontend, server, client, it)
+  .settings(basicSettings)
+
 lazy val server = PlayProject.server("logstreams", file("server"))
+  .enablePlugins(WebScalaJSBundlerPlugin)
   .settings(serverSettings: _*)
   .dependsOn(crossJvm)
 lazy val frontend = project.in(file("frontend"))
-  .settings(frontSettings: _*)
-  .enablePlugins(ScalaJSPlugin, ScalaJSWeb)
+  .enablePlugins(ScalaJSBundlerPlugin, ScalaJSWeb)
   .dependsOn(crossJs)
+  .settings(frontSettings: _*)
 lazy val cross = portableProject(JSPlatform, JVMPlatform)
   .crossType(PortableType.Full)
   .in(file("shared"))
@@ -31,28 +45,22 @@ lazy val it = Project("logstreams-test", file("logstreams-test"))
 
 addCommandAlias("web", ";logstreams/run")
 
-val malliinaGroup = "com.malliina"
-val utilPlayVersion = "4.18.1"
-val primitivesVersion = "1.7.1"
-val playJsonVersion = "2.6.13"
-val akkaHttpVersion = "10.1.5"
-val utilPlayDep = malliinaGroup %% "util-play" % utilPlayVersion
-
-val basicSettings = Seq(
-  organization := malliinaGroup,
-  scalaVersion := "2.12.8",
-  scalacOptions := Seq("-unchecked", "-deprecation")
-)
-
-def frontSettings = Seq(
+def frontSettings = basicSettings ++ Seq(
   version := "1.0.0",
-  scalaVersion := "2.12.8",
-  scalaJSUseMainModuleInitializer := true,
   libraryDependencies ++= Seq(
     "com.lihaoyi" %%% "scalatags" % "0.6.7",
     "be.doeraene" %%% "scalajs-jquery" % "0.9.4",
     "com.typesafe.play" %%% "play-json" % playJsonVersion,
     "org.scalatest" %%% "scalatest" % "3.0.5" % Test
+  ),
+  version in webpack := "4.27.1",
+  emitSourceMaps := false,
+  scalaJSUseMainModuleInitializer := true,
+  webpackBundlingMode := BundlingMode.LibraryOnly(),
+  npmDependencies in Compile ++= Seq(
+    "jquery" -> "3.3.1",
+    "popper.js" -> "1.14.6",
+    "bootstrap" -> "4.2.1"
   )
 )
 
@@ -67,7 +75,7 @@ def serverSettings = basicSettings ++ Seq(
     "mysql" % "mysql-connector-java" % "5.1.47",
     "com.typesafe.slick" %% "slick" % "3.2.3",
     "com.zaxxer" % "HikariCP" % "3.2.0",
-    "com.malliina" %% "logstreams-client" % "1.3.0",
+    "com.malliina" %% "logstreams-client" % "1.4.0",
     "com.malliina" %% "play-social" % utilPlayVersion,
     utilPlayDep,
     utilPlayDep % Test classifier "tests"

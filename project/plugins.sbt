@@ -10,7 +10,7 @@ classpathTypes += "maven-plugin"
 scalacOptions ++= Seq("-unchecked", "-deprecation")
 
 Seq(
-  "com.malliina" % "sbt-play" % "1.5.0",
+  "com.malliina" % "sbt-play" % "1.6.0",
   "com.malliina" % "sbt-utils-maven" % "0.11.0",
   "org.scala-js" % "sbt-scalajs" % "0.6.26",
   "org.portable-scala" % "sbt-scalajs-crossproject" % "0.6.0",

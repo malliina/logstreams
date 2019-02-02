@@ -11,7 +11,7 @@ val malliinaGroup = "com.malliina"
 val utilPlayVersion = "5.0.0"
 val primitivesVersion = "1.8.1"
 val playJsonVersion = "2.7.1"
-val akkaHttpVersion = "10.1.5"
+val akkaHttpVersion = "10.1.7"
 val utilPlayDep = malliinaGroup %% "util-play" % utilPlayVersion
 
 val basicSettings = Seq(
@@ -72,7 +72,7 @@ val server = Project("logstreams", file("server"))
       "mysql" % "mysql-connector-java" % "5.1.47",
       "com.typesafe.slick" %% "slick" % "3.2.3",
       "com.zaxxer" % "HikariCP" % "3.2.0",
-      "com.malliina" %% "logstreams-client" % "1.4.0",
+      "com.malliina" %% "logstreams-client" % "1.5.0",
       "com.malliina" %% "play-social" % utilPlayVersion,
       utilPlayDep,
       utilPlayDep % Test classifier "tests"

@@ -1,10 +1,10 @@
 package com.malliina.logstreams.html
 
-import com.malliina.html.{Bootstrap, Tags}
+import com.malliina.html.{Bootstrap, HtmlTags}
 import com.malliina.logstreams.html.Htmls._
 import com.malliina.logstreams.models.{AppName, FrontStrings}
-import com.malliina.values.Username
 import com.malliina.play.tags.TagPage
+import com.malliina.values.Username
 import controllers.Assets.Asset
 import controllers.{Logs, UserFeedback, routes}
 import play.api.mvc.Call
@@ -29,7 +29,7 @@ object Htmls {
   def asset(file: Asset): Call = routes.Logs.versioned(file)
 }
 
-class Htmls(scripts: Seq[Asset]) extends Bootstrap(Tags) with FrontStrings {
+class Htmls(scripts: Seq[Asset]) extends Bootstrap(HtmlTags) with FrontStrings {
 
   import tags._
 
@@ -42,7 +42,11 @@ class Htmls(scripts: Seq[Asset]) extends Bootstrap(Tags) with FrontStrings {
     row(
       divClass(col.sm.eight)(
         div(id := AppsDropdown, `class` := "dropdown")(
-          button(`class` := "btn btn-secondary btn-sm dropdown-toggle", `type` := "button", dataToggle := "dropdown", aria.haspopup := "true", aria.expanded := "false")("Apps"),
+          button(`class` := "btn btn-secondary btn-sm dropdown-toggle",
+                 `type` := "button",
+                 dataToggle := "dropdown",
+                 aria.haspopup := "true",
+                 aria.expanded := "false")("Apps"),
           div(`class` := DropdownMenu, id := DropdownMenuId)(
             apps.map(app => a(`class` := DropdownItemId, href := "#")(app.name))
           )
@@ -50,12 +54,20 @@ class Htmls(scripts: Seq[Asset]) extends Bootstrap(Tags) with FrontStrings {
         div(id := AppsFiltered)
       ),
       div(`class` := s"${col.sm.four} mt-1 mt-sm-0")(
-        div(`class` := s"btn-group btn-group-toggle compact-group float-right", role := "group", data("toggle") := "buttons")(
+        div(`class` := s"btn-group btn-group-toggle compact-group float-right",
+            role := "group",
+            data("toggle") := "buttons")(
           label(`class` := "btn btn-info btn-sm", id := LabelVerbose)(
-            input(`type` := "radio", name := "options", id := "option-verbose", autocomplete := "off")(" Verbose")
+            input(`type` := "radio",
+                  name := "options",
+                  id := "option-verbose",
+                  autocomplete := "off")(" Verbose")
           ),
           label(`class` := "btn btn-info btn-sm ", id := LabelCompact)(
-            input(`type` := "radio", name := "options", id := "option-compact", autocomplete := "off")(" Compact")
+            input(`type` := "radio",
+                  name := "options",
+                  id := "option-compact",
+                  autocomplete := "off")(" Compact")
           )
         )
       )
@@ -107,7 +119,8 @@ class Htmls(scripts: Seq[Asset]) extends Bootstrap(Tags) with FrontStrings {
     )
   }
 
-  def logEntriesTable(tableId: String) = table(`class` := tables.defaultClass, id := tableId)
+  def logEntriesTable(tableId: String) =
+    table(`class` := tables.defaultClass, id := tableId)
 
   def defaultTable(tableId: String, headers: Seq[String]) =
     defaultTableBase(tableId, headers.map(h => th(h)))
@@ -121,7 +134,8 @@ class Htmls(scripts: Seq[Asset]) extends Bootstrap(Tags) with FrontStrings {
   def baseIndex(tabName: String)(inner: Modifier*) = {
     def navItem(thisTabName: String, tabId: String, url: Call, iconicName: String) = {
       val itemClass = if (tabId == tabName) "nav-item active" else "nav-item"
-      li(`class` := itemClass)(a(href := url, `class` := "nav-link")(iconic(iconicName), s" $thisTabName"))
+      li(`class` := itemClass)(
+        a(href := url, `class` := "nav-link")(iconic(iconicName), s" $thisTabName"))
     }
 
     root("logstreams")(
@@ -154,7 +168,9 @@ class Htmls(scripts: Seq[Asset]) extends Bootstrap(Tags) with FrontStrings {
         ),
         body(
           section(inner),
-          scripts.map { js => jsScript(asset(js), attr("defer").empty) }
+          scripts.map { js =>
+            jsScript(asset(js), attr("defer").empty)
+          }
         )
       )
     )

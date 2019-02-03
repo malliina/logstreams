@@ -54,7 +54,8 @@ val frontend = project
       "jquery" -> "3.3.1",
       "popper.js" -> "1.14.6",
       "bootstrap" -> "4.2.1"
-    )
+    ),
+    npmDevDependencies in Compile += "terser" -> "3.14.1"
   )
 
 val server = Project("logstreams", file("server"))

@@ -2,9 +2,12 @@ import play.sbt.PlayImport
 import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 import sbtcrossproject.CrossPlugin.autoImport.{
-  crossProject => portableProject,
-  CrossType => PortableType
+  CrossType => PortableType,
+  crossProject => portableProject
 }
+import scalajsbundler.util.JSON
+
+import scala.sys.process.Process
 
 val serverVersion = "0.5.0"
 val malliinaGroup = "com.malliina"
@@ -13,6 +16,28 @@ val primitivesVersion = "1.8.1"
 val playJsonVersion = "2.7.1"
 val akkaHttpVersion = "10.1.7"
 val utilPlayDep = malliinaGroup %% "util-play" % utilPlayVersion
+
+val ensureNode = taskKey[Unit]("Make sure the user uses the correct version of node.js")
+
+ensureNode := {
+  val log = streams.value.log
+  val nodeVersion = Process("node --version")
+    .lineStream(log)
+    .toList
+    .headOption
+    .getOrElse(sys.error(s"Unable to resolve node version."))
+  val validPrefixes = Seq("v8")
+  if (validPrefixes.exists(p => nodeVersion.startsWith(p))) {
+    log.info(s"Using node $nodeVersion")
+  } else {
+    log.info(s"Node $nodeVersion is unlikely to work. Trying to change version using nvm...")
+    Process("nvm use 8").run(log).exitValue()
+  }
+}
+
+val startupTransition: State => State = { s: State =>
+  "logstreamsRoot/ensureNode" :: s
+}
 
 val basicSettings = Seq(
   organization := malliinaGroup,
@@ -51,11 +76,33 @@ val frontend = project
     scalaJSUseMainModuleInitializer := true,
     webpackBundlingMode := BundlingMode.LibraryOnly(),
     npmDependencies in Compile ++= Seq(
+      "bootstrap" -> "4.2.1",
       "jquery" -> "3.3.1",
       "popper.js" -> "1.14.6",
-      "bootstrap" -> "4.2.1"
+      "@fortawesome/fontawesome-free" -> "5.8.1"
     ),
-    npmDevDependencies in Compile += "terser" -> "3.14.1"
+    npmDevDependencies in Compile ++= Seq(
+      "autoprefixer" -> "9.4.3",
+      "cssnano" -> "4.1.8",
+      "css-loader" -> "2.1.0",
+      "file-loader" -> "3.0.1",
+      "less" -> "3.9.0",
+      "less-loader" -> "4.1.0",
+      "mini-css-extract-plugin" -> "0.5.0",
+      "postcss-import" -> "12.0.1",
+      "postcss-loader" -> "3.0.0",
+      "postcss-preset-env" -> "6.5.0",
+      "style-loader" -> "0.23.1",
+      "url-loader" -> "1.1.2",
+      "webpack-merge" -> "4.1.5"
+    ),
+    additionalNpmConfig in Compile := Map(
+      "engines" -> JSON.obj("node" -> JSON.str("8.x")),
+      "private" -> JSON.bool(true),
+      "license" -> JSON.str("BSD")
+    ),
+    webpackConfigFile in fastOptJS := Some(baseDirectory.value / "webpack.dev.config.js"),
+    webpackConfigFile in fullOptJS := Some(baseDirectory.value / "webpack.prod.config.js")
   )
 
 val server = Project("logstreams", file("server"))
@@ -123,5 +170,11 @@ val logstreamsRoot = project
   .in(file("."))
   .aggregate(frontend, server, client, it)
   .settings(basicSettings)
+  .settings(
+    onLoad in Global := {
+      val old = (onLoad in Global).value
+      startupTransition compose old
+    }
+  )
 
 addCommandAlias("web", ";logstreams/run")

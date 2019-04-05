@@ -132,10 +132,10 @@ class Htmls(scripts: Seq[Asset]) extends Bootstrap(HtmlTags) with FrontStrings {
     )
 
   def baseIndex(tabName: String)(inner: Modifier*) = {
-    def navItem(thisTabName: String, tabId: String, url: Call, iconicName: String) = {
+    def navItem(thisTabName: String, tabId: String, url: Call, faName: String) = {
       val itemClass = if (tabId == tabName) "nav-item active" else "nav-item"
       li(`class` := itemClass)(
-        a(href := url, `class` := "nav-link")(iconic(iconicName), s" $thisTabName"))
+        a(href := url, `class` := "nav-link")(fa(faName), s" $thisTabName"))
     }
 
     root("logstreams")(
@@ -145,7 +145,7 @@ class Htmls(scripts: Seq[Asset]) extends Bootstrap(HtmlTags) with FrontStrings {
         modifier(
           navItem("Logs", "logs", reverse.index(), "list"),
           navItem("Sources", "sources", reverse.sources(), "home"),
-          navItem("Users", "users", reverse.allUsers(), "person")
+          navItem("Users", "users", reverse.allUsers(), "user")
         )
       ),
       div(`class` := "wide-content", id := "page-content")(inner)
@@ -158,12 +158,8 @@ class Htmls(scripts: Seq[Asset]) extends Bootstrap(HtmlTags) with FrontStrings {
         head(
           titleTag(titleLabel),
           deviceWidthViewport,
-          cssLinkHashed(
-            "https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css",
-            "sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
-          ),
-          cssLink("https://use.fontawesome.com/releases/v5.0.6/css/all.css"),
-          cssLink(Htmls.asset("css/main.css")),
+          cssLink(asset("vendors.css")),
+          cssLink(asset("styles.css")),
           extraHeader,
         ),
         body(
@@ -194,4 +190,6 @@ class Htmls(scripts: Seq[Asset]) extends Bootstrap(HtmlTags) with FrontStrings {
         namedInput(elemId, `type` := inType, `class` := s"$FormControl $InputMd", required)
       )
     )
+
+  def fa(faName: String) = i(`class` := s"fas fa-$faName", title := faName, aria.hidden := tags.True)
 }

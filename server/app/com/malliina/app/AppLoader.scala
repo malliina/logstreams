@@ -60,7 +60,7 @@ abstract class AppComponents(context: Context)
     "use.fontawesome.com"
   )
   val databaseSchema = StreamsSchema(DatabaseConf(configuration, mode))
-  val csp = s"default-src 'self' 'unsafe-inline' ${allowedDomains.mkString(" ")}; connect-src *; img-src 'self' data:;"
+  val csp = s"default-src 'self' 'unsafe-inline' 'unsafe-eval' ${allowedDomains.mkString(" ")}; connect-src *; img-src 'self' data:;"
   override lazy val securityHeadersConfig: SecurityHeadersConfig =
     SecurityHeadersConfig(contentSecurityPolicy = Option(csp))
   val defaultHttpConf = HttpConfiguration.fromConfiguration(configuration, environment)

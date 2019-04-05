@@ -1,12 +1,13 @@
-GET         /                          controllers.Logs.index
-GET         /ping                      controllers.Logs.ping
-GET         /sources                   controllers.Logs.sources
-GET         /users                     controllers.Logs.allUsers
-POST        /users                     controllers.Logs.addUser
-POST        /users/:user/delete        controllers.Logs.removeUser(user: com.malliina.values.Username)
-GET         /ws/logs                   controllers.SocketsBundle.listenerSocket
-GET         /ws/admins                 controllers.SocketsBundle.adminSocket
-GET         /ws/sources                controllers.SocketsBundle.sourceSocket
-GET         /oauth                     controllers.OAuth.googleStart
-GET         /oauthcb                   controllers.OAuth.googleCallback
-GET         /assets/*file              controllers.Logs.versioned(path = "/public", file: Asset)
+GET         /                           controllers.Logs.index
+GET         /ping                       controllers.Logs.ping
+GET         /sources                    controllers.Logs.sources
+GET         /users                      controllers.Logs.allUsers
+POST        /users                      controllers.Logs.addUser
+POST        /users/:user/delete         controllers.Logs.removeUser(user: com.malliina.values.Username)
+GET         /ws/logs                    controllers.SocketsBundle.listenerSocket
+GET         /ws/admins                  controllers.SocketsBundle.adminSocket
+GET         /ws/sources                 controllers.SocketsBundle.sourceSocket
+GET         /oauth                      controllers.OAuth.googleStart
+GET         /oauthcb                    controllers.OAuth.googleCallback
+GET         /assets/static/*file        controllers.Logs.static(file: String)
+GET         /assets/*file               controllers.Logs.versioned(path = "/public", file: Asset)

@@ -53,6 +53,7 @@ class Logs(htmls: Htmls,
   // Assets
 
   def versioned(path: String, file: Asset) = assets.versioned(path, file)
+  def static(file: String) = assets.at("/public", s"static/$file", aggressiveCaching = true)
 
   // HTML
 

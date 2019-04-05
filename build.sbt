@@ -7,37 +7,15 @@ import sbtcrossproject.CrossPlugin.autoImport.{
 }
 import scalajsbundler.util.JSON
 
-import scala.sys.process.Process
-
-val serverVersion = "0.5.0"
 val malliinaGroup = "com.malliina"
-val utilPlayVersion = "5.0.0"
-val primitivesVersion = "1.8.1"
-val playJsonVersion = "2.7.1"
-val akkaHttpVersion = "10.1.7"
+val utilPlayVersion = "5.1.1"
+val primitivesVersion = "1.9.0"
+val playJsonVersion = "2.7.2"
+val akkaHttpVersion = "10.1.8"
+val scalaTestVersion = "3.0.7"
 val utilPlayDep = malliinaGroup %% "util-play" % utilPlayVersion
 
-val ensureNode = taskKey[Unit]("Make sure the user uses the correct version of node.js")
-
-ensureNode := {
-  val log = streams.value.log
-  val nodeVersion = Process("node --version")
-    .lineStream(log)
-    .toList
-    .headOption
-    .getOrElse(sys.error(s"Unable to resolve node version."))
-  val validPrefixes = Seq("v8")
-  if (validPrefixes.exists(p => nodeVersion.startsWith(p))) {
-    log.info(s"Using node $nodeVersion")
-  } else {
-    log.info(s"Node $nodeVersion is unlikely to work. Trying to change version using nvm...")
-    Process("nvm use 8").run(log).exitValue()
-  }
-}
-
-val startupTransition: State => State = { s: State =>
-  "logstreamsRoot/ensureNode" :: s
-}
+val serverVersion = "0.5.0"
 
 val basicSettings = Seq(
   organization := malliinaGroup,
@@ -60,26 +38,26 @@ val crossJs = cross.js
 
 val frontend = project
   .in(file("frontend"))
-  .enablePlugins(ScalaJSBundlerPlugin, ScalaJSWeb)
+  .enablePlugins(ScalaJSBundlerPlugin, ScalaJSWeb, NodeCheckPlugin)
   .dependsOn(crossJs)
   .settings(basicSettings)
   .settings(
     version := "1.0.0",
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %%% "scalatags" % "0.6.7",
+      "com.lihaoyi" %%% "scalatags" % "0.6.8",
       "be.doeraene" %%% "scalajs-jquery" % "0.9.4",
       "com.typesafe.play" %%% "play-json" % playJsonVersion,
-      "org.scalatest" %%% "scalatest" % "3.0.5" % Test
+      "org.scalatest" %%% "scalatest" % scalaTestVersion % Test
     ),
     version in webpack := "4.27.1",
     emitSourceMaps := false,
     scalaJSUseMainModuleInitializer := true,
     webpackBundlingMode := BundlingMode.LibraryOnly(),
     npmDependencies in Compile ++= Seq(
+      "@fortawesome/fontawesome-free" -> "5.8.1",
       "bootstrap" -> "4.2.1",
       "jquery" -> "3.3.1",
-      "popper.js" -> "1.14.6",
-      "@fortawesome/fontawesome-free" -> "5.8.1"
+      "popper.js" -> "1.14.6"
     ),
     npmDevDependencies in Compile ++= Seq(
       "autoprefixer" -> "9.4.3",
@@ -149,12 +127,12 @@ val client = Project("logstreams-client", file("client"))
     developerName := "Michael Skogberg",
     resolvers += "Sonatype releases" at "https://oss.sonatype.org/content/repositories/releases/",
     libraryDependencies ++= Seq(
-      "com.neovisionaries" % "nv-websocket-client" % "2.6",
+      "com.neovisionaries" % "nv-websocket-client" % "2.8",
       "com.malliina" %% "logback-streams" % "1.5.0",
       "com.malliina" %%% "primitives" % primitivesVersion,
       "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
-      "org.scalatest" %% "scalatest" % "3.0.5" % Test
+      "org.scalatest" %% "scalatest" % scalaTestVersion % Test
     ),
     releaseCrossBuild := true
   )
@@ -170,11 +148,5 @@ val logstreamsRoot = project
   .in(file("."))
   .aggregate(frontend, server, client, it)
   .settings(basicSettings)
-  .settings(
-    onLoad in Global := {
-      val old = (onLoad in Global).value
-      startupTransition compose old
-    }
-  )
 
 addCommandAlias("web", ";logstreams/run")

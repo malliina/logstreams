@@ -135,7 +135,8 @@ val client = Project("logstreams-client", file("client"))
       "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
       "org.scalatest" %% "scalatest" % scalaTestVersion % Test
     ),
-    releaseCrossBuild := true
+    releaseCrossBuild := true,
+    releaseProcess := tagReleaseProcess.value
   )
 
 val it = Project("logstreams-test", file("logstreams-test"))

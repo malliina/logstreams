@@ -9,7 +9,7 @@ class AkkaHttpAppender extends SocketAppender[WebSocketClient] {
         hostAndPort <- toMissing(endpoint, "endpoint")
         user <- toMissing(username, "username")
         pass <- toMissing(password, "password")
-        _ <- validate(hostAndPort).right
+        _ <- validate(hostAndPort)
       } yield {
         val headers: List[KeyValue] = List(HttpUtil.basicAuth(user, pass))
         val scheme = if (getSecure) "wss" else "ws"

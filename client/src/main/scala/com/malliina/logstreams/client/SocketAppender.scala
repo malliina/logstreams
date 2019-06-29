@@ -50,7 +50,7 @@ class SocketAppender[T <: Closeable] extends DefaultAkkaAppender {
     enabled = isEnabled
   }
 
-  def toMissing[T](o: Option[T], fieldName: String) = o.toRight(missing(fieldName)).right
+  def toMissing[O](o: Option[O], fieldName: String) = o.toRight(missing(fieldName))
 
   def validate(host: String): Either[String, Unit] =
     if (host contains "/") Left(s"Host '$host' must not contain a slash ('/'). Only supply the host (and optionally, port).")

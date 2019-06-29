@@ -8,7 +8,7 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
 class SocketTests extends FunSuite {
-  def failSocket = new SocketClient(FullUrl.build("http://kjdhfkdshfds.com/blaa").right.get, null, Nil)
+  def failSocket = new SocketClient(FullUrl("http", "kjdhfkdshfds.com", "/blaa"), null, Nil)
 
   test("network failure fails with WebSocketException") {
     val socket = failSocket

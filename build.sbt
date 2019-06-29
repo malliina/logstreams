@@ -8,18 +8,18 @@ import sbtcrossproject.CrossPlugin.autoImport.{
 import scalajsbundler.util.JSON
 
 val malliinaGroup = "com.malliina"
-val utilPlayVersion = "5.1.1"
-val primitivesVersion = "1.9.0"
-val playJsonVersion = "2.7.2"
+val utilPlayVersion = "5.2.1"
+val primitivesVersion = "1.11.0"
+val playJsonVersion = "2.7.4"
 val akkaHttpVersion = "10.1.8"
-val scalaTestVersion = "3.0.7"
+val scalaTestVersion = "3.0.8"
 val utilPlayDep = malliinaGroup %% "util-play" % utilPlayVersion
 
 val serverVersion = "0.5.0"
 
 val basicSettings = Seq(
   organization := malliinaGroup,
-  scalaVersion := "2.12.8",
+  scalaVersion := "2.13.0",
   scalacOptions := Seq("-unchecked", "-deprecation")
 )
 
@@ -44,8 +44,8 @@ val frontend = project
   .settings(
     version := "1.0.0",
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %%% "scalatags" % "0.6.8",
-      "be.doeraene" %%% "scalajs-jquery" % "0.9.4",
+      "com.lihaoyi" %%% "scalatags" % "0.7.0",
+//      "be.doeraene" %%% "scalajs-jquery" % "0.9.4",
       "com.typesafe.play" %%% "play-json" % playJsonVersion,
       "org.scalatest" %%% "scalatest" % scalaTestVersion % Test
     ),
@@ -96,7 +96,7 @@ val server = Project("logstreams", file("server"))
     libraryDependencies ++= Seq(
       "com.h2database" % "h2" % "1.4.196",
       "mysql" % "mysql-connector-java" % "5.1.47",
-      "com.typesafe.slick" %% "slick" % "3.2.3",
+      "com.typesafe.slick" %% "slick" % "3.3.2",
       "com.zaxxer" % "HikariCP" % "3.2.0",
       "com.malliina" %% "logstreams-client" % "1.5.0",
       "com.malliina" %% "play-social" % utilPlayVersion,
@@ -123,12 +123,13 @@ val client = Project("logstreams-client", file("client"))
   .enablePlugins(MavenCentralPlugin)
   .settings(basicSettings)
   .settings(
+    crossScalaVersions := scalaVersion.value :: "2.12.8" :: Nil,
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
     resolvers += "Sonatype releases" at "https://oss.sonatype.org/content/repositories/releases/",
     libraryDependencies ++= Seq(
-      "com.neovisionaries" % "nv-websocket-client" % "2.8",
-      "com.malliina" %% "logback-streams" % "1.5.0",
+      "com.neovisionaries" % "nv-websocket-client" % "2.9",
+      "com.malliina" %% "logback-streams" % "1.6.0",
       "com.malliina" %%% "primitives" % primitivesVersion,
       "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,

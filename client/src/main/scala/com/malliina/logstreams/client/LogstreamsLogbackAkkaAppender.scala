@@ -11,7 +11,7 @@ class LogstreamsLogbackAkkaAppender extends SocketAppender[JsonSocket] {
         hostAndPort <- toMissing(endpoint, "endpoint")
         user <- toMissing(username, "username")
         pass <- toMissing(password, "password")
-        _ <- validate(hostAndPort).right
+        _ <- validate(hostAndPort)
       } yield {
         val headers: Seq[KeyValue] = Seq(HttpUtil.basicAuth(user, pass))
         val host = hostAndPort.takeWhile(_ != ':')

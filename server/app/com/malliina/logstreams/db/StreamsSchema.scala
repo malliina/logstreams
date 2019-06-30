@@ -30,7 +30,7 @@ object StreamsSchema {
   }
 
   // https://github.com/slick/slick/issues/1614#issuecomment-284730145
-  def executor(threads: Int = NumThreads) = AsyncExecutor(
+  def executor(threads: Int = NumThreads): AsyncExecutor = AsyncExecutor(
     name = "AsyncExecutor.boat",
     minThreads = threads,
     maxThreads = threads,
@@ -59,7 +59,6 @@ class StreamsSchema(ds: DataSource, override val impl: JdbcProfile)
 
   class Users(tag: Tag) extends Table[DataUser](tag, "USERS") {
     def user = column[Username]("USER", O.PrimaryKey, O.Length(100))
-
     def passHash = column[Password]("PASS_HASH", O.Length(254))
 
     def * = (user, passHash) <> ((DataUser.apply _).tupled, DataUser.unapply)
@@ -67,9 +66,7 @@ class StreamsSchema(ds: DataSource, override val impl: JdbcProfile)
 
   class Tokens(tag: Tag) extends Table[DataUser](tag, "TOKENS") {
     def tokenUser = column[Username]("TOKEN_USER", O.PrimaryKey, O.Length(100))
-
     def token = column[Password]("TOKEN")
-
     def user = column[Username]("USER", O.Length(100))
 
     def userConstraint = foreignKey("FK_TOKEN_USER", user, users)(
@@ -82,26 +79,17 @@ class StreamsSchema(ds: DataSource, override val impl: JdbcProfile)
 
   class LogEntries(tag: Tag) extends Table[LogEntryRow](tag, "LOGS") {
     def id = column[LogEntryId]("ID", O.PrimaryKey, O.AutoInc)
-
     def app = column[Username]("APP", O.Length(100))
-
     def remoteAddress = column[String]("ADDRESS")
-
-    def timestamp = column[Instant]("TIMESTAMP")
-
+    def timestamp = column[Instant]("TIMESTAMP", O.SqlType("TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP(3) NOT NULL"))
     def message = column[String]("MESSAGE")
-
     def loggerName = column[String]("LOGGER")
-
     def threadName = column[String]("THREAD")
-
     def level = column[Level]("LEVEL")
-
     def stackTrace = column[Option[String]]("STACKTRACE")
-
     // The clauses DEFAULT CURRENT_TIMESTAMP and ON UPDATE CURRENT_TIMESTAMP are by default applied to a timestamp
     // field, and enable the default behavior.
-    def added = column[Instant]("ADDED", O.SqlType("TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
+    def added = column[Instant]("ADDED", O.SqlType("TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP(3)"))
 
     def userConstraint = foreignKey("FK_LOG_USER", app, users)(
       _.user,

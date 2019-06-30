@@ -25,7 +25,7 @@ object TestData {
     getClass.getName.stripSuffix("$"),
     Thread.currentThread().getName,
     Level.ERROR,
-    Option(new Exception("boom").getStackTraceString)
+    Option("Test stack string")
   )
 
   def testEvent(e: models.LogEvent) = AppLogEvent(

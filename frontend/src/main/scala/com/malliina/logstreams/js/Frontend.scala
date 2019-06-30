@@ -1,7 +1,6 @@
 package com.malliina.logstreams.js
 
 import org.scalajs.dom
-import org.scalajs.jquery.JQueryStatic
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport
@@ -26,7 +25,7 @@ object Frontend {
 
 @js.native
 @JSImport("jquery", JSImport.Namespace)
-object MyJQuery extends JQueryStatic
+object MyJQuery extends js.Object
 
 @js.native
 @JSImport("popper.js", JSImport.Namespace)

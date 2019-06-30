@@ -17,5 +17,5 @@ object Auths {
     }
 
   def viewers(auth: LogAuth): UserAuthenticator =
-    UserAuthenticator(rh => auth.authenticateSocket(rh).map(_.right.map(_.user)))
+    UserAuthenticator(rh => auth.authenticateSocket(rh).map(_.map(_.user)))
 }

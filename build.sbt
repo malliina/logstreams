@@ -45,7 +45,6 @@ val frontend = project
     version := "1.0.0",
     libraryDependencies ++= Seq(
       "com.lihaoyi" %%% "scalatags" % "0.7.0",
-//      "be.doeraene" %%% "scalajs-jquery" % "0.9.4",
       "com.typesafe.play" %%% "play-json" % playJsonVersion,
       "org.scalatest" %%% "scalatest" % scalaTestVersion % Test
     ),
@@ -92,13 +91,12 @@ val server = Project("logstreams", file("server"))
     pipelineStages in Assets := Seq(scalaJSPipeline),
     version := serverVersion,
     buildInfoKeys += BuildInfoKey("frontName" -> (name in frontend).value),
-    resolvers += "Sonatype releases" at "https://oss.sonatype.org/content/repositories/releases/",
     libraryDependencies ++= Seq(
       "com.h2database" % "h2" % "1.4.196",
       "mysql" % "mysql-connector-java" % "5.1.47",
       "com.typesafe.slick" %% "slick" % "3.3.2",
       "com.zaxxer" % "HikariCP" % "3.2.0",
-      "com.malliina" %% "logstreams-client" % "1.5.0",
+      "com.malliina" %% "logstreams-client" % "1.6.0",
       "com.malliina" %% "play-social" % utilPlayVersion,
       utilPlayDep,
       utilPlayDep % Test classifier "tests"
@@ -143,11 +141,12 @@ val it = Project("logstreams-test", file("logstreams-test"))
   .dependsOn(server % "test->test", client)
   .settings(basicSettings)
   .settings(
-    libraryDependencies += PlayImport.ws
+    libraryDependencies += "com.typesafe.play" %% "play-ws-standalone" % "2.0.6"
   )
 
 val logstreamsRoot = project
   .in(file("."))
+//  .aggregate(frontend, server, client)
   .aggregate(frontend, server, client, it)
   .settings(basicSettings)
 

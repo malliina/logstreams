@@ -6,7 +6,6 @@ import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents}
 import org.scalajs.dom
 import org.scalajs.dom.document
 import org.scalajs.dom.raw.{Event, HTMLElement, HTMLTableElement}
-import org.scalajs.jquery.{JQuery, JQueryEventObject}
 import play.api.libs.json.JsValue
 import scalatags.JsDom.all._
 
@@ -17,7 +16,8 @@ object ListenerSocket {
     new ListenerSocket(wsPath, settings, verboseSupport)
 }
 
-class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean) extends BaseSocket(wsPath) {
+class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean)
+    extends BaseSocket(wsPath) {
   val CellContent = "cell-content"
   val CellWide = "cell-wide"
   val ColumnCount = 6
@@ -30,7 +30,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
 
   val localStorage = dom.window.localStorage
 
-  lazy val tableBody = elem(TableBodyId)
+  lazy val tableBody = e(TableBodyId)
   lazy val table = getElem[HTMLTableElement](LogTableId)
 
   def isVerbose: Boolean = settings.isVerbose
@@ -75,7 +75,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
   def onLogEvents(appLogEvents: AppLogEvents): Unit =
     appLogEvents.events foreach onLogEvent
 
-  def onLogEvent(event: AppLogEvent): JQuery = {
+  def onLogEvent(event: AppLogEvent): Unit = {
     val entry = event.event
     val row: RowContent = toRow(event)
     val stackId = s"stack-${row.linkId}"
@@ -83,17 +83,13 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
       val errorRow = tr(`class` := Hidden, id := stackId)(
         td(colspan := s"$ColumnCount")(pre(stackTrace))
       )
-      tableBody prepend errorRow.render
+      tableBody.insertBefore(errorRow.render, tableBody.firstChild)
     }
-    tableBody prepend row.content.render
+    tableBody.insertBefore(row.content.render, tableBody.firstChild)
     // Toggles text wrapping for long texts when clicked
-    elem(row.cellId).click { _: JQueryEventObject =>
-      elem(row.cellId) toggleClass CellContent
-      false
-    }
-    elem(row.linkId).click { _: JQueryEventObject =>
-      elem(stackId) toggleClass Hidden
-      false
+    getElem[HTMLElement](row.cellId).onClickToggleClass(CellContent)
+    getElem[HTMLElement](row.linkId).onclick = _ => {
+      e(stackId).asInstanceOf[HTMLElement].toggleClass(Hidden)
     }
   }
 
@@ -102,8 +98,8 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
     val entry = event.event
     val rowClass = entry.level match {
       case "ERROR" => Danger
-      case "WARN" => Warning
-      case _ => ""
+      case "WARN"  => Warning
+      case _       => ""
     }
     val entryId = UUID.randomUUID().toString take 5
     val msgCellId = s"msg-$entryId"
@@ -123,9 +119,10 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
     RowContent(frag, msgCellId, linkId)
   }
 
-
   def cell(content: String, hideable: Boolean = false) =
-    toCell(content, names(CellContent, if (hideable) if (isVerbose) VerboseKey else s"$VerboseKey $Off" else ""))
+    toCell(
+      content,
+      names(CellContent, if (hideable) if (isVerbose) VerboseKey else s"$VerboseKey $Off" else ""))
 
   def wideCell(content: String, cellId: String) =
     td(`class` := s"$CellContent $CellWide", id := cellId)(content)

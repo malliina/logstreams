@@ -4,7 +4,7 @@ import com.malliina.http.FullUrl
 import com.malliina.logstreams.js.BaseSocket.{EventKey, Ping}
 import org.scalajs.dom
 import org.scalajs.dom.CloseEvent
-import org.scalajs.dom.raw.{ErrorEvent, Event, MessageEvent}
+import org.scalajs.dom.raw.{Event, MessageEvent}
 import play.api.libs.json._
 
 import scala.util.Try
@@ -14,9 +14,8 @@ object BaseSocket {
   val Ping = "ping"
 }
 
-class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.noop)
-  extends ScriptHelpers {
-  val statusElem = elem("status")
+class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.noop) extends ScriptHelpers {
+  val statusElem = Option(e("status"))
   val socket: dom.WebSocket = openSocket(wsPath)
 
   def handlePayload(payload: JsValue): Unit = ()
@@ -69,7 +68,7 @@ class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.noop)
     FullUrl(wsProto, location.host, "")
   }
 
-  def setFeedback(feedback: String) = statusElem html feedback
+  def setFeedback(feedback: String): Unit = statusElem.foreach(_.innerHTML = feedback)
 
   def onJsonException(t: Throwable): Unit = {
     log error t

@@ -91,7 +91,7 @@ class OAuth(val actions: ActionBuilder[Request, AnyContent], creds: GoogleOAuthC
   }
 
   def googleCallback = actions.async { req =>
-    val describe = req.session.get(CodeValidator.State).fold("without state")(s => s"with a state of '$s'")
+    val describe = req.session.get(OAuthKeys.State).fold("without state")(s => s"with a state of '$s'")
     log.info(s"Validating OAuth callback $describe...")
     validator.validateCallback(req)
   }

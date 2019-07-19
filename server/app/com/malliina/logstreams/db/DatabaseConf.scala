@@ -1,10 +1,47 @@
 package com.malliina.logstreams.db
 
 import java.nio.file.{Files, Path, Paths}
+import java.sql.{PreparedStatement, ResultSet, Timestamp}
+import java.time.Instant
 
 import com.malliina.values.ErrorMessage
 import play.api.{Configuration, Mode}
+import slick.ast.FieldSymbol
 import slick.jdbc.{H2Profile, JdbcProfile, MySQLProfile}
+
+object InstantMySQLProfile extends JdbcProfile with MySQLProfile {
+  override val columnTypes = new JdbcTypes
+
+  class JdbcTypes extends super.JdbcTypes {
+    override val instantType = new InstantJdbcType {
+      override def sqlTypeName(sym: Option[FieldSymbol]) = "TIMESTAMP(3)"
+      override def setValue(v: Instant, p: PreparedStatement, idx: Int): Unit =
+        p.setTimestamp(idx, Timestamp.from(v))
+      override def getValue(r: ResultSet, idx: Int): Instant =
+        Option(r.getTimestamp(idx)).map(_.toInstant).orNull
+      override def updateValue(v: Instant, r: ResultSet, idx: Int): Unit =
+        r.updateTimestamp(idx, Timestamp.from(v))
+      override def valueToSQLLiteral(value: Instant): String = s"'${Timestamp.from(value)}'"
+    }
+  }
+}
+
+object InstantH2Profile extends JdbcProfile with H2Profile {
+  override val columnTypes = new JdbcTypes
+
+  class JdbcTypes extends super.JdbcTypes {
+    override val instantType = new InstantJdbcType {
+      override def sqlTypeName(sym: Option[FieldSymbol]) = "TIMESTAMP(3)"
+      override def setValue(v: Instant, p: PreparedStatement, idx: Int): Unit =
+        p.setTimestamp(idx, Timestamp.from(v))
+      override def getValue(r: ResultSet, idx: Int): Instant =
+        Option(r.getTimestamp(idx)).map(_.toInstant).orNull
+      override def updateValue(v: Instant, r: ResultSet, idx: Int): Unit =
+        r.updateTimestamp(idx, Timestamp.from(v))
+      override def valueToSQLLiteral(value: Instant): String = s"'${Timestamp.from(value)}'"
+    }
+  }
+}
 
 case class DatabaseConf(url: String, user: String, pass: String, driver: String, impl: JdbcProfile)
 
@@ -76,9 +113,9 @@ object DatabaseConf {
   def h2(conn: String) = DatabaseConf(s"jdbc:h2:$conn;DB_CLOSE_DELAY=-1", "", "", H2Driver, H2Profile)
 
   def impl(brand: String): Either[ErrorMessage, JdbcProfile] = brand match {
-    case MySQLDriver => Right(MySQLProfile)
-    case MariaDriver => Right(MySQLProfile)
-    case H2Driver => Right(H2Profile)
+    case MySQLDriver => Right(InstantMySQLProfile)
+    case MariaDriver => Right(InstantMySQLProfile)
+    case H2Driver => Right(InstantH2Profile)
     case other => Left(ErrorMessage(s"Unknown driver: '$other'."))
   }
 }

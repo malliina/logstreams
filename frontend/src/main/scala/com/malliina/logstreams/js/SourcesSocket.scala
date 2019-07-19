@@ -6,7 +6,7 @@ import scalatags.Text
 import scalatags.Text.all._
 
 class SourcesSocket extends BaseSocket("/ws/admins?f=json") {
-  val tableBody = e(SourceTableId).getElementsByTagName("tbody").head
+  val tableBody = elem(SourceTableId).getElementsByTagName("tbody").head
 
   override def handlePayload(payload: JsValue): Unit =
     handleValidated[LogSources](payload)(onParsed)

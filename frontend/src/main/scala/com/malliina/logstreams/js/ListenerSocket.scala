@@ -30,7 +30,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
 
   val localStorage = dom.window.localStorage
 
-  lazy val tableBody = e(TableBodyId)
+  lazy val tableBody = elem(TableBodyId)
   lazy val table = getElem[HTMLTableElement](LogTableId)
 
   def isVerbose: Boolean = settings.isVerbose
@@ -88,8 +88,11 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
     tableBody.insertBefore(row.content.render, tableBody.firstChild)
     // Toggles text wrapping for long texts when clicked
     getElem[HTMLElement](row.cellId).onClickToggleClass(CellContent)
-    getElem[HTMLElement](row.linkId).onclick = _ => {
-      e(stackId).asInstanceOf[HTMLElement].toggleClass(Hidden)
+    // Shows stacktrace if present
+    elemOptAs[HTMLElement](row.linkId).foreach { e =>
+      e.onclick = _ => {
+        elem(stackId).asInstanceOf[HTMLElement].toggleClass(Hidden)
+      }
     }
   }
 

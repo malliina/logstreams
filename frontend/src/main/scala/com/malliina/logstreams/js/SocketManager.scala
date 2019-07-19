@@ -11,7 +11,7 @@ object SocketManager {
 
 class SocketManager extends ScriptHelpers {
   val settings: Settings = StorageSettings
-  val availableApps = e(DropdownMenuId).getElementsByClassName(DropdownItemId).map(_.asInstanceOf[Anchor])
+  val availableApps = elem(DropdownMenuId).getElementsByClassName(DropdownItemId).map(_.asInstanceOf[Anchor])
   private var socket: ListenerSocket = socketFor(settings.apps)
 
   availableApps.foreach { item =>
@@ -28,7 +28,7 @@ class SocketManager extends ScriptHelpers {
       selected.onclick = (_: MouseEvent) => updateFilter(settings.remove(app))
       selected
     }
-    val target = e(AppsFiltered)
+    val target = elem(AppsFiltered)
     target.innerHTML = ""
     buttons.foreach { btn => target.appendChild(btn) }
   }

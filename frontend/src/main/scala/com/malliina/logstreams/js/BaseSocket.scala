@@ -15,7 +15,7 @@ object BaseSocket {
 }
 
 class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.noop) extends ScriptHelpers {
-  val statusElem = Option(e("status"))
+  val statusElem = Option(elem("status"))
   val socket: dom.WebSocket = openSocket(wsPath)
 
   def handlePayload(payload: JsValue): Unit = ()
@@ -79,8 +79,8 @@ class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.noop) extends 
   }
 
   def clear(): Unit = {
-    e(TableHeadId).innerHTML = ""
-    e(TableBodyId).innerHTML = ""
+    elem(TableHeadId).innerHTML = ""
+    elem(TableBodyId).innerHTML = ""
   }
 
   def close(): Unit = socket.close()

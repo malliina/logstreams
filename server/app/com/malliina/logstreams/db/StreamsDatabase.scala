@@ -33,10 +33,9 @@ class StreamsDatabase(db: StreamsSchema) {
     logEntries
       .filterIf(query.apps.nonEmpty)(_.app.inSet(query.apps))
       .sortBy(r =>
-        if (query.order == SortOrder.asc) (r.added.asc, r.id.asc) else (r.added.desc, r.id.asc))
+        if (query.order == SortOrder.asc) (r.added.asc, r.id.asc) else (r.added.desc, r.id.desc))
       .drop(query.offset)
       .take(query.limit)
-      .sortBy(_.id.asc)
       .result
       .map(rows => AppLogEvents(rows.map(_.toEvent)))
   }

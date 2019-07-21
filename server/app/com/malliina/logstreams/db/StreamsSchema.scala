@@ -96,8 +96,10 @@ class StreamsSchema(ds: DataSource, override val impl: JdbcProfile)
       onUpdate = ForeignKeyAction.Cascade,
       onDelete = ForeignKeyAction.NoAction)
 
-    def forInsert = (app, remoteAddress, timestamp, message, loggerName, threadName, level, stackTrace) <> ((LogEntryInput.apply _).tupled, LogEntryInput.unapply)
+    def appAddedIdx = index("LOGS_APP_ADDED_IDX", (app, added))
+    def addedIdx = index("LOGS_ADDED_IDX", added)
 
+    def forInsert = (app, remoteAddress, timestamp, message, loggerName, threadName, level, stackTrace) <> ((LogEntryInput.apply _).tupled, LogEntryInput.unapply)
     def * = (id, app, remoteAddress, timestamp, message, loggerName, threadName, level, stackTrace, added) <> ((LogEntryRow.apply _).tupled, LogEntryRow.unapply)
   }
 

@@ -19,9 +19,7 @@ object DatabaseAuth {
 }
 
 class DatabaseAuth(val db: StreamsSchema) extends UserService {
-
-  import db.impl.api._
-  import db.mappings._
+  import db.api._
 
   val users = db.users
 

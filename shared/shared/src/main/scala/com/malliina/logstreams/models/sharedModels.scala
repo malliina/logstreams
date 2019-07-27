@@ -87,6 +87,7 @@ object AppLogEvent {
 
 case class AppLogEvents(events: Seq[AppLogEvent]) extends FrontEvent {
   def filter(p: AppLogEvent => Boolean): AppLogEvents = copy(events = events.filter(p))
+  def reverse = AppLogEvents(events.reverse)
 }
 
 object AppLogEvents {

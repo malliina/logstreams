@@ -39,15 +39,11 @@ object StreamsSchema {
   )
 }
 
-class StreamsSchema(ds: DataSource, override val impl: JdbcProfile)
-  extends DatabaseLike(impl, impl.api.Database.forDataSource(ds, Option(NumThreads), executor = StreamsSchema.executor(NumThreads)))
+class StreamsSchema(ds: DataSource, i: JdbcProfile)
+  extends DatabaseLike(ds, i)
     with Closeable {
-
-  import impl.api._
-
-  object mappings extends Mappings(impl)
-
-  import mappings._
+  val api = new Mappings(impl) with impl.API
+  import api._
 
   val users = TableQuery[Users]
   val tokens = TableQuery[Tokens]

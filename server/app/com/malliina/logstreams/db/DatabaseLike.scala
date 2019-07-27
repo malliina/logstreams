@@ -4,6 +4,8 @@ import java.sql.SQLException
 
 import com.malliina.concurrent.Execution.cached
 import com.malliina.logstreams.db.DatabaseLike.log
+import com.malliina.logstreams.db.StreamsSchema.NumThreads
+import javax.sql.DataSource
 import play.api.Logger
 import slick.jdbc.JdbcProfile
 import slick.jdbc.meta.MTable
@@ -13,8 +15,8 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 import scala.language.higherKinds
 
-abstract class DatabaseLike(val impl: JdbcProfile, val database: JdbcProfile#API#Database) {
-
+abstract class DatabaseLike(ds: DataSource, val impl: JdbcProfile) {
+  val database = impl.api.Database.forDataSource(ds, Option(NumThreads), executor = StreamsSchema.executor(NumThreads))
   import impl.api._
 
   def tableQueries: Seq[TableQuery[_ <: Table[_]]]

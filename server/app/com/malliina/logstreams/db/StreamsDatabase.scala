@@ -6,14 +6,12 @@ import com.malliina.logstreams.models._
 import scala.concurrent.Future
 
 object StreamsDatabase {
-  def apply(db: StreamsSchema) = new StreamsDatabase(db)
+  def apply(db: StreamsSchema): StreamsDatabase = new StreamsDatabase(db)
 }
 
 class StreamsDatabase(db: StreamsSchema) {
-
-  import db.impl.api._
+  import db.api._
   import db.logEntries
-  import db.mappings._
   import db.run
 
   def insert(events: Seq[LogEntryInput]): Future[EntriesWritten] = run("Insert logs") {

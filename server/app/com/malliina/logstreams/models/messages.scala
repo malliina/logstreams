@@ -13,33 +13,45 @@ object LogEvents {
   implicit val json: OFormat[LogEvents] = Json.format[LogEvents]
 }
 
-case class LogEntryInput(appName: Username,
-                         remoteAddress: String,
-                         timestamp: Instant,
-                         message: String,
-                         loggerName: String,
-                         threadName: String,
-                         level: Level,
-                         stackTrace: Option[String])
+case class LogEntryInput(
+    appName: Username,
+    remoteAddress: String,
+    timestamp: Instant,
+    message: String,
+    loggerName: String,
+    threadName: String,
+    level: Level,
+    stackTrace: Option[String]
+)
 
 case class LogEntryInputs(events: Seq[LogEntryInput])
 
-case class LogEntryRow(id: LogEntryId,
-                       appName: Username,
-                       remoteAddress: String,
-                       timestamp: Instant,
-                       message: String,
-                       loggerName: String,
-                       threadName: String,
-                       level: Level,
-                       stackTrace: Option[String],
-                       added: Instant) {
+case class LogEntryRow(
+    id: LogEntryId,
+    app: Username,
+    address: String,
+    timestamp: Instant,
+    message: String,
+    logger: String,
+    thread: String,
+    level: Level,
+    stacktrace: Option[String],
+    added: Instant
+) {
   def toEvent = AppLogEvent(
     id,
-    LogSource(AppName(appName.name), remoteAddress),
-    LogEvent(timestamp.toEpochMilli, LogEntryRow.format(timestamp),
-      message, loggerName, threadName, level.levelStr, stackTrace),
-    added.toEpochMilli, LogEntryRow.format(added)
+    LogSource(AppName(app.name), address),
+    LogEvent(
+      timestamp.toEpochMilli,
+      LogEntryRow.format(timestamp),
+      message,
+      logger,
+      thread,
+      level.levelStr,
+      stacktrace
+    ),
+    added.toEpochMilli,
+    LogEntryRow.format(added)
   )
 }
 

@@ -10,7 +10,7 @@ import akka.stream.{Materializer, OverflowStrategy}
 import akka.util.Timeout
 import ch.qos.logback.classic.Level
 import com.malliina.logstreams.Streams.onlyOnce
-import com.malliina.logstreams.db.{StreamsDatabase, StreamsQuery}
+import com.malliina.logstreams.db.{LogsDatabase, StreamsQuery}
 import com.malliina.logstreams.models._
 import com.malliina.logstreams.ws.SourceManager.{AppJoined, AppLeft, GetApps}
 import com.malliina.logstreams.ws._
@@ -33,21 +33,25 @@ object SocketsBundle {
   private val log = Logger(getClass)
 }
 
-class SocketsBundle(listenerAuth: Authenticator[Username],
-                    sourceAuth: Authenticator[Username],
-                    db: StreamsDatabase,
-                    deps: ActorExecution) {
+class SocketsBundle(
+    listenerAuth: Authenticator[Username],
+    sourceAuth: Authenticator[Username],
+    db: LogsDatabase,
+    deps: ActorExecution
+) {
   implicit val mat: Materializer = deps.materializer
   implicit val ec: ExecutionContextExecutor = deps.executionContext
 
   // Publish-Subscribe Akka Streams
   // https://doc.akka.io/docs/akka/2.5/stream/stream-dynamic.html
-  val (appsSink, logsSource) = MergeHub.source[LogEntryInputs](perProducerBufferSize = 256)
+  val (appsSink, logsSource) = MergeHub
+    .source[LogEntryInputs](perProducerBufferSize = 256)
     .toMat(BroadcastHub.sink(bufferSize = 256))(Keep.both)
     .run()
 
-  val savedEvents: Source[AppLogEvents, NotUsed] = onlyOnce(logsSource.mapAsync(parallelism = 10) { ins =>
-    db.insert(ins.events).map(written => AppLogEvents(written.rows.map(_.toEvent)))
+  val savedEvents: Source[AppLogEvents, NotUsed] = onlyOnce(logsSource.mapAsync(parallelism = 10) {
+    ins =>
+      db.insert(ins.events).map(written => AppLogEvents(written.rows.map(_.toEvent)))
   })
 
   val _ = savedEvents.runWith(Sink.ignore)
@@ -57,8 +61,10 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
   implicit val adminTransformer: MessageFlowTransformer[JsValue, AdminEvent] =
     jsonMessageFlowTransformer[JsValue, AdminEvent]
 
-  val (ref, pub) = Source.actorRef[AdminEvent](10, OverflowStrategy.dropHead)
-    .toMat(Sink.asPublisher(fanout = true))(Keep.both).run()
+  val (ref, pub) = Source
+    .actorRef[AdminEvent](10, OverflowStrategy.dropHead)
+    .toMat(Sink.asPublisher(fanout = true))(Keep.both)
+    .run()
   val adminSource: Source[AdminEvent, NotUsed] = Source.fromPublisher(pub)
   // drains admin events for situations where no admin is subscribed
   adminSource.runWith(Sink.ignore)
@@ -72,13 +78,22 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
             if (query.apps.isEmpty) {
               savedEvents
             } else {
-              savedEvents.map(es => es.filter(e => query.apps.exists(app => app.name == e.source.name.name)))
+              savedEvents.map(
+                es => es.filter(e => query.apps.exists(app => app.name == e.source.name.name))
+              )
             }
           val concatEvents: Source[AppLogEvents, NotUsed] =
-            Source.fromFuture(db.events(query))
-              .flatMapConcat(history => Source.single(history.reverse).concat(filteredEvents.map(_.filter(e => !history.events.exists(_.id == e.id)))))
+            Source
+              .fromFuture(db.events(query))
+              .flatMapConcat(
+                history =>
+                  Source
+                    .single(history.reverse)
+                    .concat(filteredEvents.map(_.filter(e => !history.events.exists(_.id == e.id))))
+              )
               .filter(_.events.nonEmpty)
-          Flow.fromSinkAndSource(Sink.ignore, concatEvents)
+          Flow
+            .fromSinkAndSource(Sink.ignore, concatEvents)
             .keepAlive(10.seconds, () => SimpleEvent.ping)
             .backpressureTimeout(5.seconds)
         }.left.map { err =>
@@ -94,7 +109,8 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
       implicit val timeout: Timeout = Timeout(5.seconds)
       (serverManager ? GetApps).mapTo[LogSources].map { sources =>
         Right {
-          Flow.fromSinkAndSource(Sink.ignore, Source.single(sources).concat(adminSource))
+          Flow
+            .fromSinkAndSource(Sink.ignore, Source.single(sources).concat(adminSource))
             .keepAlive(10.seconds, () => SimpleEvent.ping)
             .backpressureTimeout(5.seconds)
         }
@@ -107,26 +123,33 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
       val server = LogSource(AppName(user.name), Proxies.realAddress(rh))
       serverManager ! AppJoined(server)
       val transformer = jsonMessageFlowTransformer.map[LogEntryInputs](
-        json => json.validate[LogEvents].map { es =>
-          LogEntryInputs(es.events.map { event =>
-            LogEntryInput(
-              user,
-              Proxies.realAddress(rh),
-              Instant.ofEpochMilli(event.timestamp),
-              event.message,
-              event.loggerName,
-              event.threadName,
-              Level.toLevel(event.level),
-              event.stackTrace
-            )
-          })
-        }.getOrElse(throw new Exception)
+        json =>
+          json
+            .validate[LogEvents]
+            .map { es =>
+              LogEntryInputs(es.events.map { event =>
+                LogEntryInput(
+                  user,
+                  Proxies.realAddress(rh),
+                  Instant.ofEpochMilli(event.timestamp),
+                  event.message,
+                  event.loggerName,
+                  event.threadName,
+                  Level.toLevel(event.level),
+                  event.stackTrace
+                )
+              })
+            }
+            .getOrElse(throw new Exception)
       )
-      val typedFlow = Flow.fromSinkAndSource(appsSink, Source.maybe[JsValue])
+      val typedFlow = Flow
+        .fromSinkAndSource(appsSink, Source.maybe[JsValue])
         .keepAlive(10.seconds, () => Json.toJson(SimpleEvent.ping))
       right {
         transformer.transform(typedFlow).watchTermination() { (_, termination) =>
-          termination.foreach { _ => serverManager ! AppLeft(server) }
+          termination.foreach { _ =>
+            serverManager ! AppLeft(server)
+          }
           NotUsed
         }
       }
@@ -135,8 +158,12 @@ class SocketsBundle(listenerAuth: Authenticator[Username],
 
   def right[T](t: => T): Future[Right[Nothing, T]] = Future.successful(Right(t))
 
-  def auth[T](rh: RequestHeader, impl: Authenticator[Username])(code: Username => Future[Either[Result, T]]): Future[Either[Result, T]] =
-    impl.authenticate(rh).flatMap(e => e.fold(f => Future.successful(Left(onUnauthorized(rh, f))), u => code(u)))
+  def auth[T](rh: RequestHeader, impl: Authenticator[Username])(
+      code: Username => Future[Either[Result, T]]
+  ): Future[Either[Result, T]] =
+    impl
+      .authenticate(rh)
+      .flatMap(e => e.fold(f => Future.successful(Left(onUnauthorized(rh, f))), u => code(u)))
 
   def onUnauthorized(rh: RequestHeader, failure: AuthFailure): Result = {
     log warn s"Unauthorized request $rh"

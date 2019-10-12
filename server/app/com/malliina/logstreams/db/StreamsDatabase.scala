@@ -9,7 +9,7 @@ object StreamsDatabase {
   def apply(db: StreamsSchema): StreamsDatabase = new StreamsDatabase(db)
 }
 
-class StreamsDatabase(db: StreamsSchema) {
+class StreamsDatabase(db: StreamsSchema) extends LogsDatabase {
   import db.api._
   import db.logEntries
   import db.run
@@ -30,8 +30,11 @@ class StreamsDatabase(db: StreamsSchema) {
   def events(query: StreamsQuery = StreamsQuery.default): Future[AppLogEvents] = run("Fetch logs") {
     logEntries
       .filterIf(query.apps.nonEmpty)(_.app.inSet(query.apps))
-      .sortBy(r =>
-        if (query.order == SortOrder.asc) (r.added.asc, r.id.asc) else (r.added.desc, r.id.desc))
+      .sortBy(
+        r =>
+          if (query.order == SortOrder.asc) (r.added.asc, r.id.asc)
+          else (r.added.desc, r.id.desc)
+      )
       .drop(query.offset)
       .take(query.limit)
       .result

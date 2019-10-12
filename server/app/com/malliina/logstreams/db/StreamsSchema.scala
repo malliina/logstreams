@@ -39,9 +39,7 @@ object StreamsSchema {
   )
 }
 
-class StreamsSchema(ds: DataSource, i: JdbcProfile)
-  extends DatabaseLike(ds, i)
-    with Closeable {
+class StreamsSchema(ds: DataSource, i: JdbcProfile) extends DatabaseLike(ds, i) with Closeable {
   val api = new Mappings(impl) with impl.API
   import api._
 
@@ -61,14 +59,14 @@ class StreamsSchema(ds: DataSource, i: JdbcProfile)
   }
 
   class Tokens(tag: Tag) extends Table[DataUser](tag, "TOKENS") {
-    def tokenUser = column[Username]("TOKEN_USER", O.PrimaryKey, O.Length(100))
     def token = column[Password]("TOKEN")
     def user = column[Username]("USER", O.Length(100))
 
     def userConstraint = foreignKey("FK_TOKEN_USER", user, users)(
       _.user,
       onUpdate = ForeignKeyAction.Cascade,
-      onDelete = ForeignKeyAction.Cascade)
+      onDelete = ForeignKeyAction.Cascade
+    )
 
     def * = (user, token) <> ((DataUser.apply _).tupled, DataUser.unapply)
   }
@@ -77,7 +75,8 @@ class StreamsSchema(ds: DataSource, i: JdbcProfile)
     def id = column[LogEntryId]("ID", O.PrimaryKey, O.AutoInc)
     def app = column[Username]("APP", O.Length(100))
     def remoteAddress = column[String]("ADDRESS")
-    def timestamp = column[Instant]("TIMESTAMP", O.SqlType("TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP(3) NOT NULL"))
+    def timestamp =
+      column[Instant]("TIMESTAMP", O.SqlType("TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP(3) NOT NULL"))
     def message = column[String]("MESSAGE")
     def loggerName = column[String]("LOGGER")
     def threadName = column[String]("THREAD")
@@ -90,13 +89,34 @@ class StreamsSchema(ds: DataSource, i: JdbcProfile)
     def userConstraint = foreignKey("FK_LOG_USER", app, users)(
       _.user,
       onUpdate = ForeignKeyAction.Cascade,
-      onDelete = ForeignKeyAction.NoAction)
+      onDelete = ForeignKeyAction.NoAction
+    )
 
     def appAddedIdx = index("LOGS_APP_ADDED_IDX", (app, added))
     def addedIdx = index("LOGS_ADDED_IDX", added)
 
-    def forInsert = (app, remoteAddress, timestamp, message, loggerName, threadName, level, stackTrace) <> ((LogEntryInput.apply _).tupled, LogEntryInput.unapply)
-    def * = (id, app, remoteAddress, timestamp, message, loggerName, threadName, level, stackTrace, added) <> ((LogEntryRow.apply _).tupled, LogEntryRow.unapply)
+    def forInsert = (
+      app,
+      remoteAddress,
+      timestamp,
+      message,
+      loggerName,
+      threadName,
+      level,
+      stackTrace
+    ) <> ((LogEntryInput.apply _).tupled, LogEntryInput.unapply)
+    def * = (
+      id,
+      app,
+      remoteAddress,
+      timestamp,
+      message,
+      loggerName,
+      threadName,
+      level,
+      stackTrace,
+      added
+    ) <> ((LogEntryRow.apply _).tupled, LogEntryRow.unapply)
   }
 
   override def close(): Unit = database.close()

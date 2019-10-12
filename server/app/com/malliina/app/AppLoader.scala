@@ -2,9 +2,9 @@ package com.malliina.app
 
 import java.nio.file.Paths
 
-import buildinfo.BuildInfo
 import com.malliina.logstreams.auth.{Auths, UserService}
-import com.malliina.logstreams.db.{DatabaseAuth, DatabaseConf, StreamsDatabase, StreamsSchema}
+import com.malliina.logstreams.db.NewStreamsDatabase.fail
+import com.malliina.logstreams.db._
 import com.malliina.logstreams.html.Htmls
 import com.malliina.oauth.GoogleOAuthCredentials
 import com.malliina.play.ActorExecution
@@ -30,15 +30,15 @@ object LocalConf {
 
 class AppLoader extends DefaultApp(new ProdAppComponents(_))
 
-class ProdAppComponents(ctx: Context) extends AppComponents(ctx) {
+class ProdAppComponents(ctx: Context)
+    extends AppComponents(ctx, c => Conf.fromConf(c).fold(fail, identity)) {
   override lazy val auth = new WebAuth(authImpl)
 }
 
-abstract class AppComponents(context: Context)
-  extends BuiltInComponentsFromContext(context)
+abstract class AppComponents(context: Context, dbConf: Configuration => Conf)
+    extends BuiltInComponentsFromContext(context)
     with HttpFiltersComponents
     with AssetsComponents {
-
 
   def auth: LogAuth
 
@@ -46,9 +46,11 @@ abstract class AppComponents(context: Context)
   val isProd = environment.mode == Mode.Prod
 
   override val configuration = context.initialConfiguration ++ LocalConf.localConf
-  override lazy val httpFilters = Seq(new GzipFilter(), csrfFilter, securityHeadersFilter, allowedHostsFilter)
+  override lazy val httpFilters =
+    Seq(new GzipFilter(), csrfFilter, securityHeadersFilter, allowedHostsFilter)
   val creds: GoogleOAuthCredentials =
-    if (mode != Mode.Test) GoogleOAuthCredentials(configuration).fold(err => throw new Exception(err.message), identity)
+    if (mode != Mode.Test)
+      GoogleOAuthCredentials(configuration).fold(err => throw new Exception(err.message), identity)
     else GoogleOAuthCredentials("", "", "")
   override lazy val allowedHostsConfig: AllowedHostsConfig =
     AllowedHostsConfig(Seq("localhost", "logs.malliina.com"))
@@ -59,21 +61,24 @@ abstract class AppComponents(context: Context)
     "code.jquery.com",
     "use.fontawesome.com"
   )
-  val databaseSchema = StreamsSchema(DatabaseConf(configuration, mode))
-  val csp = s"default-src 'self' 'unsafe-inline' 'unsafe-eval' ${allowedDomains.mkString(" ")}; connect-src *; img-src 'self' data:;"
+  val csp =
+    s"default-src 'self' 'unsafe-inline' 'unsafe-eval' ${allowedDomains.mkString(" ")}; connect-src *; img-src 'self' data:;"
   override lazy val securityHeadersConfig: SecurityHeadersConfig =
     SecurityHeadersConfig(contentSecurityPolicy = Option(csp))
   val defaultHttpConf = HttpConfiguration.fromConfiguration(configuration, environment)
   // Sets sameSite = None, otherwise the Google auth redirect will wipe out the session state
   override lazy val httpConfiguration =
-    defaultHttpConf.copy(session = defaultHttpConf.session.copy(cookieName = "logsSession", sameSite = None))
+    defaultHttpConf.copy(
+      session = defaultHttpConf.session.copy(cookieName = "logsSession", sameSite = None)
+    )
 
   implicit val ec: ExecutionContextExecutor = materializer.executionContext
   val actions = controllerComponents.actionBuilder
   // Services
-  val database = StreamsDatabase(databaseSchema)
+  val db = NewStreamsDatabase.withMigrations(actorSystem, dbConf(configuration))
+  val database: LogsDatabase = db
   val htmls = Htmls.forApp(BuildInfo.frontName, isProd)
-  val users: UserService = DatabaseAuth(databaseSchema)
+  val users: UserService = NewDatabaseAuth(db.ds, db.ec)
   lazy val listenerAuth = Auths.viewers(auth)
   val sourceAuth = Auths.sources(users)
   val oauth = new OAuth(actions, creds)
@@ -85,7 +90,10 @@ abstract class AppComponents(context: Context)
   lazy val sockets = new SocketsBundle(listenerAuth, sourceAuth, database, deps)
   override lazy val router: Router = new Routes(httpErrorHandler, home, sockets, oauth)
 
-  applicationLifecycle.addStopHook(() => Future.successful {
-    databaseSchema.close()
-  })
+  applicationLifecycle.addStopHook(
+    () =>
+      Future.successful {
+        db.close()
+      }
+  )
 }

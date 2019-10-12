@@ -1,4 +1,3 @@
-import play.sbt.PlayImport
 import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 import sbtcrossproject.CrossPlugin.autoImport.{
@@ -19,7 +18,7 @@ val serverVersion = "0.5.0"
 
 val basicSettings = Seq(
   organization := malliinaGroup,
-  scalaVersion := "2.13.0",
+  scalaVersion := "2.13.1",
   scalacOptions := Seq("-unchecked", "-deprecation")
 )
 
@@ -91,15 +90,19 @@ val server = Project("logstreams", file("server"))
     pipelineStages in Assets := Seq(scalaJSPipeline),
     version := serverVersion,
     buildInfoKeys += BuildInfoKey("frontName" -> (name in frontend).value),
+    buildInfoPackage := "com.malliina.app",
     libraryDependencies ++= Seq(
       "com.h2database" % "h2" % "1.4.196",
+      "io.getquill" %% "quill-jdbc" % "3.4.10",
+      "org.flywaydb" % "flyway-core" % "6.0.3",
       "mysql" % "mysql-connector-java" % "5.1.47",
       "com.typesafe.slick" %% "slick" % "3.3.2",
       "com.zaxxer" % "HikariCP" % "3.2.0",
       "com.malliina" %% "logstreams-client" % "1.6.0",
       "com.malliina" %% "play-social" % utilPlayVersion,
       utilPlayDep,
-      utilPlayDep % Test classifier "tests"
+      utilPlayDep % Test classifier "tests",
+      "ch.vorburger.mariaDB4j" % "mariaDB4j" % "2.4.0" % Test
     ).map(_.withSources().withJavadoc()),
     pipelineStages := Seq(digest, gzip),
     javaOptions in Universal ++= {

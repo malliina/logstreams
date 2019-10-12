@@ -3,12 +3,12 @@ package com.malliina.logstreams.db
 import java.time.Instant
 
 import akka.actor.ActorSystem
+import com.malliina.logstreams.db.NewMappings._
 import com.malliina.logstreams.models._
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import io.getquill._
 import org.flywaydb.core.Flyway
 import play.api.Logger
-
 import scala.concurrent.{ExecutionContext, Future}
 
 object NewStreamsDatabase {

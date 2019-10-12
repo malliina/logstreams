@@ -2,13 +2,14 @@ package com.malliina.logstreams.db
 
 import com.malliina.logstreams.auth.UserError.{AlreadyExists, DoesNotExist}
 import com.malliina.logstreams.auth.UserService
+import com.malliina.logstreams.db.NewDatabaseAuth.log
 import com.malliina.play.auth.BasicCredentials
 import com.malliina.values.{Password, Username}
 import com.zaxxer.hikari.HikariDataSource
-import io.getquill.{MysqlEscape, MysqlJdbcContext, NamingStrategy, SnakeCase, UpperCase}
+import io.getquill._
 import org.apache.commons.codec.digest.DigestUtils
 import play.api.Logger
-import NewDatabaseAuth.log
+
 import scala.concurrent.{ExecutionContext, Future}
 
 object NewDatabaseAuth {

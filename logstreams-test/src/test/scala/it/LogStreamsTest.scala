@@ -7,24 +7,24 @@ import com.malliina.logstreams.models._
 import com.malliina.play.auth.BasicCredentials
 import com.malliina.security.SSLUtils
 import com.malliina.values.{Password, Username}
-import org.scalatest.FunSuite
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import play.api.ApplicationLoader.Context
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.ahc.AhcWSClient
 import play.api.{BuiltInComponents, Logger}
-import tests.{OneServerPerSuite2, TestComponents}
+import tests.{OneServerPerSuite2, TestComponents, TestComps}
 
 import scala.concurrent.Promise
 
-abstract class TestServerSuite extends ServerSuite(new TestComponents(_))
+abstract class TestServerSuite extends ServerSuite(new TestComponents(_, TestComps.db))
 
 abstract class ServerSuite[T <: BuiltInComponents](build: Context => T)
-  extends FunSuite
+    extends FunSuite
     with OneServerPerSuite2[T] {
   override def createComponents(context: Context) = build(context)
 }
 
-class LogStreamsTest extends TestServerSuite {
+class LogStreamsTest extends TestServerSuite with BeforeAndAfterAll {
   val testUser = "u"
   val testPass = "p"
   val testCreds = creds(testUser)
@@ -90,7 +90,8 @@ class LogStreamsTest extends TestServerSuite {
     await(components.users.add(creds(user)))
 
     def onJson(json: JsValue): Unit = {
-      if (!status.trySuccess(json)) if (!update.trySuccess(json)) if (!disconnectedPromise.trySuccess(json)) ()
+      if (!status.trySuccess(json))
+        if (!update.trySuccess(json)) if (!disconnectedPromise.trySuccess(json)) ()
     }
 
     withAdmin(onJson) { client =>
@@ -127,7 +128,9 @@ class LogStreamsTest extends TestServerSuite {
   def withSource[T](username: String)(code: SocketClient => T) =
     withWebSocket(username, bundle.sourceSocket().url, _ => ())(code)
 
-  def withWebSocket[T](username: String, path: String, onJson: JsValue => Any)(code: TestSocket => T) = {
+  def withWebSocket[T](username: String, path: String, onJson: JsValue => Any)(
+      code: TestSocket => T
+  ) = {
     val wsUri = FullUrl("ws", s"localhost:$port", path)
     using(new TestSocket(wsUri, onJson, username)) { client =>
       await(client.initialConnection)
@@ -141,11 +144,12 @@ class LogStreamsTest extends TestServerSuite {
     res.close()
   }
 
-  class TestSocket(wsUri: FullUrl, onJson: JsValue => Any, username: String = testUser) extends SocketClient(
-    wsUri,
-    SSLUtils.trustAllSslContext().getSocketFactory,
-    Seq(HttpUtil.Authorization -> HttpUtil.authorizationValue(username, "p"))
-  ) {
+  class TestSocket(wsUri: FullUrl, onJson: JsValue => Any, username: String = testUser)
+      extends SocketClient(
+        wsUri,
+        SSLUtils.trustAllSslContext().getSocketFactory,
+        Seq(HttpUtil.Authorization -> HttpUtil.authorizationValue(username, "p"))
+      ) {
     override def onText(message: String): Unit = onJson(Json.parse(message))
   }
 

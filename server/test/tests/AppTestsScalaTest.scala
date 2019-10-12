@@ -7,25 +7,31 @@ import play.api.ApplicationLoader.Context
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 
-class TestComponents(ctx: Context) extends AppComponents(ctx, _ => TestComps.startTestDatabase()) {
+class TestComponents(ctx: Context, db: DB)
+    extends AppComponents(ctx, _ => TestComps.startTestDatabase(db)) {
   override lazy val auth = new TestAuth(controllerComponents.actionBuilder)
 }
 
-class TestSuite extends AppSuite(new TestComponents(_))
+//class TestSuite extends AppSuite(new TestComponents(_, TestComps.db))
 
-class AppTestsScalaTest extends TestSuite {
-
-  test("can make request") {
-    val result = route(app, FakeRequest(GET, "/")).get
-    assert(status(result) === 200)
-  }
-}
+//class AppTestsScalaTest extends TestSuite {
+//  test("can make request") {
+//    val result = route(app, FakeRequest(GET, "/")).get
+//    assert(status(result) === 200)
+//  }
+//}
 
 object TestComps {
-  def startTestDatabase(): Conf = {
+  lazy val db: DB = startDB()
+
+  private def startDB(): DB = {
     val dbConfig = DBConfigurationBuilder.newBuilder()
     val db = DB.newEmbeddedDB(dbConfig.build())
     db.start()
-    Conf(dbConfig.getURL("test"), "root", "", Conf.MySQLDriver)
+    db
+  }
+
+  def startTestDatabase(embedded: DB): Conf = {
+    Conf(embedded.getConfiguration.getURL("test"), "root", "", Conf.MySQLDriver)
   }
 }

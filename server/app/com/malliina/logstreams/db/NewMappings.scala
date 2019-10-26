@@ -7,7 +7,9 @@ import ch.qos.logback.classic.Level
 import com.malliina.logstreams.models.LogEntryId
 import io.getquill.MappedEncoding
 
-object NewMappings {
+object NewMappings extends NewMappings
+
+trait NewMappings {
   implicit val instantDecoder = MappedEncoding[Date, Instant](d => d.toInstant)
   implicit val instantEncoder = MappedEncoding[Instant, Date](i => Date.from(i))
 

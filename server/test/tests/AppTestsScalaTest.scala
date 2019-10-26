@@ -12,15 +12,6 @@ class TestComponents(ctx: Context, db: DB)
   override lazy val auth = new TestAuth(controllerComponents.actionBuilder)
 }
 
-//class TestSuite extends AppSuite(new TestComponents(_, TestComps.db))
-
-//class AppTestsScalaTest extends TestSuite {
-//  test("can make request") {
-//    val result = route(app, FakeRequest(GET, "/")).get
-//    assert(status(result) === 200)
-//  }
-//}
-
 object TestComps {
   lazy val db: DB = startDB()
 

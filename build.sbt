@@ -92,12 +92,9 @@ val server = Project("logstreams", file("server"))
     buildInfoKeys += BuildInfoKey("frontName" -> (name in frontend).value),
     buildInfoPackage := "com.malliina.app",
     libraryDependencies ++= Seq(
-      "com.h2database" % "h2" % "1.4.196",
       "io.getquill" %% "quill-jdbc" % "3.4.10",
       "org.flywaydb" % "flyway-core" % "6.0.3",
       "mysql" % "mysql-connector-java" % "5.1.47",
-      "com.typesafe.slick" %% "slick" % "3.3.2",
-      "com.zaxxer" % "HikariCP" % "3.2.0",
       "com.malliina" %% "logstreams-client" % "1.6.0",
       "com.malliina" %% "play-social" % utilPlayVersion,
       utilPlayDep,

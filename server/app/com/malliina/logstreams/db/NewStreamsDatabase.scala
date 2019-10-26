@@ -120,7 +120,9 @@ class NewStreamsDatabase(val ds: HikariDataSource)(implicit val ec: ExecutionCon
     val start = System.currentTimeMillis()
     val result = performIO(io)
     val end = System.currentTimeMillis()
-    log.warn(s"$name completed in ${end - start} ms.")
+    if (end - start > 500) {
+      log.warn(s"$name completed in ${end - start} ms.")
+    }
     result
   }
 

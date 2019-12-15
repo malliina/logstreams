@@ -31,21 +31,21 @@ object LocalConf {
 class AppLoader extends DefaultApp(new ProdAppComponents(_))
 
 class ProdAppComponents(ctx: Context)
-    extends AppComponents(ctx, c => Conf.fromConf(c).fold(fail, identity)) {
+  extends AppComponents(ctx, c => Conf.fromConf(c).fold(fail, identity)) {
   override lazy val auth = new WebAuth(authImpl)
 }
 
 abstract class AppComponents(context: Context, dbConf: Configuration => Conf)
-    extends BuiltInComponentsFromContext(context)
-    with HttpFiltersComponents
-    with AssetsComponents {
+  extends BuiltInComponentsFromContext(context)
+  with HttpFiltersComponents
+  with AssetsComponents {
 
   def auth: LogAuth
 
   val mode = environment.mode
   val isProd = environment.mode == Mode.Prod
 
-  override val configuration = context.initialConfiguration ++ LocalConf.localConf
+  override val configuration = LocalConf.localConf.withFallback(context.initialConfiguration)
   override lazy val httpFilters =
     Seq(new GzipFilter(), csrfFilter, securityHeadersFilter, allowedHostsFilter)
   val creds: GoogleOAuthCredentials =
@@ -90,10 +90,9 @@ abstract class AppComponents(context: Context, dbConf: Configuration => Conf)
   lazy val sockets = new SocketsBundle(listenerAuth, sourceAuth, database, deps)
   override lazy val router: Router = new Routes(httpErrorHandler, home, sockets, oauth)
 
-  applicationLifecycle.addStopHook(
-    () =>
-      Future.successful {
-        db.close()
-      }
+  applicationLifecycle.addStopHook(() =>
+    Future.successful {
+      db.close()
+    }
   )
 }

@@ -6,9 +6,10 @@ import akka.NotUsed
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, MergeHub, Sink, Source}
-import akka.stream.{Materializer, OverflowStrategy}
+import akka.stream.{CompletionStrategy, Materializer, OverflowStrategy}
 import akka.util.Timeout
 import ch.qos.logback.classic.Level
+import com.malliina.logstreams.Streams
 import com.malliina.logstreams.Streams.onlyOnce
 import com.malliina.logstreams.db.{LogsDatabase, StreamsQuery}
 import com.malliina.logstreams.models._
@@ -34,10 +35,10 @@ object SocketsBundle {
 }
 
 class SocketsBundle(
-    listenerAuth: Authenticator[Username],
-    sourceAuth: Authenticator[Username],
-    db: LogsDatabase,
-    deps: ActorExecution
+  listenerAuth: Authenticator[Username],
+  sourceAuth: Authenticator[Username],
+  db: LogsDatabase,
+  deps: ActorExecution
 ) {
   implicit val mat: Materializer = deps.materializer
   implicit val ec: ExecutionContextExecutor = deps.executionContext
@@ -61,8 +62,8 @@ class SocketsBundle(
   implicit val adminTransformer: MessageFlowTransformer[JsValue, AdminEvent] =
     jsonMessageFlowTransformer[JsValue, AdminEvent]
 
-  val (ref, pub) = Source
-    .actorRef[AdminEvent](10, OverflowStrategy.dropHead)
+  val (ref, pub) = Streams
+    .actorRef(10, OverflowStrategy.dropHead)
     .toMat(Sink.asPublisher(fanout = true))(Keep.both)
     .run()
   val adminSource: Source[AdminEvent, NotUsed] = Source.fromPublisher(pub)
@@ -73,33 +74,35 @@ class SocketsBundle(
   def listenerSocket = WebSocket.acceptOrResult[JsValue, FrontEvent] { rh =>
     auth(rh, listenerAuth) { _ =>
       Future.successful {
-        StreamsQuery(rh).map { query =>
-          val filteredEvents =
-            if (query.apps.isEmpty) {
-              savedEvents
-            } else {
-              savedEvents.map(
-                es => es.filter(e => query.apps.exists(app => app.name == e.source.name.name))
-              )
-            }
-          val concatEvents: Source[AppLogEvents, NotUsed] =
-            Source
-              .fromFuture(db.events(query))
-              .flatMapConcat(
-                history =>
+        StreamsQuery(rh)
+          .map { query =>
+            val filteredEvents =
+              if (query.apps.isEmpty) {
+                savedEvents
+              } else {
+                savedEvents.map { es =>
+                  es.filter(e => query.apps.exists(app => app.name == e.source.name.name))
+                }
+              }
+            val concatEvents: Source[AppLogEvents, NotUsed] =
+              Source
+                .future(db.events(query))
+                .flatMapConcat(history =>
                   Source
                     .single(history.reverse)
                     .concat(filteredEvents.map(_.filter(e => !history.events.exists(_.id == e.id))))
-              )
-              .filter(_.events.nonEmpty)
-          Flow
-            .fromSinkAndSource(Sink.ignore, concatEvents)
-            .keepAlive(10.seconds, () => SimpleEvent.ping)
-            .backpressureTimeout(5.seconds)
-        }.left.map { err =>
-          log.error(s"${err.message} - $rh")
-          BadRequest(err.message)
-        }
+                )
+                .filter(_.events.nonEmpty)
+            Flow
+              .fromSinkAndSource(Sink.ignore, concatEvents)
+              .keepAlive(10.seconds, () => SimpleEvent.ping)
+              .backpressureTimeout(5.seconds)
+          }
+          .left
+          .map { err =>
+            log.error(s"${err.message} - $rh")
+            BadRequest(err.message)
+          }
       }
     }
   }
@@ -122,25 +125,24 @@ class SocketsBundle(
     auth(rh, sourceAuth) { user =>
       val server = LogSource(AppName(user.name), Proxies.realAddress(rh))
       serverManager ! AppJoined(server)
-      val transformer = jsonMessageFlowTransformer.map[LogEntryInputs](
-        json =>
-          json
-            .validate[LogEvents]
-            .map { es =>
-              LogEntryInputs(es.events.map { event =>
-                LogEntryInput(
-                  user,
-                  Proxies.realAddress(rh),
-                  Instant.ofEpochMilli(event.timestamp),
-                  event.message,
-                  event.loggerName,
-                  event.threadName,
-                  Level.toLevel(event.level),
-                  event.stackTrace
-                )
-              })
-            }
-            .getOrElse(throw new Exception)
+      val transformer = jsonMessageFlowTransformer.map[LogEntryInputs](json =>
+        json
+          .validate[LogEvents]
+          .map { es =>
+            LogEntryInputs(es.events.map { event =>
+              LogEntryInput(
+                user,
+                Proxies.realAddress(rh),
+                Instant.ofEpochMilli(event.timestamp),
+                event.message,
+                event.loggerName,
+                event.threadName,
+                Level.toLevel(event.level),
+                event.stackTrace
+              )
+            })
+          }
+          .getOrElse(throw new Exception)
       )
       val typedFlow = Flow
         .fromSinkAndSource(appsSink, Source.maybe[JsValue])
@@ -159,7 +161,7 @@ class SocketsBundle(
   def right[T](t: => T): Future[Right[Nothing, T]] = Future.successful(Right(t))
 
   def auth[T](rh: RequestHeader, impl: Authenticator[Username])(
-      code: Username => Future[Either[Result, T]]
+    code: Username => Future[Either[Result, T]]
   ): Future[Either[Result, T]] =
     impl
       .authenticate(rh)

@@ -3,7 +3,7 @@ package com.malliina.logstreams.models
 import java.time.Instant
 
 import ch.qos.logback.classic.Level
-import com.malliina.logbackrx.RxLogback
+import com.malliina.logbackrx.LogbackFormatting
 import com.malliina.values.Username
 import play.api.libs.json.{Json, OFormat}
 
@@ -14,29 +14,29 @@ object LogEvents {
 }
 
 case class LogEntryInput(
-    appName: Username,
-    remoteAddress: String,
-    timestamp: Instant,
-    message: String,
-    loggerName: String,
-    threadName: String,
-    level: Level,
-    stackTrace: Option[String]
+  appName: Username,
+  remoteAddress: String,
+  timestamp: Instant,
+  message: String,
+  loggerName: String,
+  threadName: String,
+  level: Level,
+  stackTrace: Option[String]
 )
 
 case class LogEntryInputs(events: Seq[LogEntryInput])
 
 case class LogEntryRow(
-    id: LogEntryId,
-    app: Username,
-    address: String,
-    timestamp: Instant,
-    message: String,
-    logger: String,
-    thread: String,
-    level: Level,
-    stacktrace: Option[String],
-    added: Instant
+  id: LogEntryId,
+  app: Username,
+  address: String,
+  timestamp: Instant,
+  message: String,
+  logger: String,
+  thread: String,
+  level: Level,
+  stacktrace: Option[String],
+  added: Instant
 ) {
   def toEvent = AppLogEvent(
     id,
@@ -56,7 +56,8 @@ case class LogEntryRow(
 }
 
 object LogEntryRow {
-  def format(date: Instant) = RxLogback.defaultFormatter.format(date.toEpochMilli)
+  def format(date: Instant) = LogbackFormatting.defaultFormatter.format(date.toEpochMilli)
+
 }
 
 case class EntriesWritten(inputs: Seq[LogEntryInput], rows: Seq[LogEntryRow]) {

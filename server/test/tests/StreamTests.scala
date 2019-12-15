@@ -1,29 +1,25 @@
 package tests
 
 import akka.actor.ActorSystem
+import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import akka.stream.{ActorMaterializer, OverflowStrategy}
 import org.scalatest.FunSuite
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
 class StreamTests extends FunSuite {
-  implicit val mat = ActorMaterializer()(ActorSystem("test"))
-  implicit val ec = mat.executionContext
-
-  ignore("actors") {
-    val source = Source.actorRef[Int](1000, OverflowStrategy.dropHead)
-    val printer = Sink.foreach(println)
-    val ref = source.toMat(printer)(Keep.left).run()
-    ref ! 42
-  }
+  implicit val as = ActorSystem("test")
+  implicit val ec = as.dispatcher
 
   ignore("akka streams") {
-    val (queue, publisher) = Source.queue[Int](2, OverflowStrategy.backpressure)
-      .toMat(Sink.asPublisher(fanout = true))(Keep.both).run()
+    val (queue, publisher) = Source
+      .queue[Int](2, OverflowStrategy.backpressure)
+      .toMat(Sink.asPublisher(fanout = true))(Keep.both)
+      .run()
     val source = Source.fromPublisher(publisher)
-    val sink = Flow[Int].mapAsync(1)(i => queue.offer(i).map(r => println(r))).to(Sink.foreach(println))
+    val sink =
+      Flow[Int].mapAsync(1)(i => queue.offer(i).map(r => println(r))).to(Sink.foreach(println))
     await(Future.sequence((1 to 5).map(i => queue.offer(i).map(r => println(r)))))
     source.runForeach(println)
   }

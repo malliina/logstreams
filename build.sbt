@@ -7,11 +7,12 @@ import sbtcrossproject.CrossPlugin.autoImport.{
 import scalajsbundler.util.JSON
 
 val malliinaGroup = "com.malliina"
-val utilPlayVersion = "5.2.1"
-val primitivesVersion = "1.11.0"
-val playJsonVersion = "2.7.4"
-val akkaHttpVersion = "10.1.8"
-val scalaTestVersion = "3.0.8"
+val utilPlayVersion = "5.3.0"
+val primitivesVersion = "1.12.3"
+val logbackStreamsVersion = "1.7.0"
+val playJsonVersion = "2.8.1"
+val akkaHttpVersion = "10.1.11"
+val scalaTestVersion = "3.1.0"
 val utilPlayDep = malliinaGroup %% "util-play" % utilPlayVersion
 
 val serverVersion = "0.5.0"
@@ -92,9 +93,9 @@ val server = Project("logstreams", file("server"))
     buildInfoKeys += BuildInfoKey("frontName" -> (name in frontend).value),
     buildInfoPackage := "com.malliina.app",
     libraryDependencies ++= Seq(
-      "io.getquill" %% "quill-jdbc" % "3.4.10",
-      "org.flywaydb" % "flyway-core" % "6.0.3",
-      "mysql" % "mysql-connector-java" % "5.1.47",
+      "io.getquill" %% "quill-jdbc" % "3.5.0",
+      "org.flywaydb" % "flyway-core" % "6.1.1",
+      "mysql" % "mysql-connector-java" % "5.1.48",
       "com.malliina" %% "logstreams-client" % "1.6.0",
       "com.malliina" %% "play-social" % utilPlayVersion,
       utilPlayDep,
@@ -121,13 +122,13 @@ val client = Project("logstreams-client", file("client"))
   .enablePlugins(MavenCentralPlugin)
   .settings(basicSettings)
   .settings(
-    crossScalaVersions := scalaVersion.value :: "2.12.8" :: Nil,
+    crossScalaVersions := scalaVersion.value :: "2.12.10" :: Nil,
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
     resolvers += "Sonatype releases" at "https://oss.sonatype.org/content/repositories/releases/",
     libraryDependencies ++= Seq(
       "com.neovisionaries" % "nv-websocket-client" % "2.9",
-      "com.malliina" %% "logback-streams" % "1.6.0",
+      "com.malliina" %% "logback-streams" % logbackStreamsVersion,
       "com.malliina" %%% "primitives" % primitivesVersion,
       "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
@@ -141,7 +142,7 @@ val it = Project("logstreams-test", file("logstreams-test"))
   .dependsOn(server % "test->test", client)
   .settings(basicSettings)
   .settings(
-    libraryDependencies += "com.typesafe.play" %% "play-ws-standalone" % "2.0.6"
+    libraryDependencies += "com.typesafe.play" %% "play-ws-standalone" % "2.1.2"
   )
 
 val logstreamsRoot = project

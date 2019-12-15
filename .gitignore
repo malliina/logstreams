@@ -7,5 +7,6 @@ credentials.txt
 logs
 dist
 .hydra
-.bloop
 hydra.sbt
+
+.bloop

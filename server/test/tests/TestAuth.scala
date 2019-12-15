@@ -25,6 +25,8 @@ class TestAuth(actions: ActionBuilder[Request, AnyContent]) extends LogAuth {
       f(UserRequest(testUser, req))
     }
 
-  override def authenticateSocket(rh: RequestHeader): Future[Either[InvalidCredentials, UserRequest]] =
+  override def authenticateSocket(
+    rh: RequestHeader
+  ): Future[Either[InvalidCredentials, UserRequest]] =
     Future.successful(Right(UserRequest(testUser, rh)))
 }

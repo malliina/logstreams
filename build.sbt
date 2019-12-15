@@ -48,30 +48,30 @@ val frontend = project
       "com.typesafe.play" %%% "play-json" % playJsonVersion,
       "org.scalatest" %%% "scalatest" % scalaTestVersion % Test
     ),
-    version in webpack := "4.35.2",
+    version in webpack := "4.41.2",
     emitSourceMaps := false,
     scalaJSUseMainModuleInitializer := true,
     webpackBundlingMode := BundlingMode.LibraryOnly(),
     npmDependencies in Compile ++= Seq(
-      "@fortawesome/fontawesome-free" -> "5.9.0",
-      "bootstrap" -> "4.3.1",
+      "@fortawesome/fontawesome-free" -> "5.12.0",
+      "bootstrap" -> "4.4.1",
       "jquery" -> "3.4.1",
-      "popper.js" -> "1.15.0"
+      "popper.js" -> "1.16.0"
     ),
     npmDevDependencies in Compile ++= Seq(
-      "autoprefixer" -> "9.6.1",
+      "autoprefixer" -> "9.7.3",
       "cssnano" -> "4.1.10",
-      "css-loader" -> "3.0.0",
-      "file-loader" -> "4.0.0",
-      "less" -> "3.9.0",
+      "css-loader" -> "3.3.2",
+      "file-loader" -> "5.0.2",
+      "less" -> "3.10.3",
       "less-loader" -> "5.0.0",
-      "mini-css-extract-plugin" -> "0.7.0",
+      "mini-css-extract-plugin" -> "0.8.0",
       "postcss-import" -> "12.0.1",
       "postcss-loader" -> "3.0.0",
-      "postcss-preset-env" -> "6.6.0",
-      "style-loader" -> "0.23.1",
-      "url-loader" -> "2.0.1",
-      "webpack-merge" -> "4.2.1"
+      "postcss-preset-env" -> "6.7.0",
+      "style-loader" -> "1.0.1",
+      "url-loader" -> "3.0.0",
+      "webpack-merge" -> "4.2.2"
     ),
     additionalNpmConfig in Compile := Map(
       "engines" -> JSON.obj("node" -> JSON.str("8.x")),
@@ -96,11 +96,11 @@ val server = Project("logstreams", file("server"))
       "io.getquill" %% "quill-jdbc" % "3.5.0",
       "org.flywaydb" % "flyway-core" % "6.1.1",
       "mysql" % "mysql-connector-java" % "5.1.48",
-      "com.malliina" %% "logstreams-client" % "1.6.0",
+      "com.malliina" %% "logstreams-client" % "1.7.0",
       "com.malliina" %% "play-social" % utilPlayVersion,
       utilPlayDep,
       utilPlayDep % Test classifier "tests",
-      "ch.vorburger.mariaDB4j" % "mariaDB4j" % "2.4.0" % Test
+      "ch.vorburger.mariaDB4j" % "mariaDB4j" % "2.4.0"
     ).map(_.withSources().withJavadoc()),
     pipelineStages := Seq(digest, gzip),
     javaOptions in Universal ++= {

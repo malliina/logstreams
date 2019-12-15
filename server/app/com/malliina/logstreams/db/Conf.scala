@@ -2,11 +2,7 @@ package com.malliina.logstreams.db
 
 import play.api.Configuration
 
-case class Conf(
-  url: String,
-  user: String,
-  pass: String,
-  driver: String)
+case class Conf(url: String, user: String, pass: String, driver: String)
 
 object Conf {
   val UrlKey = "logstreams.db.url"

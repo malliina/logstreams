@@ -17,10 +17,14 @@ object StreamsQuery {
 
   def apply(rh: RequestHeader): Either[ErrorMessage, StreamsQuery] = {
     def readIntOrElse(key: String, default: Int): Either[ErrorMessage, Int] =
-      QueryStringBindable.bindableInt.bind(key, rh.queryString).getOrElse(Right(default))
-        .left.map(ErrorMessage.apply)
+      QueryStringBindable.bindableInt
+        .bind(key, rh.queryString)
+        .getOrElse(Right(default))
+        .left
+        .map(ErrorMessage.apply)
 
-    val bindApps = bindableUsers.bind(AppKey, rh.queryString).getOrElse(Right(Nil)).left.map(ErrorMessage.apply)
+    val bindApps =
+      bindableUsers.bind(AppKey, rh.queryString).getOrElse(Right(Nil)).left.map(ErrorMessage.apply)
     for {
       apps <- bindApps
       limit <- readIntOrElse(Limit, 500)
@@ -43,7 +47,8 @@ object SortOrder extends ValidatingCompanion[String, SortOrder] {
   val all = Seq(asc, desc)
 
   override def build(input: String): Either[ErrorMessage, SortOrder] =
-    all.find(_.name.toLowerCase == input.toLowerCase)
+    all
+      .find(_.name.toLowerCase == input.toLowerCase)
       .toRight(ErrorMessage(s"Invalid input: '$input'. Must be one of: '${all.mkString(", ")}'."))
 
   override def write(t: SortOrder): String = t.name
@@ -51,12 +56,17 @@ object SortOrder extends ValidatingCompanion[String, SortOrder] {
   def apply(rh: RequestHeader): Either[ErrorMessage, SortOrder] =
     bindString(Order, build, desc, rh)
 
-  def bindString[T](key: String, validate: String => Either[ErrorMessage, T], default: T, rh: RequestHeader): Either[ErrorMessage, T] =
-    QueryStringBindable.bindableString.bind(key, rh.queryString)
+  def bindString[T](
+    key: String,
+    validate: String => Either[ErrorMessage, T],
+    default: T,
+    rh: RequestHeader
+  ): Either[ErrorMessage, T] =
+    QueryStringBindable.bindableString
+      .bind(key, rh.queryString)
       .map(e => e.flatMap(validate))
       .getOrElse(Right(default))
 }
 
 case object Ascending extends SortOrder("asc")
-
 case object Descending extends SortOrder("desc")

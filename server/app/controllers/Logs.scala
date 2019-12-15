@@ -31,22 +31,25 @@ object Logs {
   val PasswordKey = "password"
 }
 
-class Logs(htmls: Htmls,
-           oauth: LogAuth,
-           users: UserService,
-           dep: ActorExecution,
-           assets: AssetsBuilder,
-           comps: ControllerComponents)
-  extends AbstractController(comps) {
+class Logs(
+  htmls: Htmls,
+  oauth: LogAuth,
+  users: UserService,
+  dep: ActorExecution,
+  assets: AssetsBuilder,
+  comps: ControllerComponents
+) extends AbstractController(comps) {
 
   implicit val as = dep.actorSystem
   implicit val m = dep.materializer
   implicit val ec = dep.executionContext
 
-  val addUserForm = Form(mapping(
-    UsernameKey -> FormMappings.username,
-    PasswordKey -> FormMappings.password
-  )(BasicCredentials.apply)(BasicCredentials.unapply))
+  val addUserForm = Form(
+    mapping(
+      UsernameKey -> FormMappings.username,
+      PasswordKey -> FormMappings.password
+    )(BasicCredentials.apply)(BasicCredentials.unapply)
+  )
 
   def ping = Action(Caching.NoCacheOk(Json.toJson(AppMeta.ThisApp)))
 
@@ -57,45 +60,62 @@ class Logs(htmls: Htmls,
 
   // HTML
 
-  def index = async { _ => users.all().map { us => Ok(htmls.logs(us.map(u => AppName(u.name)))) } }
+  def index = async { _ =>
+    users.all().map { us =>
+      Ok(htmls.logs(us.map(u => AppName(u.name))))
+    }
+  }
 
   def sources = navigate(htmls.sources)
 
   def allUsers = async { req =>
-    CSRF.getToken(req.rh).map { csrfToken =>
-      users.all() map { us =>
-        Ok(htmls.users(us, csrfToken, UserFeedback.flashed(req.rh)))
+    CSRF
+      .getToken(req.rh)
+      .map { csrfToken =>
+        users.all() map { us =>
+          Ok(htmls.users(us, csrfToken, UserFeedback.flashed(req.rh)))
+        }
       }
-    }.getOrElse {
-      Future.successful(failCSRF)
-    }
+      .getOrElse {
+        Future.successful(failCSRF)
+      }
   }
 
   def addUser = oauth.authAction { req =>
     Action.async { request =>
-      addUserForm.bindFromRequest()(request).fold(
-        formWithErrors => users.all().map { us =>
-          CSRF.getToken(request).map { csrfToken =>
-            BadRequest(htmls.users(us, csrfToken, UserFeedback.formed(formWithErrors)))
-          }.getOrElse {
-            failCSRF
-          }
-        },
-        newUser => users.add(newUser).map { result =>
-          val user = newUser.username
-          val feedback = result.fold(
-            _ => {
-              log error buildMessage(req, s"failed to add '$user' because that user already exists.")
-              UserFeedback.error(s"User '$user' already exists.")
+      addUserForm
+        .bindFromRequest()(request)
+        .fold(
+          formWithErrors =>
+            users.all().map { us =>
+              CSRF
+                .getToken(request)
+                .map { csrfToken =>
+                  BadRequest(htmls.users(us, csrfToken, UserFeedback.formed(formWithErrors)))
+                }
+                .getOrElse {
+                  failCSRF
+                }
             },
-            _ => {
-              log info buildMessage(req, s"created '$user'")
-              UserFeedback.success(s"Created user '$user'.")
+          newUser =>
+            users.add(newUser).map { result =>
+              val user = newUser.username
+              val feedback = result.fold(
+                _ => {
+                  log error buildMessage(
+                    req,
+                    s"failed to add '$user' because that user already exists."
+                  )
+                  UserFeedback.error(s"User '$user' already exists.")
+                },
+                _ => {
+                  log info buildMessage(req, s"created '$user'")
+                  UserFeedback.success(s"Created user '$user'.")
+                }
+              )
+              redirectWith(feedback)
             }
-          )
-          redirectWith(feedback)
-        }
-      )
+        )
     }
   }
 
@@ -111,12 +131,14 @@ class Logs(htmls: Htmls,
         _ => {
           log info buildMessage(req, s"deleted '$user'.")
           UserFeedback.success(s"Deleted '$user'.")
-        })
+        }
+      )
       redirectWith(feedback)
     }
   }
 
-  def buildMessage(req: UserRequest, message: String) = s"User '${req.user}' from '${req.address}' $message."
+  def buildMessage(req: UserRequest, message: String) =
+    s"User '${req.user}' from '${req.address}' $message."
 
   private def redirectWith(feedback: UserFeedback) =
     Redirect(routes.Logs.allUsers()).flashing(feedback.flash)

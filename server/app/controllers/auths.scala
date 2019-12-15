@@ -52,7 +52,8 @@ object OAuth {
 
   def sessionAuthenticator(oauth: OAuth): Authenticator[UserRequest] = {
     Authenticator { rh =>
-      val result = Auth.authenticateFromSession(rh, oauth.sessionUserKey)
+      val result = Auth
+        .authenticateFromSession(rh, oauth.sessionUserKey)
         .map(user => UserRequest(user, rh))
         .toRight(MissingCredentials(rh))
       Future.successful(result)
@@ -76,7 +77,9 @@ class OAuth(val actions: ActionBuilder[Request, AnyContent], creds: GoogleOAuthC
     routes.Logs.index(),
     sessionKey = "logsEmail",
     lastIdKey = "logsLastId",
-    authorize = email => if (email == authorizedEmail) Right(email) else Left(PermissionError(s"Unauthorized: '$email'."))
+    authorize = email =>
+      if (email == authorizedEmail) Right(email)
+      else Left(PermissionError(s"Unauthorized: '$email'."))
   )
   val sessionUserKey: String = handler.sessionKey
 
@@ -91,7 +94,8 @@ class OAuth(val actions: ActionBuilder[Request, AnyContent], creds: GoogleOAuthC
   }
 
   def googleCallback = actions.async { req =>
-    val describe = req.session.get(OAuthKeys.State).fold("without state")(s => s"with a state of '$s'")
+    val describe =
+      req.session.get(OAuthKeys.State).fold("without state")(s => s"with a state of '$s'")
     log.info(s"Validating OAuth callback $describe...")
     validator.validateCallback(req)
   }

@@ -2,12 +2,12 @@ package com.malliina.logstreams.client
 
 import com.malliina.http.FullUrl
 import com.neovisionaries.ws.client.WebSocketException
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
-class SocketTests extends FunSuite {
+class SocketTests extends AnyFunSuite {
   def failSocket = new SocketClient(FullUrl("http", "kjdhfkdshfds.com", "/blaa"), null, Nil)
 
   test("network failure fails with WebSocketException") {

@@ -13,7 +13,7 @@ import scala.concurrent.{ExecutionContext, Future}
 object NewStreamsDatabase {
   private val log = Logger(getClass)
 
-  def withMigrations(as: ActorSystem, conf: Conf) = {
+  def withMigrations(as: ActorSystem, conf: Conf): NewStreamsDatabase = {
     val flyway = Flyway.configure.dataSource(conf.url, conf.user, conf.pass).load()
     flyway.migrate()
     apply(as, conf)
@@ -41,7 +41,7 @@ object NewStreamsDatabase {
 }
 
 class NewStreamsDatabase(val ds: HikariDataSource)(implicit val ec: ExecutionContext)
-    extends LogsDatabase {
+  extends LogsDatabase {
   val naming = NamingStrategy(SnakeCase, UpperCase, MysqlEscape)
   lazy val ctx = new MysqlJdbcContext(naming, ds) with NewMappings
   import ctx._
@@ -128,9 +128,11 @@ class NewStreamsDatabase(val ds: HikariDataSource)(implicit val ec: ExecutionCon
 
   def first[T, E <: Effect](io: IO[Seq[T], E], onEmpty: => String): IO[T, E] =
     io.flatMap { ts =>
-      ts.headOption.map { t =>
-        IO.successful(t)
-      }.getOrElse { IO.failed(new Exception(onEmpty)) }
+      ts.headOption
+        .map { t =>
+          IO.successful(t)
+        }
+        .getOrElse { IO.failed(new Exception(onEmpty)) }
     }
 
   def close(): Unit = ds.close()

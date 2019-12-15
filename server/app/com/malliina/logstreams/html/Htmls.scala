@@ -42,11 +42,13 @@ class Htmls(scripts: Seq[Asset]) extends Bootstrap(HtmlTags) with FrontStrings {
     row(
       divClass(col.sm.eight)(
         div(id := AppsDropdown, `class` := "dropdown")(
-          button(`class` := "btn btn-secondary btn-sm dropdown-toggle",
-                 `type` := "button",
-                 dataToggle := "dropdown",
-                 aria.haspopup := "true",
-                 aria.expanded := "false")("Apps"),
+          button(
+            `class` := "btn btn-secondary btn-sm dropdown-toggle",
+            `type` := "button",
+            dataToggle := "dropdown",
+            aria.haspopup := "true",
+            aria.expanded := "false"
+          )("Apps"),
           div(`class` := DropdownMenu, id := DropdownMenuId)(
             apps.map(app => a(`class` := DropdownItemId, href := "#")(app.name))
           )
@@ -54,20 +56,26 @@ class Htmls(scripts: Seq[Asset]) extends Bootstrap(HtmlTags) with FrontStrings {
         div(id := AppsFiltered)
       ),
       div(`class` := s"${col.sm.four} mt-1 mt-sm-0")(
-        div(`class` := s"btn-group btn-group-toggle compact-group float-right",
-            role := "group",
-            data("toggle") := "buttons")(
+        div(
+          `class` := s"btn-group btn-group-toggle compact-group float-right",
+          role := "group",
+          data("toggle") := "buttons"
+        )(
           label(`class` := "btn btn-info btn-sm", id := LabelVerbose)(
-            input(`type` := "radio",
-                  name := "options",
-                  id := "option-verbose",
-                  autocomplete := "off")(" Verbose")
+            input(
+              `type` := "radio",
+              name := "options",
+              id := "option-verbose",
+              autocomplete := "off"
+            )(" Verbose")
           ),
           label(`class` := "btn btn-info btn-sm ", id := LabelCompact)(
-            input(`type` := "radio",
-                  name := "options",
-                  id := "option-compact",
-                  autocomplete := "off")(" Compact")
+            input(
+              `type` := "radio",
+              name := "options",
+              id := "option-compact",
+              autocomplete := "off"
+            )(" Compact")
           )
         )
       )
@@ -134,8 +142,7 @@ class Htmls(scripts: Seq[Asset]) extends Bootstrap(HtmlTags) with FrontStrings {
   def baseIndex(tabName: String)(inner: Modifier*) = {
     def navItem(thisTabName: String, tabId: String, url: Call, faName: String) = {
       val itemClass = if (tabId == tabName) "nav-item active" else "nav-item"
-      li(`class` := itemClass)(
-        a(href := url, `class` := "nav-link")(fa(faName), s" $thisTabName"))
+      li(`class` := itemClass)(a(href := url, `class` := "nav-link")(fa(faName), s" $thisTabName"))
     }
 
     root("logstreams")(
@@ -160,7 +167,7 @@ class Htmls(scripts: Seq[Asset]) extends Bootstrap(HtmlTags) with FrontStrings {
           deviceWidthViewport,
           cssLink(asset("vendors.css")),
           cssLink(asset("styles.css")),
-          extraHeader,
+          extraHeader
         ),
         body(
           section(inner),
@@ -191,5 +198,6 @@ class Htmls(scripts: Seq[Asset]) extends Bootstrap(HtmlTags) with FrontStrings {
       )
     )
 
-  def fa(faName: String) = i(`class` := s"fas fa-$faName", title := faName, aria.hidden := tags.True)
+  def fa(faName: String) =
+    i(`class` := s"fas fa-$faName", title := faName, aria.hidden := tags.True)
 }

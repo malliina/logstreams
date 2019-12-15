@@ -6,7 +6,7 @@ import akka.NotUsed
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, MergeHub, Sink, Source}
-import akka.stream.{CompletionStrategy, Materializer, OverflowStrategy}
+import akka.stream.{Materializer, OverflowStrategy}
 import akka.util.Timeout
 import ch.qos.logback.classic.Level
 import com.malliina.logstreams.Streams
@@ -22,7 +22,7 @@ import com.malliina.values.Username
 import controllers.SocketsBundle.log
 import play.api.Logger
 import play.api.libs.json.{JsValue, Json}
-import play.api.mvc.Results.BadRequest
+import play.api.mvc.Results.{BadRequest, Unauthorized}
 import play.api.mvc.WebSocket.MessageFlowTransformer
 import play.api.mvc.WebSocket.MessageFlowTransformer.jsonMessageFlowTransformer
 import play.api.mvc.{RequestHeader, Result, Results, WebSocket}
@@ -169,6 +169,6 @@ class SocketsBundle(
 
   def onUnauthorized(rh: RequestHeader, failure: AuthFailure): Result = {
     log warn s"Unauthorized request $rh"
-    Results.Unauthorized
+    Unauthorized
   }
 }

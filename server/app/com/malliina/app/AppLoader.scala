@@ -24,18 +24,40 @@ import router.Routes
 import scala.concurrent.{ExecutionContextExecutor, Future}
 
 object LocalConf {
-  val localConfFile = Paths.get(sys.props("user.home")).resolve(".logstreams/logstreams.conf")
+  val homeDir = Paths.get(sys.props("user.home"))
+  val appDir = LocalConf.homeDir.resolve(".logstreams")
+  val localConfFile = appDir.resolve("logstreams.conf")
   val localConf = Configuration(ConfigFactory.parseFile(localConfFile.toFile))
+}
+
+trait AppConf {
+  def database: Conf
+  def close(): Unit
+}
+
+object AppConf {
+  def apply(embedded: EmbeddedMySQL) = new AppConf {
+    override def database = embedded.conf
+    override def close(): Unit = embedded.stop()
+  }
+  def apply(conf: Conf) = new AppConf {
+    override def database = conf
+    override def close(): Unit = ()
+  }
 }
 
 class AppLoader extends DefaultApp(new ProdAppComponents(_))
 
 class ProdAppComponents(ctx: Context)
-  extends AppComponents(ctx, c => Conf.fromConf(c).fold(fail, identity)) {
+  extends AppComponents(
+    ctx,
+    c => Conf.fromConf(c).fold(_ => AppConf(EmbeddedMySQL.permanent), c => AppConf(c))
+  ) {
   override lazy val auth = new WebAuth(authImpl)
+
 }
 
-abstract class AppComponents(context: Context, dbConf: Configuration => Conf)
+abstract class AppComponents(context: Context, dbConf: Configuration => AppConf)
   extends BuiltInComponentsFromContext(context)
   with HttpFiltersComponents
   with AssetsComponents {
@@ -44,14 +66,14 @@ abstract class AppComponents(context: Context, dbConf: Configuration => Conf)
 
   val mode = environment.mode
   val isProd = environment.mode == Mode.Prod
-
   override val configuration = LocalConf.localConf.withFallback(context.initialConfiguration)
   override lazy val httpFilters =
     Seq(new GzipFilter(), csrfFilter, securityHeadersFilter, allowedHostsFilter)
   val creds: GoogleOAuthCredentials =
     if (mode != Mode.Test)
       GoogleOAuthCredentials(configuration).fold(err => throw new Exception(err.message), identity)
-    else GoogleOAuthCredentials("", "", "")
+    else
+      GoogleOAuthCredentials("", "", "")
   override lazy val allowedHostsConfig: AllowedHostsConfig =
     AllowedHostsConfig(Seq("localhost", "logs.malliina.com"))
   val allowedDomains = Seq(
@@ -75,7 +97,8 @@ abstract class AppComponents(context: Context, dbConf: Configuration => Conf)
   implicit val ec: ExecutionContextExecutor = materializer.executionContext
   val actions = controllerComponents.actionBuilder
   // Services
-  val db = NewStreamsDatabase.withMigrations(actorSystem, dbConf(configuration))
+  val appConf = dbConf(configuration)
+  val db = NewStreamsDatabase.withMigrations(actorSystem, appConf.database)
   val database: LogsDatabase = db
   val htmls = Htmls.forApp(BuildInfo.frontName, isProd)
   val users: UserService = NewDatabaseAuth(db.ds, db.ec)
@@ -93,6 +116,7 @@ abstract class AppComponents(context: Context, dbConf: Configuration => Conf)
   applicationLifecycle.addStopHook(() =>
     Future.successful {
       db.close()
+      appConf.close()
     }
   )
 }

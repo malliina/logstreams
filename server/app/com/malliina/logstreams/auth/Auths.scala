@@ -11,8 +11,16 @@ object Auths {
     UserAuthenticator { rh =>
       def fail = Left(InvalidCredentials(rh))
 
-      Auth.basicCredentials(rh)
-        .map(creds => users.isValid(creds).map(isValid => if (isValid) Right(creds.username) else fail))
+      Auth
+        .basicCredentials(rh)
+        .map(creds =>
+          users
+            .isValid(creds)
+            .map(isValid =>
+              if (isValid) Right(creds.username)
+              else fail
+            )
+        )
         .getOrElse(Future.successful(fail))
     }
 

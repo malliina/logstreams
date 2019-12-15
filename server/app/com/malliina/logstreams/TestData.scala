@@ -16,7 +16,8 @@ object TestData {
     getClass.getName.stripSuffix("$"),
     "this thread",
     Level.INFO,
-    None)
+    None
+  )
 
   def failEvent(msg: String) = LogEvent(
     System.currentTimeMillis(),

@@ -1,6 +1,7 @@
 package it
 
 import ch.qos.logback.classic.Level
+import com.malliina.app.EmbeddedMySQL
 import com.malliina.http.FullUrl
 import com.malliina.logstreams.client.{HttpUtil, SocketClient}
 import com.malliina.logstreams.models._
@@ -12,15 +13,15 @@ import play.api.ApplicationLoader.Context
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.ahc.AhcWSClient
 import play.api.{BuiltInComponents, Logger}
-import tests.{OneServerPerSuite2, TestComponents, TestComps}
+import tests.{OneServerPerSuite2, TestComponents}
 
 import scala.concurrent.Promise
 
-abstract class TestServerSuite extends ServerSuite(new TestComponents(_, TestComps.db))
+abstract class TestServerSuite extends ServerSuite(new TestComponents(_, EmbeddedMySQL.temporary))
 
 abstract class ServerSuite[T <: BuiltInComponents](build: Context => T)
-    extends FunSuite
-    with OneServerPerSuite2[T] {
+  extends FunSuite
+  with OneServerPerSuite2[T] {
   override def createComponents(context: Context) = build(context)
 }
 
@@ -129,7 +130,7 @@ class LogStreamsTest extends TestServerSuite with BeforeAndAfterAll {
     withWebSocket(username, bundle.sourceSocket().url, _ => ())(code)
 
   def withWebSocket[T](username: String, path: String, onJson: JsValue => Any)(
-      code: TestSocket => T
+    code: TestSocket => T
   ) = {
     val wsUri = FullUrl("ws", s"localhost:$port", path)
     using(new TestSocket(wsUri, onJson, username)) { client =>
@@ -145,11 +146,11 @@ class LogStreamsTest extends TestServerSuite with BeforeAndAfterAll {
   }
 
   class TestSocket(wsUri: FullUrl, onJson: JsValue => Any, username: String = testUser)
-      extends SocketClient(
-        wsUri,
-        SSLUtils.trustAllSslContext().getSocketFactory,
-        Seq(HttpUtil.Authorization -> HttpUtil.authorizationValue(username, "p"))
-      ) {
+    extends SocketClient(
+      wsUri,
+      SSLUtils.trustAllSslContext().getSocketFactory,
+      Seq(HttpUtil.Authorization -> HttpUtil.authorizationValue(username, "p"))
+    ) {
     override def onText(message: String): Unit = onJson(Json.parse(message))
   }
 

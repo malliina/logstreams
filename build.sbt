@@ -7,12 +7,12 @@ import sbtcrossproject.CrossPlugin.autoImport.{
 import scalajsbundler.util.JSON
 
 val malliinaGroup = "com.malliina"
-val utilPlayVersion = "5.3.0"
-val primitivesVersion = "1.12.3"
+val utilPlayVersion = "5.4.0"
+val primitivesVersion = "1.13.0"
 val logbackStreamsVersion = "1.7.0"
 val playJsonVersion = "2.8.1"
 val akkaHttpVersion = "10.1.11"
-val scalaTestVersion = "3.1.0"
+val scalaTestVersion = "3.0.8"
 val utilPlayDep = malliinaGroup %% "util-play" % utilPlayVersion
 
 val serverVersion = "0.5.0"

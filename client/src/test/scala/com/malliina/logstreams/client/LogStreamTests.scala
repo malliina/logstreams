@@ -3,12 +3,12 @@ package com.malliina.logstreams.client
 import java.net.URL
 
 import com.malliina.http.FullUrl
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.FunSuite
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
-class LogStreamTests extends AnyFunSuite {
+class LogStreamTests extends FunSuite {
   test("conn") {
     new URL("https://letsencrypt.org/").openConnection.connect()
   }

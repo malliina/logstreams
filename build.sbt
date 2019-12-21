@@ -96,7 +96,7 @@ val server = Project("logstreams", file("server"))
       "io.getquill" %% "quill-jdbc" % "3.5.0",
       "org.flywaydb" % "flyway-core" % "6.1.1",
       "mysql" % "mysql-connector-java" % "5.1.48",
-      "com.malliina" %% "logstreams-client" % "1.7.0",
+      "com.malliina" %% "logstreams-client" % "1.8.1",
       "com.malliina" %% "play-social" % utilPlayVersion,
       utilPlayDep,
       utilPlayDep % Test classifier "tests",

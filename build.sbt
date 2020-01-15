@@ -50,6 +50,7 @@ val frontend = project
     ),
     version in webpack := "4.41.2",
     emitSourceMaps := false,
+    webpackEmitSourceMaps := false,
     scalaJSUseMainModuleInitializer := true,
     webpackBundlingMode := BundlingMode.LibraryOnly(),
     npmDependencies in Compile ++= Seq(

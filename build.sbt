@@ -153,5 +153,7 @@ val logstreamsRoot = project
   .settings(basicSettings)
 
 addCommandAlias("web", ";logstreams/run")
+addCommandAlias("releaseClient", ";logstreams-client/release")
+addCommandAlias("releaseClientArtifacts", ";logstreams-client/releaseArtifacts")
 
 Global / onChangedBuildSource := ReloadOnSourceChanges

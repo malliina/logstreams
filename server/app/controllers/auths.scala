@@ -7,7 +7,7 @@ import com.malliina.play.auth._
 import com.malliina.play.controllers.{AuthBundle, BaseSecurity}
 import com.malliina.play.http.Proxies
 import com.malliina.play.models.AuthInfo
-import com.malliina.values.{Email, Username}
+import com.malliina.values.{Email, ErrorMessage, Username}
 import play.api.Logger
 import play.api.mvc._
 
@@ -16,11 +16,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait LogAuth {
   def authAction(f: UserRequest => EssentialAction): EssentialAction
-
   def withAuthAsync(f: UserRequest => Future[Result]): EssentialAction
-
   def withAuth(f: UserRequest => Result): EssentialAction
-
   def authenticateSocket(rh: RequestHeader): Future[Either[AuthFailure, UserRequest]]
 }
 
@@ -79,7 +76,7 @@ class OAuth(val actions: ActionBuilder[Request, AnyContent], creds: GoogleOAuthC
     lastIdKey = "logsLastId",
     authorize = email =>
       if (email == authorizedEmail) Right(email)
-      else Left(PermissionError(s"Unauthorized: '$email'."))
+      else Left(PermissionError(ErrorMessage(s"Unauthorized: '$email'.")))
   )
   val sessionUserKey: String = handler.sessionKey
 

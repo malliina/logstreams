@@ -7,7 +7,7 @@ import sbtcrossproject.CrossPlugin.autoImport.{
 import scalajsbundler.util.JSON
 
 val malliinaGroup = "com.malliina"
-val utilPlayVersion = "5.4.0"
+val utilPlayVersion = "5.4.1"
 val primitivesVersion = "1.13.0"
 val logbackStreamsVersion = "1.7.0"
 val playJsonVersion = "2.8.1"
@@ -44,7 +44,7 @@ val frontend = project
   .settings(
     version := "1.0.0",
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %%% "scalatags" % "0.7.0",
+      "com.lihaoyi" %%% "scalatags" % "0.8.4",
       "com.typesafe.play" %%% "play-json" % playJsonVersion,
       "org.scalatest" %%% "scalatest" % scalaTestVersion % Test
     ),
@@ -84,14 +84,16 @@ val frontend = project
   )
 
 val server = Project("logstreams", file("server"))
-  .enablePlugins(WebScalaJSBundlerPlugin, PlayServerPlugin)
+  .enablePlugins(WebScalaJSBundlerPlugin, PlayLinuxPlugin, PlayLiveReloadPlugin)
   .dependsOn(crossJvm)
   .settings(basicSettings)
   .settings(
     scalaJSProjects := Seq(frontend),
     pipelineStages in Assets := Seq(scalaJSPipeline),
     version := serverVersion,
-    buildInfoKeys += BuildInfoKey("frontName" -> (name in frontend).value),
+    buildInfoKeys ++= Seq[BuildInfoKey](
+      "frontName" -> (name in frontend).value
+    ),
     buildInfoPackage := "com.malliina.app",
     libraryDependencies ++= Seq(
       "io.getquill" %% "quill-jdbc" % "3.5.0",
@@ -126,7 +128,6 @@ val client = Project("logstreams-client", file("client"))
     crossScalaVersions := scalaVersion.value :: "2.12.10" :: Nil,
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
-    resolvers += "Sonatype releases" at "https://oss.sonatype.org/content/repositories/releases/",
     libraryDependencies ++= Seq(
       "com.neovisionaries" % "nv-websocket-client" % "2.9",
       "com.malliina" %% "logback-streams" % logbackStreamsVersion,
@@ -152,3 +153,5 @@ val logstreamsRoot = project
   .settings(basicSettings)
 
 addCommandAlias("web", ";logstreams/run")
+
+Global / onChangedBuildSource := ReloadOnSourceChanges

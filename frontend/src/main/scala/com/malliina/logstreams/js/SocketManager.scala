@@ -11,11 +11,13 @@ object SocketManager {
 
 class SocketManager extends ScriptHelpers {
   val settings: Settings = StorageSettings
-  val availableApps = elem(DropdownMenuId).getElementsByClassName(DropdownItemId).map(_.asInstanceOf[Anchor])
+  val availableApps =
+    elem(DropdownMenuId).getElementsByClassName(DropdownItemId).map(_.asInstanceOf[Anchor])
   private var socket: ListenerSocket = socketFor(settings.apps)
 
   availableApps.foreach { item =>
-    item.onclick = (_: MouseEvent) => updateFilter(settings.appendDistinct(AppName(item.textContent)))
+    item.onclick =
+      (_: MouseEvent) => updateFilter(settings.appendDistinct(AppName(item.textContent)))
   }
 
   renderApps(settings.apps)
@@ -30,7 +32,9 @@ class SocketManager extends ScriptHelpers {
     }
     val target = elem(AppsFiltered)
     target.innerHTML = ""
-    buttons.foreach { btn => target.appendChild(btn) }
+    buttons.foreach { btn =>
+      target.appendChild(btn)
+    }
   }
 
   def updateFilter(apps: Seq[AppName]): Unit = {

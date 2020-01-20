@@ -3,7 +3,6 @@ package com.malliina.app
 import java.nio.file.Paths
 
 import com.malliina.logstreams.auth.{Auths, UserService}
-import com.malliina.logstreams.db.NewStreamsDatabase.fail
 import com.malliina.logstreams.db._
 import com.malliina.logstreams.html.Htmls
 import com.malliina.oauth.GoogleOAuthCredentials

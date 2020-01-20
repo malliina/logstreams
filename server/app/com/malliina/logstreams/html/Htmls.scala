@@ -1,6 +1,9 @@
 package com.malliina.logstreams.html
 
+import com.malliina.html.HtmlImplicits.fullUrl
 import com.malliina.html.{Bootstrap, HtmlTags}
+import com.malliina.http.FullUrl
+import com.malliina.live.LiveReload
 import com.malliina.logstreams.html.Htmls._
 import com.malliina.logstreams.models.{AppName, FrontStrings}
 import com.malliina.play.tags.TagPage
@@ -23,13 +26,16 @@ object Htmls {
   def forApp(appName: String, isProd: Boolean): Htmls = {
     val name = appName.toLowerCase
     val opt = if (isProd) "opt" else "fastopt"
-    new Htmls(Seq(s"$name-$opt-library.js", s"$name-$opt-loader.js", s"$name-$opt.js"))
+    val external = if (isProd) Nil else FullUrl.build(LiveReload.script).toOption.toList
+    new Htmls(Seq(s"$name-$opt-library.js", s"$name-$opt-loader.js", s"$name-$opt.js"), external)
   }
 
   def asset(file: Asset): Call = routes.Logs.versioned(file)
 }
 
-class Htmls(scripts: Seq[Asset]) extends Bootstrap(HtmlTags) with FrontStrings {
+class Htmls(scripts: Seq[Asset], externalScripts: Seq[FullUrl])
+  extends Bootstrap(HtmlTags)
+  with FrontStrings {
 
   import tags._
 
@@ -57,7 +63,7 @@ class Htmls(scripts: Seq[Asset]) extends Bootstrap(HtmlTags) with FrontStrings {
       ),
       div(`class` := s"${col.sm.four} mt-1 mt-sm-0")(
         div(
-          `class` := s"btn-group btn-group-toggle compact-group float-right",
+          `class` := "btn-group btn-group-toggle compact-group float-right",
           role := "group",
           data("toggle") := "buttons"
         )(
@@ -172,7 +178,10 @@ class Htmls(scripts: Seq[Asset]) extends Bootstrap(HtmlTags) with FrontStrings {
         body(
           section(inner),
           scripts.map { js =>
-            jsScript(asset(js), attr("defer").empty)
+            jsScript(asset(js), defer)
+          },
+          externalScripts.map { js =>
+            jsScript(js, defer)
           }
         )
       )

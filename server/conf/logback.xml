@@ -1,29 +1,19 @@
 <configuration>
     <conversionRule conversionWord="coloredLevel" converterClass="play.api.Logger$ColoredLevel"/>
-    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>${application.home}/logs/logstreams.log</file>
-        <encoder>
-            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
-        </encoder>
-    </appender>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
-    <appender name="LOGSTREAMS" class="com.malliina.logstreams.client.AkkaHttpAppender">
-        <endpoint>${LOGSTREAMS_HOST:-logs.malliina.com}</endpoint>
-        <secure>true</secure>
-        <username>${LOGSTREAMS_USER:-logstreams}</username>
-        <password>${LOGSTREAMS_PASS}</password>
-        <enabled>${LOGSTREAMS_ENABLED:-false}</enabled>
-    </appender>
-    <logger name="play" level="INFO"/>
-    <logger name="application" level="INFO"/>
-    <logger name="com" level="INFO"/>
+<!--    <appender name="LOGSTREAMS" class="com.malliina.logstreams.client.AkkaHttpAppender">-->
+<!--        <endpoint>${LOGSTREAMS_HOST:-logs.malliina.com}</endpoint>-->
+<!--        <secure>true</secure>-->
+<!--        <username>${LOGSTREAMS_USER:-logstreams}</username>-->
+<!--        <password>${LOGSTREAMS_PASS}</password>-->
+<!--        <enabled>${LOGSTREAMS_ENABLED:-false}</enabled>-->
+<!--    </appender>-->
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
-        <appender-ref ref="FILE"/>
-        <appender-ref ref="LOGSTREAMS"/>
+<!--        <appender-ref ref="LOGSTREAMS"/>-->
     </root>
 </configuration>

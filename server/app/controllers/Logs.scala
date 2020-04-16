@@ -8,7 +8,7 @@ import com.malliina.play.ActorExecution
 import com.malliina.play.auth._
 import com.malliina.play.controllers.Caching
 import com.malliina.play.forms.FormMappings
-import com.malliina.play.http.{AuthedRequest, Bindables, CookiedRequest}
+import com.malliina.play.http.{AuthedRequest, CookiedRequest}
 import com.malliina.values.Username
 import controllers.Assets.Asset
 import controllers.Logs.{PasswordKey, UsernameKey, log}

@@ -15,13 +15,14 @@ class AkkaHttpAppender extends SocketAppender[WebSocketClient] {
         val scheme = if (getSecure) "wss" else "ws"
         val uri = FullUrl(scheme, hostAndPort, "/ws/sources")
         addInfo(s"Connecting to logstreams URL '$uri' with Akka Streams for Logback...")
-        //        val socket = new JsonSocket(uri, sf, headers)
         val webSocket = WebSocketClient(uri, headers, as, mat)
         client = Option(webSocket)
         val task = webSocket.connect(logEvents.map(e => LogEvents(Seq(e))))
         task.onComplete { t =>
-          t.fold(err => addError(s"Appender [$name] failed.", err),
-            _ => addError(s"Appender [$name] completed."))
+          t.fold(
+            err => addError(s"Appender [$name] failed.", err),
+            _ => addError(s"Appender [$name] completed.")
+          )
         }
         super.start()
       }

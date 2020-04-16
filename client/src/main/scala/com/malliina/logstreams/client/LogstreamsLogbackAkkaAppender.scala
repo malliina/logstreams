@@ -2,7 +2,7 @@ package com.malliina.logstreams.client
 
 import akka.stream.scaladsl.Sink
 import com.malliina.http.FullUrl
-import com.malliina.logbackrx.LogEvent
+import com.malliina.logback.LogEvent
 
 class LogstreamsLogbackAkkaAppender extends SocketAppender[JsonSocket] {
   override def start(): Unit = {
@@ -26,8 +26,10 @@ class LogstreamsLogbackAkkaAppender extends SocketAppender[JsonSocket] {
         }
         val task = logEvents.runWith(socketSink)
         task.onComplete { t =>
-          t.fold(err => addError(s"Appender [$name] failed.", err),
-            _ => addError(s"Appender [$name] completed."))
+          t.fold(
+            err => addError(s"Appender [$name] failed.", err),
+            _ => addError(s"Appender [$name] completed.")
+          )
         }
         super.start()
       }

@@ -3,7 +3,7 @@ package com.malliina.logstreams.models
 import java.time.Instant
 
 import ch.qos.logback.classic.Level
-import com.malliina.logbackrx.LogbackFormatting
+import com.malliina.logback.LogbackFormatting
 import com.malliina.values.Username
 import play.api.libs.json.{Json, OFormat}
 

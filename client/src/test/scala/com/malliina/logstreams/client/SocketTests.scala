@@ -2,12 +2,11 @@ package com.malliina.logstreams.client
 
 import com.malliina.http.FullUrl
 import com.neovisionaries.ws.client.WebSocketException
-import org.scalatest.FunSuite
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
-class SocketTests extends FunSuite {
+class SocketTests extends munit.FunSuite {
   def failSocket = new SocketClient(FullUrl("http", "kjdhfkdshfds.com", "/blaa"), null, Nil)
 
   test("network failure fails with WebSocketException") {
@@ -18,7 +17,7 @@ class SocketTests extends FunSuite {
     socket.close()
   }
 
-  ignore("sending to a closed socket fails") {
+  test("sending to a closed socket fails".ignore) {
     val socket = failSocket
     intercept[WebSocketException] {
       await(socket.initialConnection)

@@ -3,7 +3,7 @@ package com.malliina.logstreams
 import java.time.Instant
 
 import ch.qos.logback.classic.Level
-import com.malliina.logbackrx.LogEvent
+import com.malliina.logback.LogEvent
 import com.malliina.logstreams.models._
 
 object TestData {

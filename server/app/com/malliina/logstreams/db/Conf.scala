@@ -13,9 +13,7 @@ object Conf {
   val DefaultDriver = MySQLDriver
 
   def fromEnvOrFail() = fromEnv().fold(err => throw new Exception(err), identity)
-
   def fromConf(conf: Configuration) = from(key => conf.getOptional[String](key))
-
   def fromEnv() = from(key => sys.env.get(key).orElse(sys.props.get(key)))
 
   def from(readKey: String => Option[String]) = {

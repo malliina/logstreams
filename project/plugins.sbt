@@ -5,7 +5,7 @@ Seq(
   "com.malliina" % "play-live-reload" % "0.0.26",
   "com.malliina" % "sbt-utils-maven" % "0.15.7",
   "com.malliina" % "sbt-nodejs" % "0.15.7",
-  "org.scala-js" % "sbt-scalajs" % "0.6.31",
+  "org.scala-js" % "sbt-scalajs" % "0.6.32",
   "org.portable-scala" % "sbt-scalajs-crossproject" % "0.6.1",
   "com.vmunier" % "sbt-web-scalajs" % "1.0.10-0.6",
   "ch.epfl.scala" % "sbt-web-scalajs-bundler-sjs06" % "0.16.0",

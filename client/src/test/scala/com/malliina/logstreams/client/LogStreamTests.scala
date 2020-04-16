@@ -3,17 +3,16 @@ package com.malliina.logstreams.client
 import java.net.URL
 
 import com.malliina.http.FullUrl
-import org.scalatest.FunSuite
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
-class LogStreamTests extends FunSuite {
+class LogStreamTests extends munit.FunSuite {
   test("conn") {
     new URL("https://letsencrypt.org/").openConnection.connect()
   }
 
-  ignore("connectivity") {
+  test("connectivity".ignore) {
     val testUser = "user"
     val testPass = "pass"
     val host = "logs.malliina.com"

@@ -7,31 +7,55 @@ import sbtcrossproject.CrossPlugin.autoImport.{
 import scalajsbundler.util.JSON
 
 val malliinaGroup = "com.malliina"
-val utilPlayVersion = "5.4.1"
-val primitivesVersion = "1.13.0"
-val logbackStreamsVersion = "1.7.0"
+val utilPlayVersion = "5.7.0"
+val primitivesVersion = "1.15.0"
+val logbackStreamsVersion = "1.7.2"
 val playJsonVersion = "2.8.1"
 val akkaHttpVersion = "10.1.11"
-val scalaTestVersion = "3.0.8"
+val munitVersion = "0.7.2"
+
 val utilPlayDep = malliinaGroup %% "util-play" % utilPlayVersion
 
-val serverVersion = "0.5.0"
+val serverVersion = "0.6.0"
 
-val basicSettings = Seq(
-  organization := malliinaGroup,
-  scalaVersion := "2.13.1",
-  scalacOptions := Seq("-unchecked", "-deprecation")
+inThisBuild(
+  Seq(
+    organization := malliinaGroup,
+    scalaVersion := "2.13.1",
+    scalacOptions := Seq("-unchecked", "-deprecation"),
+    libraryDependencies ++= Seq(
+      "org.scalameta" %% "munit" % munitVersion % Test
+    ),
+    testFrameworks += new TestFramework("munit.Framework")
+  )
 )
+
+val client = Project("logstreams-client", file("client"))
+  .enablePlugins(MavenCentralPlugin)
+  .settings(
+    crossScalaVersions := scalaVersion.value :: "2.12.10" :: Nil,
+    gitUserName := "malliina",
+    developerName := "Michael Skogberg",
+    libraryDependencies ++= Seq(
+      "com.neovisionaries" % "nv-websocket-client" % "2.9",
+      "com.malliina" %% "logback-streams" % logbackStreamsVersion,
+      "com.malliina" %%% "primitives" % primitivesVersion,
+      "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
+      "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion
+    ),
+    releaseCrossBuild := true,
+    releaseProcess := tagReleaseProcess.value
+  )
 
 val cross = portableProject(JSPlatform, JVMPlatform)
   .crossType(PortableType.Full)
   .in(file("shared"))
-  .settings(basicSettings)
   .settings(
     libraryDependencies ++= Seq(
       "com.typesafe.play" %%% "play-json" % playJsonVersion,
       "com.malliina" %%% "primitives" % primitivesVersion
-    )
+    ),
+    testFrameworks += new TestFramework("munit.Framework")
   )
 val crossJvm = cross.jvm
 val crossJs = cross.js
@@ -40,13 +64,11 @@ val frontend = project
   .in(file("frontend"))
   .enablePlugins(ScalaJSBundlerPlugin, ScalaJSWeb, NodeJsPlugin)
   .dependsOn(crossJs)
-  .settings(basicSettings)
   .settings(
     version := "1.0.0",
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %%% "scalatags" % "0.8.4",
-      "com.typesafe.play" %%% "play-json" % playJsonVersion,
-      "org.scalatest" %%% "scalatest" % scalaTestVersion % Test
+      "com.lihaoyi" %%% "scalatags" % "0.8.6",
+      "com.typesafe.play" %%% "play-json" % playJsonVersion
     ),
     version in webpack := "4.41.2",
     emitSourceMaps := false,
@@ -85,8 +107,7 @@ val frontend = project
 
 val server = Project("logstreams", file("server"))
   .enablePlugins(WebScalaJSBundlerPlugin, PlayLinuxPlugin, PlayLiveReloadPlugin)
-  .dependsOn(crossJvm)
-  .settings(basicSettings)
+  .dependsOn(crossJvm, client)
   .settings(
     scalaJSProjects := Seq(frontend),
     pipelineStages in Assets := Seq(scalaJSPipeline),
@@ -96,15 +117,14 @@ val server = Project("logstreams", file("server"))
     ),
     buildInfoPackage := "com.malliina.app",
     libraryDependencies ++= Seq(
-      "io.getquill" %% "quill-jdbc" % "3.5.0",
+      "io.getquill" %% "quill-jdbc" % "3.5.1",
       "org.flywaydb" % "flyway-core" % "6.1.1",
       "mysql" % "mysql-connector-java" % "5.1.48",
-      "com.malliina" %% "logstreams-client" % "1.8.1",
       "com.malliina" %% "play-social" % utilPlayVersion,
+      "com.dimafeng" %% "testcontainers-scala-mysql" % "0.35.2" % Test,
       utilPlayDep,
-      utilPlayDep % Test classifier "tests",
-      "ch.vorburger.mariaDB4j" % "mariaDB4j" % "2.4.0"
-    ).map(_.withSources().withJavadoc()),
+      utilPlayDep % Test classifier "tests"
+    ),
     pipelineStages := Seq(digest, gzip),
     javaOptions in Universal ++= {
       val linuxName = (name in Linux).value
@@ -121,28 +141,8 @@ val server = Project("logstreams", file("server"))
     )
   )
 
-val client = Project("logstreams-client", file("client"))
-  .enablePlugins(MavenCentralPlugin)
-  .settings(basicSettings)
-  .settings(
-    crossScalaVersions := scalaVersion.value :: "2.12.10" :: Nil,
-    gitUserName := "malliina",
-    developerName := "Michael Skogberg",
-    libraryDependencies ++= Seq(
-      "com.neovisionaries" % "nv-websocket-client" % "2.9",
-      "com.malliina" %% "logback-streams" % logbackStreamsVersion,
-      "com.malliina" %%% "primitives" % primitivesVersion,
-      "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
-      "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
-      "org.scalatest" %% "scalatest" % scalaTestVersion % Test
-    ),
-    releaseCrossBuild := true,
-    releaseProcess := tagReleaseProcess.value
-  )
-
 val it = Project("logstreams-test", file("logstreams-test"))
   .dependsOn(server % "test->test", client)
-  .settings(basicSettings)
   .settings(
     libraryDependencies += "com.typesafe.play" %% "play-ws-standalone" % "2.1.2"
   )
@@ -150,7 +150,6 @@ val it = Project("logstreams-test", file("logstreams-test"))
 val logstreamsRoot = project
   .in(file("."))
   .aggregate(frontend, server, client, it)
-  .settings(basicSettings)
 
 addCommandAlias("web", ";logstreams/run")
 

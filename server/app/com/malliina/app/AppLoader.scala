@@ -35,25 +35,28 @@ trait AppConf {
 }
 
 object AppConf {
-  def apply(embedded: EmbeddedMySQL) = new AppConf {
-    override def database = embedded.conf
-    override def close(): Unit = embedded.stop()
-  }
   def apply(conf: Conf) = new AppConf {
-    override def database = conf
+    override def database: Conf = conf
     override def close(): Unit = ()
   }
 }
 
-class AppLoader extends DefaultApp(new ProdAppComponents(_))
+class AppLoader2 extends DefaultApp(new ProdAppComponents(_))
+class AppLoader extends ApplicationLoader {
+  override def load(context: Context): Application = {
+    val environment = context.environment
+    LoggerConfigurator(environment.classLoader)
+      .foreach(_.configure(environment))
+    new ProdAppComponents(context).application
+  }
+}
 
 class ProdAppComponents(ctx: Context)
   extends AppComponents(
     ctx,
-    c => Conf.fromConf(c).fold(_ => AppConf(EmbeddedMySQL.permanent), c => AppConf(c))
+    c => Conf.fromConf(c).map(c => AppConf(c)).toOption.get
   ) {
   override lazy val auth = new WebAuth(authImpl)
-
 }
 
 abstract class AppComponents(context: Context, dbConf: Configuration => AppConf)

@@ -6,11 +6,8 @@ import play.api.libs.json.Json
 
 trait Settings {
   def isVerbose: Boolean
-
   def saveVerbose(newVerbose: Boolean): Unit
-
   def apps: Seq[AppName]
-
   def saveApps(apps: Seq[AppName]): Unit
 
   def appendDistinct(app: AppName): Seq[AppName] = {

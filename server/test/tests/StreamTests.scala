@@ -3,16 +3,15 @@ package tests
 import akka.actor.ActorSystem
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import org.scalatest.FunSuite
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
-class StreamTests extends FunSuite {
+class StreamTests extends munit.FunSuite {
   implicit val as = ActorSystem("test")
   implicit val ec = as.dispatcher
 
-  ignore("akka streams") {
+  test("akka streams".ignore) {
     val (queue, publisher) = Source
       .queue[Int](2, OverflowStrategy.backpressure)
       .toMat(Sink.asPublisher(fanout = true))(Keep.both)

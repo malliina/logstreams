@@ -25,7 +25,7 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Results.{BadRequest, Unauthorized}
 import play.api.mvc.WebSocket.MessageFlowTransformer
 import play.api.mvc.WebSocket.MessageFlowTransformer.jsonMessageFlowTransformer
-import play.api.mvc.{RequestHeader, Result, Results, WebSocket}
+import play.api.mvc.{RequestHeader, Result, WebSocket}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContextExecutor, Future}

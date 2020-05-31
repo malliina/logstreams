@@ -7,12 +7,12 @@ import sbtcrossproject.CrossPlugin.autoImport.{
 import scalajsbundler.util.JSON
 
 val malliinaGroup = "com.malliina"
-val utilPlayVersion = "5.7.0"
-val primitivesVersion = "1.15.0"
-val logbackStreamsVersion = "1.7.2"
-val playJsonVersion = "2.8.1"
-val akkaHttpVersion = "10.1.11"
-val munitVersion = "0.7.2"
+val utilPlayVersion = "5.11.0"
+val primitivesVersion = "1.17.0"
+val logbackStreamsVersion = "1.8.0"
+val playJsonVersion = "2.9.0"
+val akkaHttpVersion = "10.1.12"
+val munitVersion = "0.7.7"
 
 val utilPlayDep = malliinaGroup %% "util-play" % utilPlayVersion
 
@@ -21,7 +21,7 @@ val serverVersion = "0.6.0"
 inThisBuild(
   Seq(
     organization := malliinaGroup,
-    scalaVersion := "2.13.1",
+    scalaVersion := "2.13.2",
     scalacOptions := Seq("-unchecked", "-deprecation"),
     libraryDependencies ++= Seq(
       "org.scalameta" %% "munit" % munitVersion % Test
@@ -33,7 +33,7 @@ inThisBuild(
 val client = Project("logstreams-client", file("client"))
   .enablePlugins(MavenCentralPlugin)
   .settings(
-    crossScalaVersions := scalaVersion.value :: "2.12.10" :: Nil,
+    crossScalaVersions := scalaVersion.value :: "2.12.11" :: Nil,
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
     libraryDependencies ++= Seq(
@@ -67,37 +67,36 @@ val frontend = project
   .settings(
     version := "1.0.0",
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %%% "scalatags" % "0.8.6",
+      "com.lihaoyi" %%% "scalatags" % "0.9.1",
       "com.typesafe.play" %%% "play-json" % playJsonVersion
     ),
-    version in webpack := "4.41.2",
-    emitSourceMaps := false,
+    version in webpack := "4.43.0",
     webpackEmitSourceMaps := false,
     scalaJSUseMainModuleInitializer := true,
     webpackBundlingMode := BundlingMode.LibraryOnly(),
     npmDependencies in Compile ++= Seq(
-      "@fortawesome/fontawesome-free" -> "5.12.0",
-      "bootstrap" -> "4.4.1",
-      "jquery" -> "3.4.1",
-      "popper.js" -> "1.16.0"
+      "@fortawesome/fontawesome-free" -> "5.13.0",
+      "bootstrap" -> "4.5.0",
+      "jquery" -> "3.5.1",
+      "popper.js" -> "1.16.1"
     ),
     npmDevDependencies in Compile ++= Seq(
-      "autoprefixer" -> "9.7.3",
+      "autoprefixer" -> "9.8.0",
       "cssnano" -> "4.1.10",
-      "css-loader" -> "3.3.2",
-      "file-loader" -> "5.0.2",
-      "less" -> "3.10.3",
-      "less-loader" -> "5.0.0",
-      "mini-css-extract-plugin" -> "0.8.0",
+      "css-loader" -> "3.5.3",
+      "file-loader" -> "6.0.0",
+      "less" -> "3.11.1",
+      "less-loader" -> "6.1.0",
+      "mini-css-extract-plugin" -> "0.9.0",
       "postcss-import" -> "12.0.1",
       "postcss-loader" -> "3.0.0",
       "postcss-preset-env" -> "6.7.0",
-      "style-loader" -> "1.0.1",
-      "url-loader" -> "3.0.0",
+      "style-loader" -> "1.2.1",
+      "url-loader" -> "4.1.0",
       "webpack-merge" -> "4.2.2"
     ),
     additionalNpmConfig in Compile := Map(
-      "engines" -> JSON.obj("node" -> JSON.str("8.x")),
+      "engines" -> JSON.obj("node" -> JSON.str("10.x")),
       "private" -> JSON.bool(true),
       "license" -> JSON.str("BSD")
     ),
@@ -106,7 +105,7 @@ val frontend = project
   )
 
 val server = Project("logstreams", file("server"))
-  .enablePlugins(WebScalaJSBundlerPlugin, PlayLinuxPlugin, PlayLiveReloadPlugin)
+  .enablePlugins(WebScalaJSBundlerPlugin, PlayLinuxPlugin)
   .dependsOn(crossJvm, client)
   .settings(
     scalaJSProjects := Seq(frontend),
@@ -121,7 +120,8 @@ val server = Project("logstreams", file("server"))
       "org.flywaydb" % "flyway-core" % "6.1.1",
       "mysql" % "mysql-connector-java" % "5.1.48",
       "com.malliina" %% "play-social" % utilPlayVersion,
-      "com.dimafeng" %% "testcontainers-scala-mysql" % "0.35.2" % Test,
+      "com.dimafeng" %% "testcontainers-scala-mysql" % "0.37.0" % Test,
+      ws % Test,
       utilPlayDep,
       utilPlayDep % Test classifier "tests"
     ),

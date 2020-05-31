@@ -3,7 +3,6 @@ package com.malliina.logstreams.html
 import com.malliina.html.HtmlImplicits.fullUrl
 import com.malliina.html.{Bootstrap, HtmlTags}
 import com.malliina.http.FullUrl
-import com.malliina.live.LiveReload
 import com.malliina.logstreams.html.Htmls._
 import com.malliina.logstreams.models.{AppName, FrontStrings}
 import com.malliina.play.tags.TagPage
@@ -26,8 +25,8 @@ object Htmls {
   def forApp(appName: String, isProd: Boolean): Htmls = {
     val name = appName.toLowerCase
     val opt = if (isProd) "opt" else "fastopt"
-    val external = if (isProd) Nil else FullUrl.build(LiveReload.script).toOption.toList
-    new Htmls(Seq(s"$name-$opt-library.js", s"$name-$opt-loader.js", s"$name-$opt.js"), external)
+//    val external = if (isProd) Nil else FullUrl.build(LiveReload.script).toOption.toList
+    new Htmls(Seq(s"$name-$opt-library.js", s"$name-$opt-loader.js", s"$name-$opt.js"), Nil)
   }
 
   def asset(file: Asset): Call = routes.Logs.versioned(file)

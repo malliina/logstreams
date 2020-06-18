@@ -133,10 +133,8 @@ val server = Project("logstreams", file("server"))
     ),
     pipelineStages := Seq(digest, gzip),
     javaOptions in Universal ++= {
-      val linuxName = (name in Linux).value
       Seq(
-        s"-Dconfig.file=/etc/$linuxName/production.conf",
-        s"-Dlogger.file=/etc/$linuxName/logback-prod.xml",
+        "-Dlogger.resource=logback-prod.xml",
         s"-Dhttp.port=$prodPort"
       )
     },

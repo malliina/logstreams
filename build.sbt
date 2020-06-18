@@ -1,3 +1,4 @@
+import com.typesafe.sbt.packager.docker.DockerVersion
 import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 import sbtcrossproject.CrossPlugin.autoImport.{
@@ -5,6 +6,9 @@ import sbtcrossproject.CrossPlugin.autoImport.{
   crossProject => portableProject
 }
 import scalajsbundler.util.JSON
+
+import scala.sys.process.Process
+import scala.util.Try
 
 val malliinaGroup = "com.malliina"
 val utilPlayVersion = "5.11.0"
@@ -104,6 +108,8 @@ val frontend = project
     webpackConfigFile in fullOptJS := Some(baseDirectory.value / "webpack.prod.config.js")
   )
 
+val prodPort = 9000
+
 val server = Project("logstreams", file("server"))
   .enablePlugins(WebScalaJSBundlerPlugin, PlayLinuxPlugin)
   .dependsOn(crossJvm, client)
@@ -131,14 +137,21 @@ val server = Project("logstreams", file("server"))
       Seq(
         s"-Dconfig.file=/etc/$linuxName/production.conf",
         s"-Dlogger.file=/etc/$linuxName/logback-prod.xml",
-        "-Dhttp.port=8563"
+        s"-Dhttp.port=$prodPort"
       )
     },
     linuxPackageSymlinks := linuxPackageSymlinks.value.filterNot(_.link == "/usr/bin/starter"),
     routesImport ++= Seq(
       "com.malliina.values.Username",
       "com.malliina.play.http.Bindables.username"
-    )
+    ),
+    httpPort in Linux := Option(s"$prodPort"),
+    dockerVersion := Option(DockerVersion(19, 3, 5, None)),
+    dockerBaseImage := "openjdk:11",
+    daemonUser in Docker := "logstreams",
+    version in Docker := gitHash,
+    dockerRepository := Option("malliinalogstreams.azurecr.io"),
+    dockerExposedPorts ++= Seq(prodPort)
   )
 
 val it = Project("logstreams-test", file("logstreams-test"))
@@ -154,3 +167,9 @@ val logstreamsRoot = project
 addCommandAlias("web", ";logstreams/run")
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
+
+def gitHash: String =
+  sys.env
+    .get("GITHUB_SHA")
+    .orElse(Try(Process("git rev-parse --short HEAD").lineStream.head).toOption)
+    .getOrElse("unknown")

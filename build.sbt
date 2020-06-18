@@ -134,6 +134,8 @@ val server = Project("logstreams", file("server"))
     pipelineStages := Seq(digest, gzip),
     javaOptions in Universal ++= {
       Seq(
+        "-J-Xmx1024m",
+        "-Dpidfile.path=/dev/null",
         "-Dlogger.resource=logback-prod.xml",
         s"-Dhttp.port=$prodPort"
       )

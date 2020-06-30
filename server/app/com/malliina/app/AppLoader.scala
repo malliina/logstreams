@@ -100,10 +100,10 @@ abstract class AppComponents(context: Context, dbConf: Configuration => AppConf)
   val actions = controllerComponents.actionBuilder
   // Services
   val appConf = dbConf(configuration)
-  val db = NewStreamsDatabase.withMigrations(actorSystem, appConf.database)
+  val db = NewStreamsDatabase.withMigrations(appConf.database, executionContext)
   val database: LogsDatabase = db
   val htmls = Htmls.forApp(BuildInfo.frontName, isProd)
-  val users: UserService = NewDatabaseAuth(db.ds, db.ec)
+  val users: UserService = new NewDatabaseAuth(db.ctx)(db.ec)
   lazy val listenerAuth = Auths.viewers(auth)
   val sourceAuth = Auths.sources(users)
   val oauth = new OAuth(actions, creds)

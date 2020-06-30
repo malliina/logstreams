@@ -17,6 +17,7 @@ val logbackStreamsVersion = "1.8.0"
 val playJsonVersion = "2.9.0"
 val akkaHttpVersion = "10.1.12"
 val munitVersion = "0.7.7"
+val quillVersion = "3.5.2"
 
 val utilPlayDep = malliinaGroup %% "util-play" % utilPlayVersion
 
@@ -121,8 +122,9 @@ val server = Project("logstreams", file("server"))
       "frontName" -> (name in frontend).value
     ),
     buildInfoPackage := "com.malliina.app",
-    libraryDependencies ++= Seq(
-      "io.getquill" %% "quill-jdbc" % "3.5.1",
+    libraryDependencies ++= Seq("quill-jdbc", "quill-jasync-mysql").map { mod =>
+      "io.getquill" %% mod % quillVersion
+    } ++ Seq(
       "org.flywaydb" % "flyway-core" % "6.1.1",
       "mysql" % "mysql-connector-java" % "5.1.48",
       "com.malliina" %% "play-social" % utilPlayVersion,

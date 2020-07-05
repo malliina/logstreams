@@ -1,9 +1,9 @@
 package com.malliina.logstreams.db
 
-import com.github.jasync.sql.db.ConnectionPoolConfiguration
-import com.github.jasync.sql.db.mysql.MySQLConnectionBuilder
-import com.malliina.logstreams.db.NewStreamsDatabase.{DatabaseContext, log}
+import akka.actor.ActorSystem
+import com.malliina.logstreams.db.NewStreamsDatabase.log
 import com.malliina.logstreams.models._
+import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import io.getquill._
 import org.flywaydb.core.Flyway
 import play.api.Logger
@@ -13,37 +13,37 @@ import scala.concurrent.{ExecutionContext, Future}
 object NewStreamsDatabase {
   private val log = Logger(getClass)
 
-  type DatabaseContext =
-    MysqlJAsyncContext[CompositeNamingStrategy3[SnakeCase.type, UpperCase.type, MysqlEscape.type]]
-      with NewMappings
-
-  private val regex = "jdbc:mysql://([\\.0-9a-zA-Z-]+):?([0-9]*)/([0-9a-zA-Z-]+)".r
-
-  def apply(conf: Conf, ec: ExecutionContext): NewStreamsDatabase = {
-    val m = regex.findFirstMatchIn(conf.url).get
-    val host = m.group(1)
-    val port = m.group(2).toIntOption.getOrElse(3306)
-    val name = m.group(3)
-    val config = new ConnectionPoolConfiguration(host, port, name, conf.user, conf.pass)
-    val pool = MySQLConnectionBuilder.createConnectionPool(config)
-    val ctx: DatabaseContext =
-      new MysqlJAsyncContext(NamingStrategy(SnakeCase, UpperCase, MysqlEscape), pool)
-        with NewMappings
-    new NewStreamsDatabase(ctx)(ec)
-  }
-
-  def withMigrations(conf: Conf, ec: ExecutionContext): NewStreamsDatabase = {
+  def withMigrations(as: ActorSystem, conf: Conf): NewStreamsDatabase = {
     val flyway = Flyway.configure.dataSource(conf.url, conf.user, conf.pass).load()
     flyway.migrate()
-    apply(conf, ec)
+    apply(as, conf)
+  }
+
+  private def apply(as: ActorSystem, dbConf: Conf): NewStreamsDatabase = {
+    val pool = as.dispatchers.lookup("contexts.database")
+    apply(dataSource(dbConf), pool)
+  }
+
+  private def apply(ds: HikariDataSource, ec: ExecutionContext): NewStreamsDatabase =
+    new NewStreamsDatabase(ds)(ec)
+
+  def dataSource(conf: Conf): HikariDataSource = {
+    val hikari = new HikariConfig()
+    hikari.setDriverClassName(Conf.MySQLDriver)
+    hikari.setJdbcUrl(conf.url)
+    hikari.setUsername(conf.user)
+    hikari.setPassword(conf.pass)
+    log info s"Connecting to '${conf.url}'..."
+    new HikariDataSource(hikari)
   }
 
   def fail(message: String): Nothing = throw new Exception(message)
 }
 
-class NewStreamsDatabase(val ctx: DatabaseContext)(implicit val ec: ExecutionContext)
+class NewStreamsDatabase(val ds: HikariDataSource)(implicit val ec: ExecutionContext)
   extends LogsDatabase {
-//  lazy val ctx: MysqlJdbcContext with NewMappings = new MysqlJdbcContext(naming, ds) with NewMappings
+  val naming = NamingStrategy(SnakeCase, UpperCase, MysqlEscape)
+  lazy val ctx = new MysqlJdbcContext(naming, ds) with NewMappings
   import ctx._
 
   val logs = quote(querySchema[LogEntryRow]("LOGS"))
@@ -106,13 +106,15 @@ class NewStreamsDatabase(val ctx: DatabaseContext)(implicit val ec: ExecutionCon
       } else {
         if (isAsc) runIO(allAsc) else runIO(allDesc)
       }
-      task.map { rows => AppLogEvents(rows.map(_.toEvent)) }
+      task.map { rows =>
+        AppLogEvents(rows.map(_.toEvent))
+      }
     }
 
-  def transactionally[T](name: String)(io: IO[T, _]): Result[T] =
+  def transactionally[T](name: String)(io: IO[T, _]): Future[Result[T]] =
     performAsync(name)(io.transactional)
 
-  def performAsync[T](name: String)(io: IO[T, _]): Result[T] = perform(name, io)
+  def performAsync[T](name: String)(io: IO[T, _]): Future[Result[T]] = Future(perform(name, io))(ec)
 
   def perform[T](name: String, io: IO[T, _]): Result[T] = {
     val start = System.currentTimeMillis()
@@ -127,9 +129,11 @@ class NewStreamsDatabase(val ctx: DatabaseContext)(implicit val ec: ExecutionCon
   def first[T, E <: Effect](io: IO[Seq[T], E], onEmpty: => String): IO[T, E] =
     io.flatMap { ts =>
       ts.headOption
-        .map { t => IO.successful(t) }
+        .map { t =>
+          IO.successful(t)
+        }
         .getOrElse { IO.failed(new Exception(onEmpty)) }
     }
 
-  def close(): Unit = ctx.close()
+  def close(): Unit = ds.close()
 }

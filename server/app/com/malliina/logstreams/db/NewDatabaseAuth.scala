@@ -3,9 +3,10 @@ package com.malliina.logstreams.db
 import com.malliina.logstreams.auth.UserError.{AlreadyExists, DoesNotExist}
 import com.malliina.logstreams.auth.UserService
 import com.malliina.logstreams.db.NewDatabaseAuth.log
-import com.malliina.logstreams.db.NewStreamsDatabase.DatabaseContext
 import com.malliina.play.auth.BasicCredentials
 import com.malliina.values.{Password, Username}
+import com.zaxxer.hikari.HikariDataSource
+import io.getquill._
 import org.apache.commons.codec.digest.DigestUtils
 import play.api.Logger
 
@@ -16,30 +17,35 @@ object NewDatabaseAuth {
 
   def hash(username: Username, password: Password): Password =
     Password(DigestUtils.md5Hex(username.name + ":" + password.pass))
+
+  def apply(ds: HikariDataSource, ec: ExecutionContext): NewDatabaseAuth =
+    new NewDatabaseAuth(ds)(ec)
 }
 
-class NewDatabaseAuth(val ctx: DatabaseContext)(implicit ec: ExecutionContext) extends UserService {
+class NewDatabaseAuth(ds: HikariDataSource)(implicit ec: ExecutionContext) extends UserService {
+  val naming = NamingStrategy(SnakeCase, UpperCase, MysqlEscape)
+  lazy val ctx = new MysqlJdbcContext(naming, ds)
   import ctx._
   val users = quote(querySchema[DataUser]("USERS"))
 
-  def add(creds: BasicCredentials): Future[Either[AlreadyExists, Unit]] = {
+  def add(creds: BasicCredentials): Future[Either[AlreadyExists, Unit]] = Future {
     val q = quote {
       users.insert(lift(DataUser(creds.username, hash(creds))))
     }
-    run(q).map { rows =>
-      if (rows > 0) {
-        log.info(s"Added '${creds.username}'.")
-      }
-      Right(())
+    val rows = run(q)
+    if (rows > 0) {
+      log.info(s"Added '${creds.username}'.")
     }
+    Right(())
   }
-  def update(creds: BasicCredentials): Future[Either[DoesNotExist, Unit]] = {
-    val q = quote {
-      users
-        .filter(_.user == lift(creds.username))
-        .update(_.passHash -> lift(hash(creds)))
-    }
-    val a = runIO(q).map { rowCount =>
+  def update(creds: BasicCredentials): Future[Either[DoesNotExist, Unit]] = Future {
+    transaction {
+      val q = quote {
+        users
+          .filter(_.user == lift(creds.username))
+          .update(_.passHash -> lift(hash(creds)))
+      }
+      val rowCount = run(q)
       if (rowCount > 0) {
         log.info(s"Updated the password of '${creds.username}'.")
         Right(())
@@ -47,26 +53,24 @@ class NewDatabaseAuth(val ctx: DatabaseContext)(implicit ec: ExecutionContext) e
         Left(DoesNotExist(creds.username))
       }
     }
-    performIO(a.transactional)
   }
-  def remove(user: Username): Future[Either[DoesNotExist, Unit]] = {
+  def remove(user: Username): Future[Either[DoesNotExist, Unit]] = Future {
     val q = quote(users.filter(_.user == lift(user)).delete)
-    run(q).map { rowCount =>
-      if (rowCount > 0) {
-        log.info(s"Removed '$user'.")
-        Right(())
-      } else {
-        Left(DoesNotExist(user))
-      }
+    val rowCount = run(q)
+    if (rowCount > 0) {
+      log.info(s"Removed '$user'.")
+      Right(())
+    } else {
+      Left(DoesNotExist(user))
     }
   }
-  def isValid(creds: BasicCredentials): Future[Boolean] = {
+  def isValid(creds: BasicCredentials): Future[Boolean] = Future {
     val q = quote {
       users.filter(u => u.user == lift(creds.username) && u.passHash == lift(hash(creds))).nonEmpty
     }
     run(q)
   }
-  def all(): Future[Seq[Username]] = {
+  def all(): Future[Seq[Username]] = Future {
     run(quote(users.map(_.user)))
   }
 

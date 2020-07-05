@@ -122,7 +122,7 @@ val server = Project("logstreams", file("server"))
     ),
     buildInfoPackage := "com.malliina.app",
     libraryDependencies ++= Seq(
-      "io.getquill" %% "quill-jdbc" % "3.5.1",
+      "io.getquill" %% "quill-jdbc" % "3.5.2",
       "org.flywaydb" % "flyway-core" % "6.1.1",
       "mysql" % "mysql-connector-java" % "5.1.48",
       "com.malliina" %% "play-social" % utilPlayVersion,

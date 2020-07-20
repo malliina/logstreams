@@ -12,12 +12,12 @@ import scalatags.JsDom.all._
 case class RowContent(content: Frag, cellId: String, linkId: String)
 
 object ListenerSocket {
-  def apply(wsPath: String, settings: Settings, verboseSupport: Boolean = false) =
+  def apply(wsPath: String, settings: Settings, verboseSupport: Boolean) =
     new ListenerSocket(wsPath, settings, verboseSupport)
 }
 
 class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean)
-    extends BaseSocket(wsPath) {
+  extends BaseSocket(wsPath) {
   val CellContent = "cell-content"
   val CellWide = "cell-wide"
   val ColumnCount = 6
@@ -25,6 +25,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
   val Hidden = "hidden"
   val NoWrap = "no-wrap"
   val Warning = "warning"
+  val ActiveCustom = "active-custom"
 
   val Off = "off"
 
@@ -47,8 +48,8 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
         th("Level")
       ).render
     )
-    configureToggle(LabelVerbose, isVerbose)(_ => updateVerbose(true))
-    configureToggle(LabelCompact, !isVerbose)(_ => updateVerbose(false))
+    configureToggle(LabelVerbose, isVerbose)(_ => updateVerboseByClick(true))
+    configureToggle(LabelCompact, !isVerbose)(_ => updateVerboseByClick(false))
   }
 
   updateVerbose(isVerbose)
@@ -61,12 +62,22 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
     }
   }
 
+  def updateVerboseByClick(newVerbose: Boolean) = {
+    updateVerbose(newVerbose)
+    activateCustom(LabelVerbose, false)
+    activateCustom(LabelCompact, false)
+  }
+
   def configureToggle(on: String, isActive: Boolean)(onClick: Event => Unit): Unit = {
-    val e = getElem[HTMLElement](on)
-    if (isActive) {
-      e.classList.add("active")
-    }
+    val e = activateCustom(on, isActive)
     e.addEventListener("click", onClick)
+  }
+
+  private def activateCustom(id: String, isActive: Boolean) = {
+    val e = getElem[HTMLElement](id)
+    if (isActive) e.classList.add(ActiveCustom)
+    else e.classList.remove(ActiveCustom)
+    e
   }
 
   override def handlePayload(payload: JsValue): Unit =
@@ -125,7 +136,8 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
   def cell(content: String, hideable: Boolean = false) =
     toCell(
       content,
-      names(CellContent, if (hideable) if (isVerbose) VerboseKey else s"$VerboseKey $Off" else ""))
+      names(CellContent, if (hideable) if (isVerbose) VerboseKey else s"$VerboseKey $Off" else "")
+    )
 
   def wideCell(content: String, cellId: String) =
     td(`class` := s"$CellContent $CellWide", id := cellId)(content)

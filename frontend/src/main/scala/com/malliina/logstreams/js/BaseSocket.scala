@@ -38,12 +38,14 @@ class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.noop) extends 
   }
 
   def onMessage(msg: MessageEvent): Unit = {
-    Try(Json.parse(msg.data.toString)).map { json =>
-      val isPing = (json \ EventKey).validate[String].filter(_ == Ping).isSuccess
-      if (!isPing) {
-        handlePayload(json)
+    Try(Json.parse(msg.data.toString))
+      .map { json =>
+        val isPing = (json \ EventKey).validate[String].filter(_ == Ping).isSuccess
+        if (!isPing) {
+          handlePayload(json)
+        }
       }
-    }.recover { case e => onJsonException(e) }
+      .recover { case e => onJsonException(e) }
   }
 
   def onConnected(e: Event): Unit = showConnected()

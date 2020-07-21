@@ -27,17 +27,24 @@ object SocketClient {
   * Supports automatic reconnections. Calling `close()` will close any open resources
   * and cancel future reconnections, after which this instance must no longer be used.
   */
-class SocketClient(val uri: FullUrl,
-                   socketFactory: SSLSocketFactory,
-                   headers: Seq[KeyValue],
-                   connectTimeout: FiniteDuration = DefaultConnectTimeout) extends Closeable {
+class SocketClient(
+  val uri: FullUrl,
+  socketFactory: SSLSocketFactory,
+  headers: Seq[KeyValue],
+  connectTimeout: FiniteDuration = DefaultConnectTimeout
+) extends Closeable {
   private val enabled = new AtomicBoolean(true)
   private val connected = new AtomicBoolean(false)
   // polls for connectivity, reconnects if necessary
   private val loopExecutor = Executors.newSingleThreadScheduledExecutor()
-  private val loop = loopExecutor.scheduleWithFixedDelay(new Runnable {
-    override def run(): Unit = ensureConnected()
-  }, 30, 30, TimeUnit.SECONDS)
+  private val loop = loopExecutor.scheduleWithFixedDelay(
+    new Runnable {
+      override def run(): Unit = ensureConnected()
+    },
+    30,
+    30,
+    TimeUnit.SECONDS
+  )
 
   private val sf = new WebSocketFactory
   sf setSSLSocketFactory socketFactory
@@ -47,8 +54,10 @@ class SocketClient(val uri: FullUrl,
 
   // The listener seems stateless, so it is safe to reuse it across connections
   private val listener = new WebSocketAdapter {
-    override def onConnected(websocket: WebSocket,
-                             headers: util.Map[String, util.List[String]]): Unit = {
+    override def onConnected(
+      websocket: WebSocket,
+      headers: util.Map[String, util.List[String]]
+    ): Unit = {
       log info s"Connected to ${websocket.getURI}."
       connected set true
       firstConnection trySuccess websocket.getURI
@@ -63,10 +72,12 @@ class SocketClient(val uri: FullUrl,
       onText(text)
     }
 
-    override def onDisconnected(websocket: WebSocket,
-                                serverCloseFrame: WebSocketFrame,
-                                clientCloseFrame: WebSocketFrame,
-                                closedByServer: Boolean): Unit = {
+    override def onDisconnected(
+      websocket: WebSocket,
+      serverCloseFrame: WebSocketFrame,
+      clientCloseFrame: WebSocketFrame,
+      closedByServer: Boolean
+    ): Unit = {
       log warn s"Disconnected from ${websocket.getURI}."
       connected set false
       firstConnection tryFailure new Exception(s"Disconnected from ${websocket.getURI}.")

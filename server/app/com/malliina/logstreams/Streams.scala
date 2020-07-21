@@ -9,7 +9,7 @@ object Streams extends Streams
 trait Streams {
   def actorRef(bufferSize: Int, overflowStrategy: OverflowStrategy) = Source.actorRef(
     { case _: Any => CompletionStrategy.draining },
-    { case elem   => new Exception(s"Stream failed. $elem") },
+    { case elem => new Exception(s"Stream failed. $elem") },
     bufferSize,
     overflowStrategy
   )

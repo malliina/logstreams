@@ -111,7 +111,9 @@ class LogStreamsTest extends TestServerSuite {
     }
   }
 
-  test("admin receives status on connect and updates when a source connects and disconnects".ignore) {
+  test(
+    "admin receives status on connect and updates when a source connects and disconnects".ignore
+  ) {
     val status = Promise[JsValue]()
     val update = Promise[JsValue]()
     val disconnectedPromise = Promise[JsValue]()

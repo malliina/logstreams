@@ -15,7 +15,7 @@ object Frontend {
   def main(args: Array[String]): Unit = {
     val path = dom.window.location.pathname
     val jsImpl: PartialFunction[String, Any] = {
-      case "/" => SocketManager()
+      case "/"        => SocketManager()
       case "/sources" => new SourcesSocket()
     }
 

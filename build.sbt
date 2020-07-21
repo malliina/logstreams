@@ -16,7 +16,7 @@ val primitivesVersion = "1.17.0"
 val logbackStreamsVersion = "1.8.0"
 val playJsonVersion = "2.9.0"
 val akkaHttpVersion = "10.1.12"
-val munitVersion = "0.7.7"
+val munitVersion = "0.7.9"
 
 val utilPlayDep = malliinaGroup %% "util-play" % utilPlayVersion
 
@@ -37,11 +37,11 @@ inThisBuild(
 val client = Project("logstreams-client", file("client"))
   .enablePlugins(MavenCentralPlugin)
   .settings(
-    crossScalaVersions := scalaVersion.value :: "2.12.11" :: Nil,
+    crossScalaVersions := scalaVersion.value :: "2.12.12" :: Nil,
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
     libraryDependencies ++= Seq(
-      "com.neovisionaries" % "nv-websocket-client" % "2.9",
+      "com.neovisionaries" % "nv-websocket-client" % "2.10",
       "com.malliina" %% "logback-streams" % logbackStreamsVersion,
       "com.malliina" %%% "primitives" % primitivesVersion,
       "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,

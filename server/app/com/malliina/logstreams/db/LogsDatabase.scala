@@ -5,6 +5,6 @@ import com.malliina.logstreams.models.{AppLogEvents, EntriesWritten, LogEntryInp
 import scala.concurrent.Future
 
 trait LogsDatabase {
-  def insert(events: Seq[LogEntryInput]): Future[EntriesWritten]
+  def insert(events: List[LogEntryInput]): Future[EntriesWritten]
   def events(query: StreamsQuery = StreamsQuery.default): Future[AppLogEvents]
 }

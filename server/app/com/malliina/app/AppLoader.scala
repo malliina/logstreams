@@ -101,10 +101,11 @@ abstract class AppComponents(context: Context, dbConf: Configuration => AppConf)
   val actions = controllerComponents.actionBuilder
   // Services
   val appConf = dbConf(configuration)
-  val db = NewStreamsDatabase.withMigrations(actorSystem, appConf.database)
+  val doobieDb = DoobieDatabase.withMigrations(appConf.database, executionContext)
+  val db = DoobieStreamsDatabase(doobieDb)
   val database: LogsDatabase = db
   val htmls = Htmls.forApp(BuildInfo.frontName, isProd)
-  val usersDb = NewDatabaseAuth(db.ds, db.ec)
+  val usersDb = DoobieDatabaseAuth(doobieDb)
   val users: UserService = usersDb
   val listenerAuth = Auths.viewers(auth)
   val sourceAuth = Auths.sources(users)
@@ -119,7 +120,7 @@ abstract class AppComponents(context: Context, dbConf: Configuration => AppConf)
 
   applicationLifecycle.addStopHook(() =>
     Future.successful {
-      db.close()
+      doobieDb.close()
       appConf.close()
     }
   )

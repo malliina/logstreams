@@ -1,31 +1,28 @@
 package tests
 
 import com.malliina.app.{AppComponents, AppConf}
-import com.malliina.logstreams.db.{NewDatabaseAuth, NewStreamsDatabase}
+import com.malliina.logstreams.db.DoobieDatabase
+import doobie.util.fragment.Fragment
 import play.api.ApplicationLoader.Context
 
 import scala.concurrent.Future
 
 class TestComponents(ctx: Context, conf: AppConf) extends AppComponents(ctx, _ => conf) {
   override lazy val auth = new TestAuth(controllerComponents.actionBuilder)
-  val truncator = new Truncator(db, usersDb)
+  val truncator = new Truncator(doobieDb)
 }
 
-class Truncator(val db: NewStreamsDatabase, users: NewDatabaseAuth) {
+class Truncator(db: DoobieDatabase) {
   def truncate(): Future[Int] = {
-    val step1 = {
-      import db.ctx._
-      db.transactionally("Truncate tables") {
-        for {
-          l <- runIO(db.logs.delete)
-          t <- runIO(db.tokens.delete)
-        } yield 42
+    import doobie.implicits._
+    import cats.implicits._
+    implicit val ec = db.ec
+    val io = List("LOGS", "TOKENS", "USERS")
+      .traverse { tableName =>
+        val table = Fragment.const0(tableName)
+        sql"delete from $table".update(db.logHandler).run
       }
-    }
-    val step2: Long = {
-      import users.ctx._
-      users.ctx.run(users.users.delete)
-    }
-    step1
+      .map(_.sum)
+    db.run(io)
   }
 }

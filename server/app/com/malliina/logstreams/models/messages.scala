@@ -8,7 +8,7 @@ import com.malliina.logback.LogbackFormatting
 import com.malliina.values.Username
 import play.api.libs.json.{Json, OFormat}
 
-case class LogEvents(events: Seq[LogEvent])
+case class LogEvents(events: List[LogEvent])
 
 object LogEvents {
   implicit val json: OFormat[LogEvents] = Json.format[LogEvents]
@@ -25,7 +25,7 @@ case class LogEntryInput(
   stackTrace: Option[String]
 )
 
-case class LogEntryInputs(events: Seq[LogEntryInput])
+case class LogEntryInputs(events: List[LogEntryInput])
 
 case class LogEntryRow(
   id: LogEntryId,

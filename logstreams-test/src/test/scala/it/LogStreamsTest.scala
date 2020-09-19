@@ -123,7 +123,7 @@ class LogStreamsTest extends TestServerSuite {
       val p = Promise[JsValue]()
       withListener(p.success) { listener =>
         await(listener.initialConnection)
-        source send Json.stringify(Json.toJson(LogEvents(Seq(testEvent))))
+        source send Json.stringify(Json.toJson(LogEvents(List(testEvent))))
         val receivedEvent = await(p.future)
         val jsonResult = receivedEvent.validate[AppLogEvents]
         assert(jsonResult.isSuccess)

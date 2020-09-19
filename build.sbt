@@ -125,7 +125,6 @@ val server = Project("logstreams", file("server"))
     libraryDependencies ++= Seq("doobie-core", "doobie-hikari").map { d =>
       "org.tpolecat" %% d % "0.9.2"
     } ++ Seq(
-      "io.getquill" %% "quill-jdbc" % "3.5.2",
       "org.flywaydb" % "flyway-core" % "6.5.6",
       "mysql" % "mysql-connector-java" % "5.1.49",
       "com.malliina" %% "play-social" % utilPlayVersion,

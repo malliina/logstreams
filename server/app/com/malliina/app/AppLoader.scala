@@ -13,6 +13,7 @@ import controllers._
 import play.api.ApplicationLoader.Context
 import play.api._
 import play.api.http.HttpConfiguration
+import play.api.mvc.EssentialFilter
 import play.api.routing.Router
 import play.filters.HttpFiltersComponents
 import play.filters.gzip.GzipFilter
@@ -69,7 +70,7 @@ abstract class AppComponents(context: Context, dbConf: Configuration => AppConf)
   val mode = environment.mode
   val isProd = environment.mode == Mode.Prod
   override val configuration = LocalConf.localConf.withFallback(context.initialConfiguration)
-  override lazy val httpFilters =
+  override lazy val httpFilters: Seq[EssentialFilter] =
     Seq(new GzipFilter(), csrfFilter, securityHeadersFilter, allowedHostsFilter)
   val creds: GoogleOAuthCredentials =
     if (mode != Mode.Test)
@@ -91,7 +92,7 @@ abstract class AppComponents(context: Context, dbConf: Configuration => AppConf)
     SecurityHeadersConfig(contentSecurityPolicy = Option(csp))
   val defaultHttpConf = HttpConfiguration.fromConfiguration(configuration, environment)
   // Sets sameSite = None, otherwise the Google auth redirect will wipe out the session state
-  override lazy val httpConfiguration =
+  override lazy val httpConfiguration: HttpConfiguration =
     defaultHttpConf.copy(
       session = defaultHttpConf.session.copy(cookieName = "logsSession", sameSite = None)
     )
@@ -103,8 +104,9 @@ abstract class AppComponents(context: Context, dbConf: Configuration => AppConf)
   val db = NewStreamsDatabase.withMigrations(actorSystem, appConf.database)
   val database: LogsDatabase = db
   val htmls = Htmls.forApp(BuildInfo.frontName, isProd)
-  val users: UserService = NewDatabaseAuth(db.ds, db.ec)
-  lazy val listenerAuth = Auths.viewers(auth)
+  val usersDb = NewDatabaseAuth(db.ds, db.ec)
+  val users: UserService = usersDb
+  val listenerAuth = Auths.viewers(auth)
   val sourceAuth = Auths.sources(users)
   val oauth = new OAuth(actions, creds)
   val authImpl = new OAuthCtrl(oauth, materializer)
@@ -113,7 +115,7 @@ abstract class AppComponents(context: Context, dbConf: Configuration => AppConf)
   // Controllers
   lazy val home = new Logs(htmls, auth, users, deps, assets, controllerComponents)
   lazy val sockets = new SocketsBundle(listenerAuth, sourceAuth, database, deps)
-  override lazy val router: Router = new Routes(httpErrorHandler, home, sockets, oauth)
+  override val router: Router = new Routes(httpErrorHandler, home, sockets, oauth)
 
   applicationLifecycle.addStopHook(() =>
     Future.successful {

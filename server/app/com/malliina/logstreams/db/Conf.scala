@@ -8,9 +8,9 @@ object Conf {
   val MySQLDriver = "com.mysql.jdbc.Driver"
   val DefaultDriver = MySQLDriver
 
-  def fromConf(conf: Configuration) = from(conf.get[Configuration]("logstreams.db"))
+  def fromConf(conf: Configuration) = fromDatabaseConf(conf.get[Configuration]("logstreams.db"))
 
-  def from(conf: Configuration) = {
+  def fromDatabaseConf(conf: Configuration) = {
     def read(key: String): Either[String, String] =
       conf.getOptional[String](key).toRight(s"Key missing: '$key'.")
 

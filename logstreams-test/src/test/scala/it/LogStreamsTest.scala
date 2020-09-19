@@ -3,7 +3,7 @@ package it
 import akka.actor.ActorSystem
 import ch.qos.logback.classic.Level
 import com.dimafeng.testcontainers.MySQLContainer
-import com.malliina.app.AppConf
+import com.malliina.app.{AppConf, LocalConf}
 import com.malliina.http.FullUrl
 import com.malliina.logstreams.client.{HttpUtil, SocketClient}
 import com.malliina.logstreams.db.Conf
@@ -11,46 +11,71 @@ import com.malliina.logstreams.models._
 import com.malliina.play.auth.BasicCredentials
 import com.malliina.security.SSLUtils
 import com.malliina.values.{Password, Username}
-import munit.Suite
-import play.api.Logger
+import munit.{FunSuite, Suite}
+import play.api.{Configuration, Logger}
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.ahc.AhcWSClient
 import play.api.test.{DefaultTestServerFactory, RunningServer}
 import tests.{TestAppLoader, TestComponents}
 
-import scala.concurrent.Promise
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Promise}
+import scala.util.Try
 
-class LogsAppConf(db: MySQLContainer) extends AppConf {
-  override def database: Conf =
-    Conf(s"${db.jdbcUrl}?useSSL=false", db.username, db.password, db.driverClassName)
-  override def close(): Unit = db.stop()
+class LogsAppConf(override val database: Conf) extends AppConf {
+  override def close(): Unit = ()
 }
 
 case class LogsTestInstance(server: RunningServer, components: TestComponents)
 
-trait LogsServerPerSuite { self: Suite =>
-  val testServer: Fixture[LogsTestInstance] = new Fixture[LogsTestInstance]("test-server") {
-    private var container: Option[MySQLContainer] = None
-    private var runningServer: LogsTestInstance = null
-    def apply() = runningServer
+trait MUnitDatabaseSuite { self: munit.Suite =>
+  val db: Fixture[Conf] = new Fixture[Conf]("database") {
+    var container: Option[MySQLContainer] = None
+    var conf: Option[Conf] = None
+    def apply() = conf.get
     override def beforeAll(): Unit = {
-      val db = MySQLContainer(mysqlImageVersion = "mysql:5.7.29")
-      db.start()
-      container = Option(db)
-      val comps = new TestComponents(TestAppLoader.createTestAppContext, new LogsAppConf(db))
-      runningServer = LogsTestInstance(DefaultTestServerFactory.start(comps.application), comps)
+      val localTestDb =
+        Try(LocalConf.localConf.get[Configuration]("logstreams.testdb")).toEither.flatMap { c =>
+          Conf.fromDatabaseConf(c)
+        }
+      val testDb = localTestDb.getOrElse {
+        val c = MySQLContainer(mysqlImageVersion = "mysql:5.7.29")
+        c.start()
+        container = Option(c)
+        Conf(s"${c.jdbcUrl}?useSSL=false", c.username, c.password, c.driverClassName)
+      }
+      conf = Option(testDb)
     }
     override def afterAll(): Unit = {
-      runningServer.server.stopServer.close()
+      container.foreach(_.stop())
+    }
+  }
+
+  override def munitFixtures: Seq[Fixture[_]] = Seq(db)
+}
+
+trait LogsServerPerSuite extends MUnitDatabaseSuite { self: Suite =>
+  val testServer: Fixture[LogsTestInstance] = new Fixture[LogsTestInstance]("test-server") {
+    private var runningServer: Option[LogsTestInstance] = None
+    def apply() = runningServer.get
+    override def beforeAll(): Unit = {
+      val comps = new TestComponents(TestAppLoader.createTestAppContext, new LogsAppConf(db()))
+      runningServer = Option(
+        LogsTestInstance(DefaultTestServerFactory.start(comps.application), comps)
+      )
+      Await.result(comps.truncator.truncate(), 10.seconds)
+    }
+    override def afterAll(): Unit = {
+      runningServer.foreach(_.server.stopServer.close())
     }
   }
   def components = testServer().components
   def port = testServer().server.endpoints.httpEndpoint.map(_.port).get
 
-  override def munitFixtures = Seq(testServer)
+  override def munitFixtures: Seq[Fixture[_]] = Seq(db, testServer)
 }
 
-abstract class TestServerSuite extends munit.FunSuite with LogsServerPerSuite
+abstract class TestServerSuite extends FunSuite with LogsServerPerSuite
 
 class LogStreamsTest extends TestServerSuite {
   val testUser = "u"

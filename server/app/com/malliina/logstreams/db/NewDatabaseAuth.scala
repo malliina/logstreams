@@ -64,12 +64,14 @@ class NewDatabaseAuth(ds: HikariDataSource)(implicit ec: ExecutionContext) exten
       Left(DoesNotExist(user))
     }
   }
+
   def isValid(creds: BasicCredentials): Future[Boolean] = Future {
     val q = quote {
       users.filter(u => u.user == lift(creds.username) && u.passHash == lift(hash(creds))).nonEmpty
     }
     run(q)
   }
+
   def all(): Future[Seq[Username]] = Future {
     run(quote(users.map(_.user)))
   }

@@ -42,7 +42,6 @@ object AppConf {
   }
 }
 
-class AppLoader2 extends DefaultApp(new ProdAppComponents(_))
 class AppLoader extends ApplicationLoader {
   override def load(context: Context): Application = {
     val environment = context.environment
@@ -107,15 +106,16 @@ abstract class AppComponents(context: Context, dbConf: Configuration => AppConf)
   val htmls = Htmls.forApp(BuildInfo.frontName, isProd)
   val usersDb = DoobieDatabaseAuth(doobieDb)
   val users: UserService = usersDb
-  val listenerAuth = Auths.viewers(auth)
+  // if non-lazy, NPEs here due to initialization. fix later.
+  lazy val listenerAuth = Auths.viewers(auth)
   val sourceAuth = Auths.sources(users)
   val oauth = new OAuth(actions, creds)
   val authImpl = new OAuthCtrl(oauth, materializer)
   val deps = ActorExecution(actorSystem, materializer)
 
   // Controllers
-  lazy val home = new Logs(htmls, auth, users, deps, assets, controllerComponents)
-  lazy val sockets = new SocketsBundle(listenerAuth, sourceAuth, database, deps)
+  val home = new Logs(htmls, auth, users, deps, assets, controllerComponents)
+  val sockets = new SocketsBundle(listenerAuth, sourceAuth, database, deps)
   override val router: Router = new Routes(httpErrorHandler, home, sockets, oauth)
 
   applicationLifecycle.addStopHook(() =>

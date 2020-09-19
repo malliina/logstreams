@@ -2,13 +2,14 @@ package tests
 
 import com.malliina.app.{AppComponents, AppConf}
 import com.malliina.logstreams.db.DoobieDatabase
+import controllers.LogAuth
 import doobie.util.fragment.Fragment
 import play.api.ApplicationLoader.Context
 
 import scala.concurrent.Future
 
 class TestComponents(ctx: Context, conf: AppConf) extends AppComponents(ctx, _ => conf) {
-  override lazy val auth = new TestAuth(controllerComponents.actionBuilder)
+  override lazy val auth: LogAuth = new TestAuth(controllerComponents.actionBuilder)
   val truncator = new Truncator(doobieDb)
 }
 

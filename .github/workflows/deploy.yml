@@ -23,7 +23,7 @@ jobs:
 
       - uses: azure/docker-login@v1
         with:
-          login-server: malliinacr.azurecr.io
+          login-server: malliinalogstreams.azurecr.io
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
@@ -34,7 +34,7 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: 'malliinalogstreams'
-          images: 'malliinacr.azurecr.io/logstreams:${{ github.sha }}'
+          images: 'malliinalogstreams.azurecr.io/logstreams:${{ github.sha }}'
 
       - name: Azure logout
         run: |

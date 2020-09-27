@@ -13,5 +13,5 @@ Seq(
   "com.typesafe.sbt" % "sbt-digest" % "1.1.4",
   "ch.epfl.scala" % "sbt-bloop" % "1.4.4",
   "org.scalameta" % "sbt-scalafmt" % "2.4.2",
-  "com.eed3si9n" % "sbt-buildinfo" % "0.10.0"
+  "com.eed3si9n" % "sbt-buildinfo" % "0.9.0"
 ) map addSbtPlugin

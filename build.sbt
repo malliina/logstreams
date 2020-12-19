@@ -173,5 +173,5 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 def gitHash: String =
   sys.env
     .get("GITHUB_SHA")
-    .orElse(Try(Process("git rev-parse --short HEAD").lineStream.head).toOption)
+    .orElse(Try(Process("git rev-parse HEAD").lineStream.head).toOption)
     .getOrElse("unknown")

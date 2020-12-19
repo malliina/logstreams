@@ -70,14 +70,14 @@ abstract class AppComponents(context: Context, dbConf: Configuration => AppConf)
   val isProd = environment.mode == Mode.Prod
   override val configuration = LocalConf.localConf.withFallback(context.initialConfiguration)
   override lazy val httpFilters: Seq[EssentialFilter] =
-    Seq(new GzipFilter(), csrfFilter, securityHeadersFilter, allowedHostsFilter)
+    Seq(new GzipFilter(), csrfFilter, securityHeadersFilter)
   val creds: GoogleOAuthCredentials =
     if (mode != Mode.Test)
       GoogleOAuthCredentials(configuration).fold(err => throw new Exception(err.message), identity)
     else
       GoogleOAuthCredentials("", "", "")
-  override lazy val allowedHostsConfig: AllowedHostsConfig =
-    AllowedHostsConfig(Seq("localhost", "logs.malliina.com"))
+//  override lazy val allowedHostsConfig: AllowedHostsConfig =
+//    AllowedHostsConfig(Seq("localhost", "logs.malliina.com"))
   val allowedDomains = Seq(
     "*.bootstrapcdn.com",
     "*.googleapis.com",

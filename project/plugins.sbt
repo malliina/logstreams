@@ -11,7 +11,7 @@ Seq(
   "ch.epfl.scala" % "sbt-web-scalajs-bundler" % "0.18.0",
   "com.typesafe.sbt" % "sbt-gzip" % "1.0.2",
   "com.typesafe.sbt" % "sbt-digest" % "1.1.4",
-  "ch.epfl.scala" % "sbt-bloop" % "1.4.4",
+  "ch.epfl.scala" % "sbt-bloop" % "1.4.6",
   "org.scalameta" % "sbt-scalafmt" % "2.4.2",
   "com.eed3si9n" % "sbt-buildinfo" % "0.9.0"
 ) map addSbtPlugin

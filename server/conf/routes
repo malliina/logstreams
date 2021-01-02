@@ -1,5 +1,6 @@
 GET         /                           controllers.Logs.index
 GET         /ping                       controllers.Logs.ping
+GET         /health                     controllers.Logs.ping
 GET         /sources                    controllers.Logs.sources
 GET         /users                      controllers.Logs.allUsers
 POST        /users                      controllers.Logs.addUser

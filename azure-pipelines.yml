@@ -11,7 +11,7 @@ variables:
   DockerRepository: logstreams
   WebAppName: malliinalogstreams
   SbtVersion: 1.4.6
-  ContainerRegistry: malliinalogsconnection
+  ContainerRegistry: malliinacrconnection
 
 steps:
 

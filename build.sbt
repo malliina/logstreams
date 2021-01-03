@@ -17,6 +17,7 @@ val logbackStreamsVersion = "1.8.0"
 val playJsonVersion = "2.9.1"
 val akkaHttpVersion = "10.1.12"
 val munitVersion = "0.7.12"
+val testContainersVersion = "0.38.3"
 
 val utilPlayDep = malliinaGroup %% "util-play" % utilPlayVersion
 
@@ -128,7 +129,7 @@ val server = Project("logstreams", file("server"))
       "org.flywaydb" % "flyway-core" % "6.5.6",
       "mysql" % "mysql-connector-java" % "5.1.49",
       "com.malliina" %% "play-social" % utilPlayVersion,
-      "com.dimafeng" %% "testcontainers-scala-mysql" % "0.38.3" % Test,
+      "com.dimafeng" %% "testcontainers-scala-mysql" % testContainersVersion % Test,
       ws % Test,
       utilPlayDep,
       utilPlayDep % Test classifier "tests"

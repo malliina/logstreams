@@ -3,4 +3,4 @@
 
 # logstreams
 
-This app displays logs.
+This app displays logs. Deployed to [logs.malliina.com](https://logs.malliina.com).

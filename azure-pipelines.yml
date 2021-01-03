@@ -7,10 +7,10 @@ pool:
 variables:
   azureSubscriptionEndpoint: malliinaresources
   ResourceGroupName: personal
-  DockerNamespace: malliinalogstreams.azurecr.io
+  DockerNamespace: malliinacr.azurecr.io
   DockerRepository: logstreams
   WebAppName: malliinalogstreams
-  SbtVersion: 1.4.4
+  SbtVersion: 1.4.6
   ContainerRegistry: malliinalogsconnection
 
 steps:

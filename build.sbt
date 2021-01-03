@@ -152,7 +152,7 @@ val server = Project("logstreams", file("server"))
     dockerBaseImage := "openjdk:11",
     daemonUser in Docker := "logstreams",
     version in Docker := gitHash,
-    dockerRepository := Option("malliinalogstreams.azurecr.io"),
+    dockerRepository := Option("malliinacr.azurecr.io"),
     dockerExposedPorts ++= Seq(prodPort)
   )
 

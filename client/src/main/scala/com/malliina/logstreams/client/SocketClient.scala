@@ -47,8 +47,8 @@ class SocketClient(
   )
 
   private val sf = new WebSocketFactory
-  sf setSSLSocketFactory socketFactory
-  sf setConnectionTimeout 5.seconds.toMillis.toInt
+  sf.setSSLSocketFactory(socketFactory)
+  sf.setConnectionTimeout(connectTimeout.toMillis.toInt)
 
   private val firstConnection = Promise[URI]()
 
@@ -59,13 +59,13 @@ class SocketClient(
       headers: util.Map[String, util.List[String]]
     ): Unit = {
       log info s"Connected to ${websocket.getURI}."
-      connected set true
-      firstConnection trySuccess websocket.getURI
+      connected.set(true)
+      firstConnection.trySuccess(websocket.getURI)
     }
 
     override def onConnectError(websocket: WebSocket, exception: WebSocketException): Unit = {
       log.error(s"Connect error to ${websocket.getURI}.", exception)
-      firstConnection tryFailure exception
+      firstConnection.tryFailure(exception)
     }
 
     override def onTextMessage(websocket: WebSocket, text: String): Unit = {
@@ -78,9 +78,9 @@ class SocketClient(
       clientCloseFrame: WebSocketFrame,
       closedByServer: Boolean
     ): Unit = {
-      log warn s"Disconnected from ${websocket.getURI}."
-      connected set false
-      firstConnection tryFailure new Exception(s"Disconnected from ${websocket.getURI}.")
+      log.warn(s"Disconnected from ${websocket.getURI}.")
+      connected.set(false)
+      firstConnection.tryFailure(new Exception(s"Disconnected from ${websocket.getURI}."))
     }
 
     // may fire multiple times; onDisconnected fires just once
@@ -102,7 +102,7 @@ class SocketClient(
   def isEnabled: Boolean = enabled.get()
 
   private def createNewSocket(): WebSocket = {
-    val socket: WebSocket = sf.createSocket(uri.url, connectTimeout.toSeconds.toInt)
+    val socket: WebSocket = sf.createSocket(uri.url, connectTimeout.toMillis.toInt)
     headers foreach { header => socket.addHeader(header.key, header.value) }
     socket addListener listener
     log info s"Connecting to $uri..."
@@ -121,19 +121,19 @@ class SocketClient(
 
   private def reconnect(): Unit = {
     killSocket(socket.get())
-    socket set createNewSocket()
+    socket.set(createNewSocket())
   }
 
   private def killSocket(victim: WebSocket): Unit = {
-    victim removeListener listener
+    victim.removeListener(listener)
     victim.disconnect()
   }
 
   override def close(): Unit = {
-    loop cancel true
+    loop.cancel(true)
     loopExecutor.shutdown()
     loopExecutor.awaitTermination(2, TimeUnit.SECONDS)
-    enabled set false
+    enabled.set(false)
     killSocket(socket.get())
   }
 }

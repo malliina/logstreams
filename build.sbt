@@ -11,12 +11,12 @@ import scala.sys.process.Process
 import scala.util.Try
 
 val malliinaGroup = "com.malliina"
-val utilPlayVersion = "5.11.0"
-val primitivesVersion = "1.17.0"
+val utilPlayVersion = "6.0.0"
+val primitivesVersion = "1.18.0"
 val logbackStreamsVersion = "1.8.0"
 val playJsonVersion = "2.9.1"
 val akkaHttpVersion = "10.1.12"
-val munitVersion = "0.7.12"
+val munitVersion = "0.7.20"
 val testContainersVersion = "0.38.3"
 
 val utilPlayDep = malliinaGroup %% "util-play" % utilPlayVersion
@@ -37,6 +37,7 @@ inThisBuild(
 
 val client = Project("logstreams-client", file("client"))
   .enablePlugins(MavenCentralPlugin)
+  .disablePlugins(RevolverPlugin)
   .settings(
     crossScalaVersions := scalaVersion.value :: "2.12.12" :: Nil,
     gitUserName := "malliina",
@@ -68,6 +69,7 @@ val crossJs = cross.js
 val frontend = project
   .in(file("frontend"))
   .enablePlugins(ScalaJSBundlerPlugin, ScalaJSWeb, NodeJsPlugin)
+  .disablePlugins(RevolverPlugin)
   .dependsOn(crossJs)
   .settings(
     version := "1.0.0",
@@ -111,9 +113,10 @@ val frontend = project
   )
 
 val prodPort = 9000
+val http4sModules = Seq("blaze-server", "blaze-client", "dsl", "scalatags", "play-json")
 
 val server = Project("logstreams", file("server"))
-  .enablePlugins(WebScalaJSBundlerPlugin, PlayLinuxPlugin)
+  .enablePlugins(FileTreePlugin, JavaServerAppPackaging, SystemdPlugin, BuildInfoPlugin)
   .dependsOn(crossJvm, client)
   .settings(
     scalaJSProjects := Seq(frontend),
@@ -123,11 +126,17 @@ val server = Project("logstreams", file("server"))
       "frontName" -> (name in frontend).value
     ),
     buildInfoPackage := "com.malliina.app",
-    libraryDependencies ++= Seq("doobie-core", "doobie-hikari").map { d =>
-      "org.tpolecat" %% d % "0.9.2"
+    libraryDependencies ++= http4sModules.map { m =>
+      "org.http4s" %% s"http4s-$m" % "0.21.14"
+    } ++ Seq("doobie-core", "doobie-hikari").map { d =>
+      "org.tpolecat" %% d % "0.9.4"
     } ++ Seq(
-      "org.flywaydb" % "flyway-core" % "6.5.6",
+      "com.github.pureconfig" %% "pureconfig" % "0.14.0",
+      "org.flywaydb" % "flyway-core" % "7.3.1",
       "mysql" % "mysql-connector-java" % "5.1.49",
+      "org.slf4j" % "slf4j-api" % "1.7.30",
+      "ch.qos.logback" % "logback-classic" % "1.2.3",
+      "ch.qos.logback" % "logback-core" % "1.2.3",
       "com.malliina" %% "play-social" % utilPlayVersion,
       "com.dimafeng" %% "testcontainers-scala-mysql" % testContainersVersion % Test,
       ws % Test,
@@ -138,9 +147,8 @@ val server = Project("logstreams", file("server"))
     javaOptions in Universal ++= {
       Seq(
         "-J-Xmx1024m",
-        "-Dpidfile.path=/dev/null",
-        "-Dlogger.resource=logback-prod.xml",
-        s"-Dhttp.port=$prodPort"
+        s"-Dhttp.port=$prodPort",
+        "-Dlogback.configurationFile=logback-prod.xml"
       )
     },
     linuxPackageSymlinks := linuxPackageSymlinks.value.filterNot(_.link == "/usr/bin/starter"),
@@ -148,13 +156,48 @@ val server = Project("logstreams", file("server"))
       "com.malliina.values.Username",
       "com.malliina.play.http.Bindables.username"
     ),
+    unmanagedResourceDirectories in Compile += baseDirectory.value / "public",
     httpPort in Linux := Option(s"$prodPort"),
     dockerVersion := Option(DockerVersion(19, 3, 5, None)),
     dockerBaseImage := "openjdk:11",
     daemonUser in Docker := "logstreams",
     version in Docker := gitHash,
     dockerRepository := Option("malliinacr.azurecr.io"),
-    dockerExposedPorts ++= Seq(prodPort)
+    dockerExposedPorts ++= Seq(prodPort),
+    publishArtifact in (Compile, packageDoc) := false,
+    publishArtifact in packageDoc := false,
+    sources in (Compile, doc) := Seq.empty,
+    packageName in Docker := "pics",
+    resources in Compile ++= Def.taskDyn {
+      val sjsStage = scalaJSStage.in(frontend).value match {
+        case Stage.FastOpt => fastOptJS
+        case Stage.FullOpt => fullOptJS
+      }
+      Def.task {
+        val webpackFiles = webpack.in(frontend, Compile, sjsStage).value.map(_.data)
+        val hashedFiles = hashAssets.in(frontend, Compile, sjsStage).value.map(_.hashedFile.toFile)
+        webpackFiles ++ hashedFiles
+      }
+    }.value,
+    resourceDirectories in Compile += assetsDir.in(frontend).value.toFile,
+    reStart := reStart.dependsOn(webpack.in(frontend, Compile, fastOptJS)).evaluated,
+    watchSources ++= (watchSources in frontend).value,
+    sourceGenerators in Compile += Def.taskDyn {
+      val sjsStage = scalaJSStage.in(frontend).value match {
+        case Stage.FastOpt => fastOptJS
+        case Stage.FullOpt => fullOptJS
+      }
+      Def.task {
+        val dest = (sourceManaged in Compile).value
+        val hashed = hashAssets.in(frontend, Compile, sjsStage).value
+        val prefix = assetsPrefix.in(frontend).value
+        val log = streams.value.log
+        val cached = FileFunction.cached(streams.value.cacheDirectory / "assets") { in =>
+          makeAssetsFile(dest, prefix, hashed, log)
+        }
+        cached(hashed.map(_.hashedFile.toFile).toSet).toSeq
+      }
+    }.taskValue
   )
 
 val it = Project("logstreams-test", file("logstreams-test"))
@@ -166,6 +209,10 @@ val it = Project("logstreams-test", file("logstreams-test"))
 val logstreamsRoot = project
   .in(file("."))
   .aggregate(frontend, server, client, it)
+  .settings(
+    runApp := (run in Compile).in(backend).evaluated,
+    reStart := reStart.in(backend).evaluated
+  )
 
 addCommandAlias("web", ";logstreams/run")
 

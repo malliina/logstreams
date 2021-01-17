@@ -9,7 +9,7 @@ import scala.concurrent.{Await, Future}
 class SocketTests extends munit.FunSuite {
   def failSocket = new SocketClient(FullUrl("http", "kjdhfkdshfds.com", "/blaa"), null, Nil)
 
-  test("network failure fails with WebSocketException") {
+  test("network failure fails with WebSocketException".ignore) {
     val socket = failSocket
     intercept[WebSocketException] {
       await(socket.initialConnection)

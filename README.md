@@ -4,3 +4,9 @@
 # logstreams
 
 This app displays logs. Deployed to [logs.malliina.com](https://logs.malliina.com).
+
+## Releasing the client
+
+To release the client:
+
+    sbt "project logstreams-client" release

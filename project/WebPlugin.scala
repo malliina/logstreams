@@ -15,6 +15,7 @@ case class HashedFile(path: String, hashedPath: String, originalFile: Path, hash
 object WebPlugin extends AutoPlugin {
   override def requires = ScalaJSBundlerPlugin
   object autoImport {
+    val assetsPackage = settingKey[String]("Assets code package name")
     val assetsDir = settingKey[Path]("Webpack assets dir to serve in server")
     val assetsPrefix = settingKey[String]("Assets prefix")
     val prepTarget = taskKey[Path]("Prep target dir")
@@ -93,9 +94,8 @@ object WebPlugin extends AutoPlugin {
     hashedFile
   }
 
-  def makeAssetsFile(base: File, prefix: String, hashes: Seq[HashedFile], log: ManagedLogger): Set[File] = {
+  def makeAssetsFile(base: File, packageName: String, prefix: String, hashes: Seq[HashedFile], log: ManagedLogger): Set[File] = {
     val inlined = hashes.map(h => s""""${h.path}" -> "${h.hashedPath}"""").mkString(", ")
-    val packageName = "com.malliina.pics.assets"
     val objectName = "HashedAssets"
     val content =
       s"""

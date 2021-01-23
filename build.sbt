@@ -6,6 +6,8 @@ import sbtcrossproject.CrossPlugin.autoImport.{
   crossProject => portableProject
 }
 import scalajsbundler.util.JSON
+import org.scalajs.sbtplugin.Stage
+import WebPlugin.makeAssetsFile
 
 import scala.sys.process.Process
 import scala.util.Try
@@ -68,7 +70,7 @@ val crossJs = cross.js
 
 val frontend = project
   .in(file("frontend"))
-  .enablePlugins(ScalaJSBundlerPlugin, ScalaJSWeb, NodeJsPlugin)
+  .enablePlugins(ScalaJSBundlerPlugin, NodeJsPlugin, WebPlugin)
   .disablePlugins(RevolverPlugin)
   .dependsOn(crossJs)
   .settings(
@@ -115,7 +117,8 @@ val frontend = project
 val prodPort = 9000
 val http4sModules = Seq("blaze-server", "blaze-client", "dsl", "scalatags", "play-json")
 
-val server = Project("logstreams", file("server"))
+val server = project
+  .in(file("server"))
   .enablePlugins(FileTreePlugin, JavaServerAppPackaging, SystemdPlugin, BuildInfoPlugin)
   .dependsOn(crossJvm, client)
   .settings(
@@ -126,6 +129,7 @@ val server = Project("logstreams", file("server"))
       "frontName" -> (name in frontend).value
     ),
     buildInfoPackage := "com.malliina.app",
+    buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, "hash" -> gitHash),
     libraryDependencies ++= http4sModules.map { m =>
       "org.http4s" %% s"http4s-$m" % "0.21.14"
     } ++ Seq("doobie-core", "doobie-hikari").map { d =>
@@ -152,10 +156,10 @@ val server = Project("logstreams", file("server"))
       )
     },
     linuxPackageSymlinks := linuxPackageSymlinks.value.filterNot(_.link == "/usr/bin/starter"),
-    routesImport ++= Seq(
-      "com.malliina.values.Username",
-      "com.malliina.play.http.Bindables.username"
-    ),
+//    routesImport ++= Seq(
+//      "com.malliina.values.Username",
+//      "com.malliina.play.http.Bindables.username"
+//    ),
     unmanagedResourceDirectories in Compile += baseDirectory.value / "public",
     httpPort in Linux := Option(s"$prodPort"),
     dockerVersion := Option(DockerVersion(19, 3, 5, None)),
@@ -193,7 +197,7 @@ val server = Project("logstreams", file("server"))
         val prefix = assetsPrefix.in(frontend).value
         val log = streams.value.log
         val cached = FileFunction.cached(streams.value.cacheDirectory / "assets") { in =>
-          makeAssetsFile(dest, prefix, hashed, log)
+          makeAssetsFile(dest, s"com.malliina.logstreams", prefix, hashed, log)
         }
         cached(hashed.map(_.hashedFile.toFile).toSet).toSeq
       }
@@ -206,12 +210,14 @@ val it = Project("logstreams-test", file("logstreams-test"))
     libraryDependencies += "com.typesafe.play" %% "play-ws-standalone" % "2.1.2"
   )
 
+val runApp = inputKey[Unit]("Runs the app")
+
 val logstreamsRoot = project
   .in(file("."))
   .aggregate(frontend, server, client, it)
   .settings(
-    runApp := (run in Compile).in(backend).evaluated,
-    reStart := reStart.in(backend).evaluated
+    runApp := (run in Compile).in(server).evaluated,
+    reStart := reStart.in(server).evaluated
   )
 
 addCommandAlias("web", ";logstreams/run")

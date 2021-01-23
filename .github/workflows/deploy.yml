@@ -28,7 +28,7 @@ jobs:
           password: ${{ secrets.ACR_PASSWORD }}
 
       - run: |
-          sbt "project logstreams" docker:publish
+          sbt "project server" docker:publish
 
       - name: 'Deploy to Azure'
         uses: azure/webapps-deploy@v2

@@ -2,7 +2,7 @@ package com.malliina.logstreams.models
 
 import play.api.libs.json._
 
-case class AppName(name: String) {
+case class AppName(name: String) extends AnyVal {
   override def toString: String = name
 }
 
@@ -10,7 +10,7 @@ object AppName extends Companion[String, AppName] {
   override def raw(t: AppName): String = t.name
 }
 
-case class LogEntryId(id: Long) {
+case class LogEntryId(id: Long) extends AnyVal {
   override def toString: String = s"$id"
 }
 
@@ -47,39 +47,50 @@ object AdminEvent {
     LogSources.json.reads(json).orElse(SimpleEvent.json.reads(json))
   }
   implicit val writer = Writes[AdminEvent] {
-    case ls@LogSources(_) => LogSources.json.writes(ls)
-    case se@SimpleEvent(_) => SimpleEvent.json.writes(se)
+    case ls @ LogSources(_)  => LogSources.json.writes(ls)
+    case se @ SimpleEvent(_) => SimpleEvent.json.writes(se)
   }
 }
 
-case class LogEventOld(timeStamp: Long,
-                       timeFormatted: String,
-                       message: String,
-                       loggerName: String,
-                       threadName: String,
-                       level: String,
-                       stackTrace: Option[String] = None) {
-  def toEvent = LogEvent(timeStamp, timeFormatted, message, loggerName, threadName, level, stackTrace)
+case class LogEventOld(
+  timeStamp: Long,
+  timeFormatted: String,
+  message: String,
+  loggerName: String,
+  threadName: String,
+  level: String,
+  stackTrace: Option[String] = None
+) {
+  def toEvent =
+    LogEvent(timeStamp, timeFormatted, message, loggerName, threadName, level, stackTrace)
 }
 
 object LogEventOld {
   implicit val json = Json.format[LogEventOld]
 }
 
-case class LogEvent(timestamp: Long,
-                    timeFormatted: String,
-                    message: String,
-                    loggerName: String,
-                    threadName: String,
-                    level: String,
-                    stackTrace: Option[String] = None)
+case class LogEvent(
+  timestamp: Long,
+  timeFormatted: String,
+  message: String,
+  loggerName: String,
+  threadName: String,
+  level: String,
+  stackTrace: Option[String] = None
+)
 
 object LogEvent {
   val reader = Json.reads[LogEvent].orElse(LogEventOld.json.map(_.toEvent))
   implicit val json: OFormat[LogEvent] = OFormat(reader, Json.writes[LogEvent])
 }
 
-case class AppLogEvent(id: LogEntryId, source: LogSource, event: LogEvent, added: Long, addedFormatted: String)
+case class AppLogEvent(
+  id: LogEntryId,
+  source: LogSource,
+  event: LogEvent,
+  added: Long,
+  addedFormatted: String
+)
 
 object AppLogEvent {
   implicit val json = Json.format[AppLogEvent]
@@ -101,8 +112,8 @@ object FrontEvent {
     AppLogEvents.json.reads(json).orElse(SimpleEvent.json.reads(json))
   }
   implicit val writer = Writes[FrontEvent] {
-    case ale@AppLogEvents(_) => AppLogEvents.json.writes(ale)
-    case se@SimpleEvent(_) => SimpleEvent.json.writes(se)
+    case ale @ AppLogEvents(_) => AppLogEvents.json.writes(ale)
+    case se @ SimpleEvent(_)   => SimpleEvent.json.writes(se)
   }
 }
 

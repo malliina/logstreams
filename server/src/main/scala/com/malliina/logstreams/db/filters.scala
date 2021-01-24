@@ -3,7 +3,7 @@ package com.malliina.logstreams.db
 import com.malliina.logstreams.Errors
 import com.malliina.logstreams.http4s.QueryParsers
 import com.malliina.values.{ErrorMessage, Username, ValidatingCompanion}
-import org.http4s.{Query, QueryParamDecoder}
+import org.http4s.Query
 
 case class StreamsQuery(apps: Seq[Username], limit: Int, offset: Int, order: SortOrder)
 

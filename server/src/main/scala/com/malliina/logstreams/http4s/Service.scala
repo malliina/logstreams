@@ -14,12 +14,13 @@ import com.malliina.logstreams.models.AppName
 import com.malliina.util.AppLogger
 import controllers.UserRequest
 import play.api.libs.json.Json
-import org.http4s.{play, _}
+import org.http4s._
 import Service.log
 import cats.data.NonEmptyList
 import com.malliina.logstreams.Errors
 import com.malliina.logstreams.auth.AuthProvider.{Google, PromptKey, SelectAccount}
 import com.malliina.logstreams.db.StreamsQuery
+import com.malliina.logstreams.html.Htmls.{PasswordKey, UsernameKey}
 import com.malliina.logstreams.http4s.BasicService.noCache
 import org.http4s.headers.{Location, `WWW-Authenticate`}
 import com.malliina.values.{Email, Password, Username}
@@ -52,21 +53,25 @@ class Service(
     case GET -> Root / "health" => ok(Json.toJson(AppMeta.ThisApp))
     case GET -> Root / "ping"   => ok(Json.toJson(AppMeta.ThisApp))
     case req @ GET -> Root =>
-      webAuth(req.headers) { user =>
+      webAuth(req) { user =>
         users.all().flatMap { us => ok(htmls.logs(us.map(u => AppName(u.name))).tags) }
       }
     case req @ GET -> Root / "sources" =>
-      webAuth(req.headers) { src =>
+      webAuth(req) { src =>
         ok(htmls.sources.tags)
       }
+    case req @ GET -> Root / "users" =>
+      webAuth(req) { user =>
+        users.all().flatMap { us => ok(htmls.users(us, None).tags) }
+      }
     case req @ POST -> Root / "users" =>
-      webAuth(req.headers) { user =>
+      webAuth(req) { user =>
         req.decode[UrlForm] { form =>
           def read[T](key: String, build: String => T) =
             form.getFirst(key).map(build).toRight(Errors.single(s"Missing '$key'."))
           val maybeCreds = for {
-            username <- read("username", Username.apply)
-            password <- read("password", Password.apply)
+            username <- read(UsernameKey, Username.apply)
+            password <- read(PasswordKey, Password.apply)
           } yield com.malliina.logstreams.auth.BasicCredentials(username, password)
           maybeCreds.fold(
             err => unauthorized(err),
@@ -88,7 +93,7 @@ class Service(
         }
       }
     case req @ POST -> Root / "users" / UsernameVar(targetUser) / "delete" =>
-      webAuth(req.headers) { principal =>
+      webAuth(req) { principal =>
         users.remove(targetUser).flatMap { res =>
           val feedback = res.fold(
             _ => {
@@ -109,7 +114,7 @@ class Service(
         }
       }
     case req @ GET -> Root / "ws" / "logs" =>
-      webAuth(req.headers) { principal =>
+      webAuth(req) { principal =>
         StreamsQuery
           .fromQuery(req.uri.query)
           .fold(
@@ -118,12 +123,12 @@ class Service(
           )
       }
     case req @ GET -> Root / "ws" / "admins" =>
-      webAuth(req.headers) { principal =>
+      webAuth(req) { principal =>
         sockets.admin(principal)
       }
     case req @ GET -> Root / "ws" / "sources" =>
       sourceAuth(req.headers) { src =>
-        sockets.source(UserRequest(src, req.headers))
+        sockets.source(UserRequest(src, req.headers, Urls.address(req)))
       }
     case req @ GET -> Root / "oauth" =>
       startHinted(Google, google, req)
@@ -224,8 +229,10 @@ class Service(
   def stringify(map: Map[String, String]): String =
     map.map { case (key, value) => s"$key=$value" }.mkString("&")
 
-  def webAuth(headers: Headers)(code: UserRequest => IO[Response[IO]]) =
-    withAuth(auths.viewers, headers)(user => code(UserRequest(user, headers)))
+  def webAuth(req: Request[IO])(code: UserRequest => IO[Response[IO]]) =
+    withAuth(auths.viewers, req.headers) { user =>
+      code(UserRequest(user, req.headers, Urls.address(req)))
+    }
 
   def sourceAuth(headers: Headers)(code: Username => IO[Response[IO]]) =
     withAuth(auths.sources, headers)(code)

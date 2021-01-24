@@ -2,7 +2,7 @@ package controllers
 
 import cats.effect.IO
 import com.malliina.http.OkClient
-import com.malliina.logstreams.http4s.{IdentityError, LogRoutes}
+import com.malliina.logstreams.http4s.{IdentityError, LogRoutes, Urls}
 import com.malliina.util.AppLogger
 import com.malliina.values.{Email, Username}
 import com.malliina.web.AuthConf
@@ -14,29 +14,10 @@ trait LogAuth[F[_]] {
   def authenticateSocket(req: Request[IO]): F[Either[IdentityError, UserRequest]]
 }
 
-case class UserRequest(user: Username, headers: Headers) {
-  def address = "todo"
-}
+case class UserRequest(user: Username, headers: Headers, address: String)
 
 object OAuth {
   private val log = AppLogger(getClass)
-
-//  def sessionAuthenticator(oauth: OAuth): Authenticator[UserRequest] = {
-//    Authenticator { rh =>
-//      val result = Auth
-//        .authenticateFromSession(rh, oauth.sessionUserKey)
-//        .map(user => UserRequest(user, rh))
-//        .toRight(MissingCredentials(rh))
-//      Future.successful(result)
-//    }
-//  }
-
-//  def authBundle(oauth: OAuth): AuthBundle[UserRequest] = new AuthBundle[UserRequest] {
-//    override val authenticator = sessionAuthenticator(oauth)
-//
-//    override def onUnauthorized(failure: AuthFailure) =
-//      Results.Redirect(routes.OAuth.googleStart())
-//  }
 }
 
 class OAuth(creds: AuthConf) {

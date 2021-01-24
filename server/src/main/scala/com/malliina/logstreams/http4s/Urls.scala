@@ -18,4 +18,11 @@ object Urls {
     req.isSecure.getOrElse(false) || req.headers
       .get(CaseInsensitiveString("X-Forwarded-Proto"))
       .exists(_.value == "https")
+
+  def address[F[_]](req: Request[F]): String =
+    req.headers
+      .get(CaseInsensitiveString("X-Forwarded-For"))
+      .map(_.value)
+      .orElse(req.remoteAddr)
+      .getOrElse("unknown")
 }

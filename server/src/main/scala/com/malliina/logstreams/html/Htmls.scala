@@ -7,13 +7,15 @@ import com.malliina.logstreams.html.Htmls._
 import com.malliina.logstreams.http4s.LogRoutes
 import com.malliina.logstreams.models.{AppName, FrontStrings}
 import com.malliina.values.Username
-import controllers.{Logs, UserFeedback}
+import controllers.UserFeedback
 import org.http4s.Uri
 import scalatags.Text.all._
 import scalatags.text.Builder
-import Htmls.uriAttr
 
 object Htmls {
+  val UsernameKey = "username"
+  val PasswordKey = "password"
+
   implicit val uriAttr: AttrValue[Uri] = new AttrValue[Uri] {
     override def apply(t: Builder, a: Attr, v: Uri): Unit =
       t.setAttr(a.name, Builder.GenericAttrValueSource(v.renderString))
@@ -128,8 +130,8 @@ class Htmls(scripts: Seq[String], externalScripts: Seq[FullUrl], assets: AssetsS
         ),
         div6(
           postableForm(reverse.addUser)(
-            inGroup(Logs.UsernameKey, Text, "Username"),
-            passwordGroup(Logs.PasswordKey, "Password"),
+            inGroup(UsernameKey, Text, "Username"),
+            passwordGroup(PasswordKey, "Password"),
             blockSubmitButton()("Add User")
           )
         )

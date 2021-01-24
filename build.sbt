@@ -82,7 +82,6 @@ val frontend = project
     version in webpack := "4.44.2",
     webpackEmitSourceMaps := false,
     scalaJSUseMainModuleInitializer := true,
-    webpackBundlingMode := BundlingMode.LibraryOnly(),
     npmDependencies in Compile ++= Seq(
       "@fortawesome/fontawesome-free" -> "5.14.0",
       "bootstrap" -> "4.5.2",
@@ -111,7 +110,9 @@ val frontend = project
       "license" -> JSON.str("BSD")
     ),
     webpackConfigFile in fastOptJS := Some(baseDirectory.value / "webpack.dev.config.js"),
-    webpackConfigFile in fullOptJS := Some(baseDirectory.value / "webpack.prod.config.js")
+    webpackConfigFile in fullOptJS := Some(baseDirectory.value / "webpack.prod.config.js"),
+    webpackBundlingMode in (Compile, fastOptJS) := BundlingMode.LibraryOnly(),
+    webpackBundlingMode in (Compile, fullOptJS) := BundlingMode.Application
   )
 
 val prodPort = 9000

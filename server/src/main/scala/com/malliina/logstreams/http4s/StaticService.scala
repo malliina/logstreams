@@ -3,7 +3,7 @@ package com.malliina.logstreams.http4s
 import cats.data.NonEmptyList
 import cats.effect.{Blocker, ContextShift, Sync}
 import cats.implicits._
-//import com.malliina.logstreams.HashedAssets
+import com.malliina.logstreams.HashedAssets
 import com.malliina.logstreams.http4s.StaticService.log
 import com.malliina.util.AppLogger
 import com.malliina.values.UnixPath
@@ -28,7 +28,7 @@ class StaticService[F[_]](blocker: Blocker)(implicit cs: ContextShift[F], s: Syn
   val supportedStaticExtensions =
     List(".html", ".js", ".map", ".css", ".png", ".ico") ++ fontExtensions
 
-  val prefix = "todo" // HashedAssets.prefix
+  val prefix = HashedAssets.prefix
   //  val routes = resourceService[F](ResourceService.Config("/db", blocker))
   //  val routes = fileService(FileService.Config("./public", blocker))
   val routes = HttpRoutes.of[F] {

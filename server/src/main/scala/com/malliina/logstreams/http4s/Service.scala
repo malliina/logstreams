@@ -51,8 +51,10 @@ class Service(
   val routes = HttpRoutes.of[IO] {
     case GET -> Root / "health" => ok(Json.toJson(AppMeta.ThisApp))
     case GET -> Root / "ping"   => ok(Json.toJson(AppMeta.ThisApp))
-    case GET -> Root =>
-      users.all().flatMap { us => ok(htmls.logs(us.map(u => AppName(u.name))).tags) }
+    case req @ GET -> Root =>
+      webAuth(req.headers) { user =>
+        users.all().flatMap { us => ok(htmls.logs(us.map(u => AppName(u.name))).tags) }
+      }
     case req @ GET -> Root / "sources" =>
       webAuth(req.headers) { src =>
         ok(htmls.sources.tags)
@@ -106,7 +108,7 @@ class Service(
           SeeOther(Location(reverse.allUsers))
         }
       }
-    case req @ POST -> Root / "ws" / "logs" =>
+    case req @ GET -> Root / "ws" / "logs" =>
       webAuth(req.headers) { principal =>
         StreamsQuery
           .fromQuery(req.uri.query)
@@ -115,11 +117,11 @@ class Service(
             ok => sockets.listener(ok)
           )
       }
-    case req @ POST -> Root / "ws" / "admins" =>
+    case req @ GET -> Root / "ws" / "admins" =>
       webAuth(req.headers) { principal =>
         sockets.admin(principal)
       }
-    case req @ POST -> Root / "ws" / "sources" =>
+    case req @ GET -> Root / "ws" / "sources" =>
       sourceAuth(req.headers) { src =>
         sockets.source(UserRequest(src, req.headers))
       }

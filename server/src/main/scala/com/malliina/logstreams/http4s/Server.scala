@@ -41,7 +41,7 @@ object Server extends IOApp {
   } yield {
     val logsDatabase = DoobieStreamsDatabase(db)
     val users = DoobieDatabaseAuth(db)
-    val auths = Auths(users, Http4sAuth(JWT(conf.jwt)))
+    val auths = Auths(users, Http4sAuth(JWT(conf.secret)))
     val sockets = new LogSockets(logsTopic, adminsTopic, logsDatabase)
     val google = GoogleAuthFlow(conf.google, HttpClientIO())
     HSTS {
@@ -49,11 +49,12 @@ object Server extends IOApp {
         Router(
           "/" -> Service(
             users,
-            Htmls.forApp("client", conf.mode == AppMode.Prod, HashedAssetsSource),
+            Htmls.forApp("frontend", conf.mode == AppMode.Prod, HashedAssetsSource),
             auths,
             sockets,
             google
-          ).routes
+          ).routes,
+          "/assets" -> StaticService(blocker, contextShift).routes
         )
       }
     }

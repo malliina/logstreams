@@ -31,11 +31,14 @@ object LocalConf {
   val localConf = ConfigFactory.parseFile(localConfFile.toFile)
 }
 
-case class LogstreamsConf(mode: AppMode, jwt: SecretKey, db: Conf, google: AuthConf)
+case class LogstreamsConf(mode: AppMode, secret: SecretKey, db: Conf, google: AuthConf)
+
+case class WrappedConf(logstreams: LogstreamsConf)
 
 object LogstreamsConf {
   import pureconfig.generic.auto.exportReader
   val load: LogstreamsConf = ConfigObjectSource(Right(LocalConf.localConf))
     .withFallback(ConfigSource.default)
-    .loadOrThrow[LogstreamsConf]
+    .loadOrThrow[WrappedConf]
+    .logstreams
 }

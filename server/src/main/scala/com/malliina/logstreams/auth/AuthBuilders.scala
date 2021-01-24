@@ -3,7 +3,7 @@ package com.malliina.logstreams.auth
 import cats.effect.IO
 import com.malliina.logstreams.http4s.{Http4sAuth, IdentityError, MissingCredentials}
 import com.malliina.play.auth.BasicCredentials
-import com.malliina.values.{Password, Username}
+import com.malliina.values.{Email, Password, Username}
 import org.http4s.Headers
 import org.http4s.headers.Authorization
 
@@ -15,6 +15,8 @@ class Auths(
 }
 
 object Auths {
+  val authorizedEmail = Email("malliina123@gmail.com")
+
   def apply(users: UserService[IO], web: Http4sAuth) =
     new Auths(sources(users), web)
 

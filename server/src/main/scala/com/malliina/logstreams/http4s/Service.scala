@@ -12,17 +12,19 @@ import org.http4s.{play, _}
 import Service.log
 import cats.data.NonEmptyList
 import com.malliina.logstreams.Errors
+import com.malliina.logstreams.db.StreamsQuery
 import org.http4s.headers.{Location, `WWW-Authenticate`}
 import com.malliina.values.{Password, Username}
 
 object Service {
   private val log = AppLogger(getClass)
 
-  def apply(users: UserService[IO], htmls: Htmls, auths: Auths): Service =
-    new Service(users, htmls, auths)
+  def apply(users: UserService[IO], htmls: Htmls, auths: Auths, sockets: LogSockets): Service =
+    new Service(users, htmls, auths, sockets)
 }
 
-class Service(users: UserService[IO], htmls: Htmls, auths: Auths) extends BasicService[IO] {
+class Service(users: UserService[IO], htmls: Htmls, auths: Auths, sockets: LogSockets)
+  extends BasicService[IO] {
   val reverse = LogRoutes
   val routes = HttpRoutes.of[IO] {
     case GET -> Root / "health" => ok(Json.toJson(AppMeta.ThisApp))
@@ -82,7 +84,23 @@ class Service(users: UserService[IO], htmls: Htmls, auths: Auths) extends BasicS
           SeeOther(Location(reverse.allUsers))
         }
       }
-
+    case req @ POST -> Root / "ws" / "logs" =>
+      webAuth(req.headers) { principal =>
+        StreamsQuery
+          .fromQuery(req.uri.query)
+          .fold(
+            err => BadRequest(Json.toJson(err)),
+            ok => sockets.listener(ok)
+          )
+      }
+    case req @ POST -> Root / "ws" / "admins" =>
+      webAuth(req.headers) { principal =>
+        sockets.admin(principal)
+      }
+    case req @ POST -> Root / "ws" / "sources" =>
+      sourceAuth(req.headers) { src =>
+        sockets.source(UserRequest(src, req.headers))
+      }
   }
 
   def webAuth(headers: Headers)(code: UserRequest => IO[Response[IO]]) =

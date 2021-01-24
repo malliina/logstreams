@@ -3,10 +3,13 @@ package it
 import com.dimafeng.testcontainers.MySQLContainer
 import com.malliina.app.AppConf
 import com.malliina.http.FullUrl
+import com.malliina.logstreams.{LocalConf, LogstreamsConf, WrappedConf}
 import com.malliina.logstreams.client.{HttpUtil, SocketClient}
 import com.malliina.logstreams.db.Conf
 import munit.FunSuite
 import play.api.libs.json.{JsValue, Json}
+import pureconfig.error.ConfigReaderFailures
+import pureconfig.{ConfigObjectSource, ConfigSource}
 
 import javax.net.ssl.SSLContext
 
@@ -14,7 +17,8 @@ class LogsAppConf(override val database: Conf) extends AppConf {
   override def close(): Unit = ()
 }
 
-//case class LogsTestInstance(server: RunningServer, components: TestComponents)
+case class TestConf(testdb: Conf)
+case class WrappedTestConf(logstreams: TestConf)
 
 trait MUnitDatabaseSuite { self: munit.Suite =>
   val db: Fixture[Conf] = new Fixture[Conf]("database") {
@@ -22,19 +26,24 @@ trait MUnitDatabaseSuite { self: munit.Suite =>
     var conf: Option[Conf] = None
     def apply() = conf.get
     override def beforeAll(): Unit = {
-//      val localTestDb =
-//        Try(LocalConf.localConf.get[Configuration]("logstreams.testdb")).toEither.flatMap { c =>
-//          Conf.fromDatabaseConf(c)
-//        }
-//      val testDb = localTestDb.getOrElse {
-//        val c = MySQLContainer(mysqlImageVersion = "mysql:5.7.29")
-//        c.start()
-//        container = Option(c)
-//        Conf(s"${c.jdbcUrl}?useSSL=false", c.username, c.password, c.driverClassName)
-//      }
-//      conf = Option(testDb)
+      val localTestDb = testConf()
+      val testDb = localTestDb.getOrElse {
+        val c = MySQLContainer(mysqlImageVersion = "mysql:5.7.29")
+        c.start()
+        container = Option(c)
+        Conf(s"${c.jdbcUrl}?useSSL=false", c.username, c.password, c.driverClassName)
+      }
+      conf = Option(testDb)
     }
     override def afterAll(): Unit = container.foreach(_.stop())
+  }
+
+  private def testConf(): Either[ConfigReaderFailures, Conf] = {
+    import pureconfig.generic.auto.exportReader
+    ConfigObjectSource(Right(LocalConf.localConf))
+      .withFallback(ConfigSource.default)
+      .load[WrappedTestConf]
+      .map(_.logstreams.testdb)
   }
 
   override def munitFixtures: Seq[Fixture[_]] = Seq(db)

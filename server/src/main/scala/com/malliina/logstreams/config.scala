@@ -4,7 +4,7 @@ import com.malliina.logstreams.auth.SecretKey
 import com.malliina.logstreams.db.Conf
 import com.malliina.web.AuthConf
 import com.typesafe.config.ConfigFactory
-import pureconfig.error.CannotConvert
+import pureconfig.error.{CannotConvert, ConfigReaderException, ConfigReaderFailures}
 import pureconfig.{ConfigObjectSource, ConfigReader, ConfigSource}
 
 import java.nio.file.Paths
@@ -37,8 +37,11 @@ case class WrappedConf(logstreams: LogstreamsConf)
 
 object LogstreamsConf {
   import pureconfig.generic.auto.exportReader
-  val load: LogstreamsConf = ConfigObjectSource(Right(LocalConf.localConf))
-    .withFallback(ConfigSource.default)
-    .loadOrThrow[WrappedConf]
-    .logstreams
+  val attempt: Either[ConfigReaderFailures, LogstreamsConf] =
+    ConfigObjectSource(Right(LocalConf.localConf))
+      .withFallback(ConfigSource.default)
+      .load[WrappedConf]
+      .map(_.logstreams)
+
+  def load = attempt.fold(err => throw ConfigReaderException(err), identity)
 }

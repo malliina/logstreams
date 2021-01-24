@@ -1,7 +1,7 @@
 package tests
 
 import cats.effect.IO
-import com.malliina.logstreams.http4s.IdentityError
+import com.malliina.logstreams.http4s.{IdentityError, Urls}
 import com.malliina.values.Username
 import controllers.{LogAuth, UserRequest}
 import org.http4s.Request
@@ -25,5 +25,5 @@ class TestAuth extends LogAuth[IO] {
 //    }
 
   override def authenticateSocket(req: Request[IO]): IO[Either[IdentityError, UserRequest]] =
-    IO.pure(Right(UserRequest(testUser, req.headers)))
+    IO.pure(Right(UserRequest(testUser, req.headers, Urls.address(req))))
 }

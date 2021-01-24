@@ -1,7 +1,6 @@
 package com.malliina.logstreams.auth
 
 import com.malliina.logstreams.auth.UserError.{AlreadyExists, DoesNotExist}
-import com.malliina.play.auth.BasicCredentials
 import com.malliina.values.Username
 
 trait UserService[F[_]] {

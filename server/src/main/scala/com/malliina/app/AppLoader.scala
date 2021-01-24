@@ -10,7 +10,7 @@ object LocalConf {
   val homeDir = Paths.get(sys.props("user.home"))
   val appDir = LocalConf.homeDir.resolve(".logstreams")
   val localConfFile = appDir.resolve("logstreams.conf")
-  val localConf = Configuration(ConfigFactory.parseFile(localConfFile.toFile))
+  val localConf = ConfigFactory.parseFile(localConfFile.toFile)
 }
 
 trait AppConf {

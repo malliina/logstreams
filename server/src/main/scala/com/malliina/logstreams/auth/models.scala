@@ -1,12 +1,14 @@
 package com.malliina.logstreams.auth
 
 import com.malliina.logstreams.SingleError
-import com.malliina.values.{Email, Username}
+import com.malliina.values.{Email, Password, Username}
 import play.api.libs.json.Json
 
 case class SecretKey(value: String) extends AnyVal {
   override def toString = "****"
 }
+
+case class BasicCredentials(username: Username, password: Password)
 
 case class CookieConf(
   user: String,
@@ -39,6 +41,9 @@ object UserPayload {
 sealed abstract class AuthProvider(val name: String)
 
 object AuthProvider {
+  val PromptKey = "prompt"
+  val SelectAccount = "select_account"
+
   def forString(s: String): Either[SingleError, AuthProvider] =
     Seq(Google)
       .find(_.name == s)

@@ -1,12 +1,11 @@
 package com.malliina.logstreams.html
 
 import com.malliina.html.HtmlImplicits.fullUrl
-import com.malliina.html.{Bootstrap, HtmlTags}
+import com.malliina.html.{Bootstrap, HtmlTags, TagPage}
 import com.malliina.http.FullUrl
 import com.malliina.logstreams.html.Htmls._
 import com.malliina.logstreams.http4s.LogRoutes
 import com.malliina.logstreams.models.{AppName, FrontStrings}
-import com.malliina.play.tags.TagPage
 import com.malliina.values.Username
 import controllers.{Logs, UserFeedback}
 import org.http4s.Uri
@@ -25,17 +24,17 @@ object Htmls {
     * @param isProd  true if the app runs in production, false otherwise
     * @return HTML templates with either prod or dev javascripts
     */
-  def forApp(appName: String, isProd: Boolean): Htmls = {
+  def forApp(appName: String, isProd: Boolean, assets: AssetsSource): Htmls = {
     val name = appName.toLowerCase
     val opt = if (isProd) "opt" else "fastopt"
 //    val external = if (isProd) Nil else FullUrl.build(LiveReload.script).toOption.toList
-    new Htmls(Seq(s"$name-$opt-library.js", s"$name-$opt-loader.js", s"$name-$opt.js"), Nil)
+    new Htmls(Seq(s"$name-$opt-library.js", s"$name-$opt-loader.js", s"$name-$opt.js"), Nil, assets)
   }
 
 //  def asset(file: Asset): Call = routes.Logs.versioned(file)
 }
 
-class Htmls(scripts: Seq[String], externalScripts: Seq[FullUrl])
+class Htmls(scripts: Seq[String], externalScripts: Seq[FullUrl], assets: AssetsSource)
   extends Bootstrap(HtmlTags)
   with FrontStrings {
 
@@ -46,7 +45,7 @@ class Htmls(scripts: Seq[String], externalScripts: Seq[FullUrl])
 //  val reverse = controllers.routes.Logs
   val reverse = LogRoutes
 
-  def asset(name: String): String = ???
+  def asset(name: String): Uri = assets.at(name)
 
   def logs(apps: Seq[AppName]) = baseIndex("logs")(
     headerRow("Logs"),

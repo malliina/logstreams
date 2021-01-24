@@ -3,6 +3,7 @@ package com.malliina.logstreams.db
 import cats.effect.IO._
 import cats.effect.{Blocker, ContextShift, IO, Resource}
 import com.malliina.logstreams.db.DoobieDatabase.log
+import com.malliina.util.AppLogger
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import doobie._
 import doobie.implicits._
@@ -10,12 +11,11 @@ import doobie.util.ExecutionContexts
 import doobie.util.log.{ExecFailure, ProcessingFailure, Success}
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.output.MigrateResult
-import play.api.Logger
 
 import scala.concurrent.duration.DurationInt
 
 object DoobieDatabase {
-  private val log = Logger(getClass)
+  private val log = AppLogger(getClass)
 
   def apply(conf: Conf, blocker: Blocker)(implicit cs: ContextShift[IO]) =
     transactor(dataSource(conf), blocker).map { tx => new DoobieDatabase(tx) }

@@ -3,8 +3,9 @@ package com.malliina.logstreams.http4s
 import cats.data.Kleisli
 import cats.effect.{Blocker, ExitCode, IO, IOApp, Resource}
 import com.malliina.app.AppMeta
-import com.malliina.logstreams.LogstreamsConf
-import com.malliina.logstreams.html.Htmls
+import com.malliina.http.io.HttpClientIO
+import com.malliina.logstreams.{AppMode, LogstreamsConf, SourceMessage}
+import com.malliina.logstreams.html.{HashedAssetsSource, Htmls}
 import com.malliina.logstreams.auth.JWT
 import com.malliina.logstreams.db.{DoobieDatabase, DoobieDatabaseAuth, DoobieStreamsDatabase}
 import com.malliina.util.AppLogger
@@ -16,6 +17,7 @@ import org.http4s.{HttpRoutes, Request, Response}
 import scala.concurrent.ExecutionContext
 import com.malliina.logstreams.auth.Auths
 import com.malliina.logstreams.models.{AdminEvent, LogEntryInputs, LogSources}
+import com.malliina.web.GoogleAuthFlow
 import fs2.concurrent.Topic
 
 object Server extends IOApp {
@@ -35,15 +37,24 @@ object Server extends IOApp {
     blocker <- Blocker[IO]
     db <- DoobieDatabase.withMigrations(conf.db, blocker)
     logsTopic <- Resource.liftF(Topic[IO, LogEntryInputs](LogEntryInputs(Nil)))
-    adminsTopic <- Resource.liftF(Topic[IO, AdminEvent](LogSources(Nil)))
+    adminsTopic <- Resource.liftF(Topic[IO, SourceMessage](SourceMessage.Ping))
   } yield {
     val logsDatabase = DoobieStreamsDatabase(db)
     val users = DoobieDatabaseAuth(db)
     val auths = Auths(users, Http4sAuth(JWT(conf.jwt)))
     val sockets = new LogSockets(logsTopic, adminsTopic, logsDatabase)
+    val google = GoogleAuthFlow(conf.google, HttpClientIO())
     HSTS {
       orNotFound {
-        Router("/" -> Service(users, Htmls.forApp("client", isProd = false), auths, sockets).routes)
+        Router(
+          "/" -> Service(
+            users,
+            Htmls.forApp("client", conf.mode == AppMode.Prod, HashedAssetsSource),
+            auths,
+            sockets,
+            google
+          ).routes
+        )
       }
     }
   }

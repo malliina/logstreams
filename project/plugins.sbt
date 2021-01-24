@@ -2,9 +2,8 @@ scalaVersion := "2.12.12"
 
 Seq(
   "com.malliina" % "sbt-filetree" % "0.4.1",
+  "com.malliina" % "sbt-packager" % "2.9.0",
   "com.typesafe.sbt" % "sbt-native-packager" % "1.7.6",
-  "com.malliina" % "sbt-play" % "1.8.0",
-  "com.typesafe.play" % "sbt-plugin" % "2.8.2",
   "com.malliina" % "sbt-utils-maven" % "1.0.0",
   "com.malliina" % "sbt-nodejs" % "1.0.0",
   "org.scala-js" % "sbt-scalajs" % "1.4.0",

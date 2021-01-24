@@ -1,25 +1,14 @@
 package it
 
-import akka.actor.ActorSystem
-import ch.qos.logback.classic.Level
 import com.dimafeng.testcontainers.MySQLContainer
-import com.malliina.app.{AppConf, LocalConf}
+import com.malliina.app.AppConf
 import com.malliina.http.FullUrl
 import com.malliina.logstreams.client.{HttpUtil, SocketClient}
 import com.malliina.logstreams.db.Conf
-import com.malliina.logstreams.models._
-import com.malliina.play.auth.BasicCredentials
-import com.malliina.security.SSLUtils
-import com.malliina.values.{Password, Username}
-import munit.{FunSuite, Suite}
-import play.api.{Configuration, Logger}
+import munit.FunSuite
 import play.api.libs.json.{JsValue, Json}
-import play.api.libs.ws.ahc.AhcWSClient
-import tests.{TestAppLoader}
 
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Promise}
-import scala.util.Try
+import javax.net.ssl.SSLContext
 
 class LogsAppConf(override val database: Conf) extends AppConf {
   override def close(): Unit = ()
@@ -33,21 +22,19 @@ trait MUnitDatabaseSuite { self: munit.Suite =>
     var conf: Option[Conf] = None
     def apply() = conf.get
     override def beforeAll(): Unit = {
-      val localTestDb =
-        Try(LocalConf.localConf.get[Configuration]("logstreams.testdb")).toEither.flatMap { c =>
-          Conf.fromDatabaseConf(c)
-        }
-      val testDb = localTestDb.getOrElse {
-        val c = MySQLContainer(mysqlImageVersion = "mysql:5.7.29")
-        c.start()
-        container = Option(c)
-        Conf(s"${c.jdbcUrl}?useSSL=false", c.username, c.password, c.driverClassName)
-      }
-      conf = Option(testDb)
+//      val localTestDb =
+//        Try(LocalConf.localConf.get[Configuration]("logstreams.testdb")).toEither.flatMap { c =>
+//          Conf.fromDatabaseConf(c)
+//        }
+//      val testDb = localTestDb.getOrElse {
+//        val c = MySQLContainer(mysqlImageVersion = "mysql:5.7.29")
+//        c.start()
+//        container = Option(c)
+//        Conf(s"${c.jdbcUrl}?useSSL=false", c.username, c.password, c.driverClassName)
+//      }
+//      conf = Option(testDb)
     }
-    override def afterAll(): Unit = {
-      container.foreach(_.stop())
-    }
+    override def afterAll(): Unit = container.foreach(_.stop())
   }
 
   override def munitFixtures: Seq[Fixture[_]] = Seq(db)
@@ -194,16 +181,14 @@ class LogStreamsTest extends TestServerSuite {
 //    }
 //  }
 
-  def using[T <: AutoCloseable, U](res: T)(code: T => U) = try {
-    code(res)
-  } finally {
-    res.close()
-  }
+  def using[T <: AutoCloseable, U](res: T)(code: T => U) =
+    try code(res)
+    finally res.close()
 
   class TestSocket(wsUri: FullUrl, onJson: JsValue => Any, username: String = testUser)
     extends SocketClient(
       wsUri,
-      SSLUtils.trustAllSslContext().getSocketFactory,
+      SSLContext.getInstance("TLS").getSocketFactory,
       Seq(HttpUtil.Authorization -> HttpUtil.authorizationValue(username, "p"))
     ) {
     override def onText(message: String): Unit = onJson(Json.parse(message))

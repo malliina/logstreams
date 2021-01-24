@@ -43,16 +43,15 @@ class Http4sAuth(
       .removeCookie(ResponseCookie(cookieNames.session, "", path = cookiePath))
       .removeCookie(ResponseCookie(cookieNames.user, "", path = cookiePath))
 
-  def withPicsUser(
-    user: Username,
+  def withAppUser(
+    user: UserPayload,
     isSecure: Boolean,
     provider: AuthProvider,
     res: Response[IO]
-  ) =
-    withUser(user, isSecure, res)
-      .removeCookie(cookieNames.returnUri)
-      .addCookie(responseCookie(cookieNames.lastId, user.name))
-      .addCookie(responseCookie(cookieNames.provider, provider.name))
+  ) = withUser(user, isSecure, res)
+    .removeCookie(cookieNames.returnUri)
+    .addCookie(responseCookie(cookieNames.lastId, user.username.name))
+    .addCookie(responseCookie(cookieNames.provider, provider.name))
 
   def withUser[T: Writes](t: T, isSecure: Boolean, res: Response[IO]): res.Self =
     withJwt(cookieNames.user, t, isSecure, res)

@@ -1,17 +1,15 @@
 package com.malliina.logstreams.db
 
+import cats.effect.IO
 import com.malliina.logstreams.auth.UserError.{AlreadyExists, DoesNotExist}
-import com.malliina.logstreams.auth.UserService
+import com.malliina.logstreams.auth.{BasicCredentials, UserService}
 import com.malliina.logstreams.db.DoobieDatabaseAuth.log
-import com.malliina.play.auth.BasicCredentials
+import com.malliina.util.AppLogger
 import com.malliina.values.{Password, Username}
 import doobie.implicits._
-import play.api.Logger
-import cats.effect.IO
-import scala.concurrent.Future
 
 object DoobieDatabaseAuth {
-  private val log = Logger(getClass)
+  private val log = AppLogger(getClass)
 
   def apply(db: DoobieDatabase): DoobieDatabaseAuth = new DoobieDatabaseAuth(db)
 }

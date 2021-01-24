@@ -2,7 +2,13 @@ package com.malliina.logstreams.http4s
 
 import cats.effect.IO
 import com.malliina.app.AppMeta
-import com.malliina.logstreams.auth.{Auths, Http4sAuthenticator, UserService}
+import com.malliina.logstreams.auth.{
+  AuthProvider,
+  Auths,
+  Http4sAuthenticator,
+  UserPayload,
+  UserService
+}
 import com.malliina.logstreams.html.Htmls
 import com.malliina.logstreams.models.AppName
 import com.malliina.util.AppLogger
@@ -12,19 +18,35 @@ import org.http4s.{play, _}
 import Service.log
 import cats.data.NonEmptyList
 import com.malliina.logstreams.Errors
+import com.malliina.logstreams.auth.AuthProvider.{Google, PromptKey, SelectAccount}
 import com.malliina.logstreams.db.StreamsQuery
+import com.malliina.logstreams.http4s.BasicService.noCache
 import org.http4s.headers.{Location, `WWW-Authenticate`}
-import com.malliina.values.{Password, Username}
+import com.malliina.values.{Email, Password, Username}
+import com.malliina.web.OAuthKeys.{Nonce, State}
+import com.malliina.web.Utils.randomString
+import com.malliina.web.{AuthError, Callback, GoogleAuthFlow, LoginHint, OAuthKeys, Start, Utils}
 
 object Service {
   private val log = AppLogger(getClass)
 
-  def apply(users: UserService[IO], htmls: Htmls, auths: Auths, sockets: LogSockets): Service =
-    new Service(users, htmls, auths, sockets)
+  def apply(
+    users: UserService[IO],
+    htmls: Htmls,
+    auths: Auths,
+    sockets: LogSockets,
+    google: GoogleAuthFlow
+  ): Service =
+    new Service(users, htmls, auths, sockets, google)
 }
 
-class Service(users: UserService[IO], htmls: Htmls, auths: Auths, sockets: LogSockets)
-  extends BasicService[IO] {
+class Service(
+  users: UserService[IO],
+  htmls: Htmls,
+  auths: Auths,
+  sockets: LogSockets,
+  google: GoogleAuthFlow
+) extends BasicService[IO] {
   val reverse = LogRoutes
   val routes = HttpRoutes.of[IO] {
     case GET -> Root / "health" => ok(Json.toJson(AppMeta.ThisApp))
@@ -43,7 +65,7 @@ class Service(users: UserService[IO], htmls: Htmls, auths: Auths, sockets: LogSo
           val maybeCreds = for {
             username <- read("username", Username.apply)
             password <- read("password", Password.apply)
-          } yield com.malliina.play.auth.BasicCredentials(username, password)
+          } yield com.malliina.logstreams.auth.BasicCredentials(username, password)
           maybeCreds.fold(
             err => unauthorized(err),
             newUser =>
@@ -101,7 +123,104 @@ class Service(users: UserService[IO], htmls: Htmls, auths: Auths, sockets: LogSo
       sourceAuth(req.headers) { src =>
         sockets.source(UserRequest(src, req.headers))
       }
+    case req @ GET -> Root / "oauth" =>
+      startHinted(Google, google, req)
+    case req @ GET -> Root / "oauthcb" =>
+      handleCallback(
+        req,
+        Google,
+        cb => google.validateCallback(cb).map(e => e.flatMap(google.parse))
+      )
   }
+  val cookieNames = auths.web.cookieNames
+
+  private def startHinted(
+    provider: AuthProvider,
+    validator: LoginHint[IO],
+    req: Request[IO]
+  ): IO[Response[IO]] = IO {
+    val redirectUrl = Urls.hostOnly(req) / LogRoutes.googleCallback.renderString
+    val lastIdCookie = req.cookies.find(_.name == cookieNames.lastId)
+    val promptValue = req.cookies
+      .find(_.name == auths.web.cookieNames.prompt)
+      .map(_.content)
+      .orElse(Option(SelectAccount).filter(_ => lastIdCookie.isEmpty))
+    val extra = promptValue.map(c => Map(PromptKey -> c)).getOrElse(Map.empty)
+    val maybeEmail = lastIdCookie.map(_.content).filter(_ => extra.isEmpty)
+    maybeEmail.foreach { hint =>
+      log.info(s"Starting OAuth flow with $provider using login hint '$hint'...")
+    }
+    promptValue.foreach { prompt =>
+      log.info(s"Starting OAuth flow with $provider using prompt '$prompt'...")
+    }
+    (redirectUrl, maybeEmail, extra)
+  }.flatMap {
+    case (redirectUrl, maybeEmail, extra) =>
+      validator.startHinted(redirectUrl, maybeEmail, extra).flatMap { s =>
+        startLoginFlow(s, Urls.isSecure(req))
+      }
+  }
+
+  private def startLoginFlow(s: Start, isSecure: Boolean): IO[Response[IO]] = IO {
+    val state = randomString()
+    val encodedParams = (s.params ++ Map(OAuthKeys.State -> state)).map {
+      case (k, v) =>
+        k -> Utils.urlEncode(v)
+    }
+    val url = s.authorizationEndpoint.append(s"?${stringify(encodedParams)}")
+    log.info(s"Redirecting to '$url' with state '$state'...")
+    val sessionParams = Seq(State -> state) ++ s.nonce
+      .map(n => Seq(Nonce -> n))
+      .getOrElse(Nil)
+    (url, sessionParams)
+  }.flatMap {
+    case (url, sessionParams) =>
+      SeeOther(Location(Uri.unsafeFromString(url.url))).map { res =>
+        val session = Json.toJsObject(sessionParams.toMap)
+        auths.web
+          .withSession(session, isSecure, res)
+          .putHeaders(noCache)
+      }
+  }
+
+  private def handleCallback(
+    req: Request[IO],
+    provider: AuthProvider,
+    validate: Callback => IO[Either[AuthError, Email]]
+  ): IO[Response[IO]] = {
+    val params = req.uri.query.params
+    val session = auths.web.session[Map[String, String]](req.headers).toOption.getOrElse(Map.empty)
+    val cb = Callback(
+      params.get(OAuthKeys.State),
+      session.get(State),
+      params.get(OAuthKeys.CodeKey),
+      session.get(Nonce),
+      Urls.hostOnly(req) / LogRoutes.googleCallback.renderString
+    )
+    validate(cb).flatMap { e =>
+      e.fold(
+        err => unauthorized(Errors(err.message)),
+        email => userResult(email, provider, req)
+      )
+    }
+  }
+
+  private def userResult(
+    email: Email,
+    provider: AuthProvider,
+    req: Request[IO]
+  ): IO[Response[IO]] = {
+    val returnUri: Uri = req.cookies
+      .find(_.name == cookieNames.returnUri)
+      .flatMap(c => Uri.fromString(c.content).toOption)
+      .getOrElse(LogRoutes.index)
+    SeeOther(Location(returnUri)).map { r =>
+      auths.web.withAppUser(UserPayload.email(email), Urls.isSecure(req), provider, r)
+    }
+  }
+
+  def stringify(map: Map[String, String]): String =
+    map.map { case (key, value) => s"$key=$value" }.mkString("&")
 
   def webAuth(headers: Headers)(code: UserRequest => IO[Response[IO]]) =
     withAuth(auths.viewers, headers)(user => code(UserRequest(user, headers)))
@@ -122,7 +241,9 @@ class Service(users: UserService[IO], htmls: Htmls, auths: Auths, sockets: LogSo
     unauthorized(Errors.single(s"Unauthorized."))
   }
 
-  def unauthorized(errors: Errors) =
+  def unauthorized(errors: Errors) = SeeOther(Location(LogRoutes.googleStart))
+
+  def unauthorizedEnd(errors: Errors) =
     Unauthorized(
       `WWW-Authenticate`(NonEmptyList.of(Challenge("myscheme", "myrealm"))),
       Json.toJson(errors)

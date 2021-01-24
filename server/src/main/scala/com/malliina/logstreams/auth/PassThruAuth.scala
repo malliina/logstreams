@@ -1,7 +1,6 @@
 package com.malliina.logstreams.auth
 
 import cats.effect.IO
-import com.malliina.play.auth.BasicCredentials
 import com.malliina.values.Username
 
 class PassThruAuth extends UserService[IO] {

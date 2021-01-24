@@ -1,6 +1,6 @@
 package com.malliina.logstreams.db
 
-import com.malliina.play.auth.BasicCredentials
+import com.malliina.logstreams.auth.BasicCredentials
 import com.malliina.values.Password
 import org.apache.commons.codec.digest.DigestUtils
 

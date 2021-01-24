@@ -1,9 +1,9 @@
 package com.malliina.logstreams.auth
 
 import cats.effect.IO
-import com.malliina.logstreams.http4s.{Http4sAuth, IdentityError, MissingCredentials}
-import com.malliina.play.auth.BasicCredentials
-import com.malliina.values.{Email, Password, Username}
+import com.malliina.logstreams.http4s.{Http4sAuth, IdentityError, JWTError, MissingCredentials}
+import com.malliina.values.{Email, ErrorMessage, Password, Username}
+import com.malliina.web.PermissionError
 import org.http4s.Headers
 import org.http4s.headers.Authorization
 
@@ -38,7 +38,15 @@ object Auths {
   def viewers(auth: Http4sAuth): Http4sAuthenticator[IO, Username] =
     new Http4sAuthenticator[IO, Username] {
       override def authenticate(hs: Headers): IO[Either[IdentityError, Username]] =
-        IO.pure(auth.authenticate(hs))
+        IO.pure(
+          auth
+            .authenticate(hs)
+            .flatMap { u =>
+              if (u.name == authorizedEmail.value) Right(u)
+              else
+                Left(JWTError(PermissionError(ErrorMessage(s"User '$u' is not authorized.")), hs))
+            }
+        )
     }
 
   private def basic[F[_]](hs: Headers) = hs
@@ -46,7 +54,7 @@ object Auths {
     .map { h =>
       h.credentials match {
         case org.http4s.BasicCredentials(user, pass) =>
-          Right(BasicCredentials(Username(user), Password(pass)))
+          Right(com.malliina.logstreams.auth.BasicCredentials(Username(user), Password(pass)))
         case _ =>
           Left(MissingCredentials("Basic auth expected.", hs))
       }

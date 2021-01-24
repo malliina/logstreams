@@ -3,9 +3,9 @@ package controllers
 import cats.effect.IO
 import com.malliina.http.OkClient
 import com.malliina.logstreams.http4s.{IdentityError, LogRoutes}
-import com.malliina.oauth.GoogleOAuthCredentials
 import com.malliina.util.AppLogger
 import com.malliina.values.{Email, Username}
+import com.malliina.web.AuthConf
 import org.http4s.{Headers, Request}
 
 import scala.concurrent.duration.{Duration, DurationInt}
@@ -39,7 +39,7 @@ object OAuth {
 //  }
 }
 
-class OAuth(creds: GoogleOAuthCredentials) {
+class OAuth(creds: AuthConf) {
   val LoginCookieDuration: Duration = 3650.days
   val log = OAuth.log
   val http = OkClient.default

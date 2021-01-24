@@ -21,7 +21,7 @@ val akkaHttpVersion = "10.1.12"
 val munitVersion = "0.7.20"
 val testContainersVersion = "0.38.3"
 
-val utilPlayDep = malliinaGroup %% "util-play" % utilPlayVersion
+val utilPlayDep = malliinaGroup %% "web-auth" % utilPlayVersion
 
 val serverVersion = "0.6.0"
 
@@ -141,11 +141,10 @@ val server = project
       "org.slf4j" % "slf4j-api" % "1.7.30",
       "ch.qos.logback" % "logback-classic" % "1.2.3",
       "ch.qos.logback" % "logback-core" % "1.2.3",
-      "com.malliina" %% "play-social" % utilPlayVersion,
-      "com.dimafeng" %% "testcontainers-scala-mysql" % testContainersVersion % Test,
-      ws % Test,
+      "com.malliina" %% "util-html" % utilPlayVersion,
       utilPlayDep,
-      utilPlayDep % Test classifier "tests"
+      utilPlayDep % Test classifier "tests",
+      "com.dimafeng" %% "testcontainers-scala-mysql" % testContainersVersion % Test
     ),
     pipelineStages := Seq(digest, gzip),
     javaOptions in Universal ++= {
@@ -156,10 +155,6 @@ val server = project
       )
     },
     linuxPackageSymlinks := linuxPackageSymlinks.value.filterNot(_.link == "/usr/bin/starter"),
-//    routesImport ++= Seq(
-//      "com.malliina.values.Username",
-//      "com.malliina.play.http.Bindables.username"
-//    ),
     unmanagedResourceDirectories in Compile += baseDirectory.value / "public",
     httpPort in Linux := Option(s"$prodPort"),
     dockerVersion := Option(DockerVersion(19, 3, 5, None)),

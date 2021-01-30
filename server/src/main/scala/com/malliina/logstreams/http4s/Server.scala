@@ -4,27 +4,26 @@ import cats.data.Kleisli
 import cats.effect.{Blocker, ExitCode, IO, IOApp, Resource}
 import com.malliina.app.AppMeta
 import com.malliina.http.io.HttpClientIO
-import com.malliina.logstreams.{AppMode, LogstreamsConf, SourceMessage}
-import com.malliina.logstreams.html.{HashedAssetsSource, Htmls}
-import com.malliina.logstreams.auth.JWT
+import com.malliina.logstreams.auth.{Auths, JWT}
 import com.malliina.logstreams.db.{DoobieDatabase, DoobieDatabaseAuth, DoobieStreamsDatabase}
+import com.malliina.logstreams.html.{HashedAssetsSource, Htmls}
+import com.malliina.logstreams.models.LogEntryInputs
+import com.malliina.logstreams.{AppMode, LogstreamsConf, SourceMessage}
 import com.malliina.util.AppLogger
-import org.http4s.server.Router
+import com.malliina.web.GoogleAuthFlow
+import fs2.concurrent.Topic
+import org.http4s.server.{Router, Server}
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.server.middleware.HSTS
 import org.http4s.{HttpRoutes, Request, Response}
 
 import scala.concurrent.ExecutionContext
-import com.malliina.logstreams.auth.Auths
-import com.malliina.logstreams.models.{AdminEvent, LogEntryInputs, LogSources}
-import com.malliina.web.GoogleAuthFlow
-import fs2.concurrent.Topic
 
 object Server extends IOApp {
   val log = AppLogger(getClass)
   val port = 9000
 
-  def server(conf: LogstreamsConf) = for {
+  def server(conf: LogstreamsConf, port: Int = port): Resource[IO, Server[IO]] = for {
     picsApp <- appResource(conf)
     _ = log.info(s"Binding on port $port using app version ${AppMeta.ThisApp.git}...")
     server <- BlazeServerBuilder[IO](ExecutionContext.global)

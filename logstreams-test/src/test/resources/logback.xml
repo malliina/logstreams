@@ -1,5 +1,5 @@
 <configuration>
-    <appender name="LOGSTREAMS" class="com.malliina.logstreams.client.LogStreamsLogbackAppender">
+    <appender name="LOGSTREAMS" class="com.malliina.logstreams.client.LogstreamsLogbackAkkaAppender">
         <endpoint>localhost:9000</endpoint>
         <secure>false</secure>
         <username>user</username>

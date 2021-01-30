@@ -7,7 +7,7 @@ import com.malliina.http.FullUrl
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
-class LogStreamTests extends munit.FunSuite {
+class LogstreamTests extends munit.FunSuite {
   test("conn") {
     new URL("https://letsencrypt.org/").openConnection.connect()
   }

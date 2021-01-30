@@ -1,17 +1,25 @@
 package it
 
+import cats.effect.{ContextShift, IO}
+import cats.syntax.flatMap._
 import com.dimafeng.testcontainers.MySQLContainer
 import com.malliina.app.AppConf
 import com.malliina.http.FullUrl
-import com.malliina.logstreams.{LocalConf, LogstreamsConf, WrappedConf}
 import com.malliina.logstreams.client.{HttpUtil, SocketClient}
 import com.malliina.logstreams.db.Conf
+import com.malliina.logstreams.http4s.{Server, Service}
+import com.malliina.logstreams.{LocalConf, LogstreamsConf}
 import munit.FunSuite
+import org.http4s.{Status, Uri}
+import org.http4s.client.blaze.BlazeClientBuilder
+import org.http4s.implicits.http4sLiteralsSyntax
+import org.http4s.server.Server
 import play.api.libs.json.{JsValue, Json}
 import pureconfig.error.ConfigReaderFailures
 import pureconfig.{ConfigObjectSource, ConfigSource}
 
 import javax.net.ssl.SSLContext
+import scala.concurrent.Promise
 
 class LogsAppConf(override val database: Conf) extends AppConf {
   override def close(): Unit = ()
@@ -27,6 +35,7 @@ trait MUnitDatabaseSuite { self: munit.Suite =>
     def apply() = conf.get
     override def beforeAll(): Unit = {
       val localTestDb = testConf()
+      println(localTestDb)
       val testDb = localTestDb.getOrElse {
         val c = MySQLContainer(mysqlImageVersion = "mysql:5.7.29")
         c.start()
@@ -49,28 +58,75 @@ trait MUnitDatabaseSuite { self: munit.Suite =>
   override def munitFixtures: Seq[Fixture[_]] = Seq(db)
 }
 
-//trait LogsServerPerSuite extends MUnitDatabaseSuite { self: Suite =>
-//  val testServer: Fixture[LogsTestInstance] = new Fixture[LogsTestInstance]("test-server") {
-//    private var runningServer: Option[LogsTestInstance] = None
-//    def apply() = runningServer.get
-//    override def beforeAll(): Unit = {
-//      val comps = new TestComponents(TestAppLoader.createTestAppContext, new LogsAppConf(db()))
-//      runningServer = Option(
-//        LogsTestInstance(DefaultTestServerFactory.start(comps.application), comps)
-//      )
-//      Await.result(comps.truncator.truncate(), 10.seconds)
-//    }
-//    override def afterAll(): Unit = {
-//      runningServer.foreach(_.server.stopServer.close())
-//    }
-//  }
-//  def components = testServer().components
-//  def port = testServer().server.endpoints.httpEndpoint.map(_.port).get
-//
-//  override def munitFixtures: Seq[Fixture[_]] = Seq(db, testServer)
-//}
+trait DatabaseAppSuite extends MUnitDatabaseSuite { self: munit.Suite =>
+  implicit def munitContextShift: ContextShift[IO] =
+    IO.contextShift(munitExecutionContext)
 
-abstract class TestServerSuite extends FunSuite // with LogsServerPerSuite
+  val app: Fixture[Service.Routes] = new Fixture[Service.Routes]("database-app") {
+    private var service: Option[Service.Routes] = None
+    val promise = Promise[IO[Unit]]()
+
+    override def apply(): Service.Routes = service.get
+
+    override def beforeAll(): Unit = {
+      val testConf = LogstreamsConf.load.copy(db = db())
+      val resource = Server.appResource(testConf)
+      val resourceEffect = resource.allocated[IO, Service.Routes]
+      val setupEffect =
+        resourceEffect
+          .map {
+            case (t, release) =>
+              promise.success(release)
+              t
+          }
+          .flatTap(t => IO.pure(()))
+
+      service = Option(setupEffect.unsafeRunSync())
+    }
+
+    override def afterAll(): Unit = {
+      IO.fromFuture(IO(promise.future))(munitContextShift).flatten.unsafeRunSync()
+    }
+  }
+
+  override def munitFixtures: Seq[Fixture[_]] = Seq(db, app)
+}
+
+trait ServerSuite extends MUnitDatabaseSuite { self: munit.Suite =>
+  implicit def munitContextShift: ContextShift[IO] =
+    IO.contextShift(munitExecutionContext)
+
+  val server: Fixture[Server[IO]] = new Fixture[Server[IO]]("server") {
+    private var service: Option[Server[IO]] = None
+    val promise = Promise[IO[Unit]]()
+
+    override def apply(): Server[IO] = service.get
+
+    override def beforeAll(): Unit = {
+      val testConf = LogstreamsConf.load.copy(db = db())
+      val resource = Server.server(testConf, port = 12345)
+      val resourceEffect = resource.allocated[IO, Server[IO]]
+      val setupEffect =
+        resourceEffect
+          .map {
+            case (t, release) =>
+              promise.success(release)
+              t
+          }
+          .flatTap(t => IO.pure(()))
+
+      service = Option(setupEffect.unsafeRunSync())
+    }
+
+    override def afterAll(): Unit = {
+      IO.fromFuture(IO(promise.future))(munitContextShift).flatten.unsafeRunSync()
+    }
+  }
+
+  override def munitFixtures: Seq[Fixture[_]] = Seq(db, server)
+}
+
+abstract class TestServerSuite extends FunSuite with ServerSuite
 
 class LogStreamsTest extends TestServerSuite {
   val testUser = "u"
@@ -81,13 +137,16 @@ class LogStreamsTest extends TestServerSuite {
 //
 //  implicit val as = ActorSystem("test")
 //
-//  test("can ping server") {
-//    using(AhcWSClient()) { client =>
-//      val res = await(client.url(s"http://localhost:$port/ping").get())
-//      assert(res.status == 200)
-//      client.close()
-//    }
-//  }
+  def port = server().address.getPort
+
+  test("can ping server") {
+    val response = BlazeClientBuilder[IO](munitExecutionContext).resource
+      .use { client =>
+        client.get(Uri.unsafeFromString(s"http://localhost:$port/ping"))(res => IO.pure(res))
+      }
+      .unsafeRunSync()
+    assertEquals(response.status, Status.Ok)
+  }
 //
 //  test("can open socket") {
 //    val c = creds("u1")

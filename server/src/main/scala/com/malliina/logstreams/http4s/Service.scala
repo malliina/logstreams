@@ -16,7 +16,7 @@ import controllers.UserRequest
 import play.api.libs.json.Json
 import org.http4s._
 import Service.log
-import cats.data.NonEmptyList
+import cats.data.{Kleisli, NonEmptyList}
 import com.malliina.logstreams.Errors
 import com.malliina.logstreams.auth.AuthProvider.{Google, PromptKey, SelectAccount}
 import com.malliina.logstreams.db.StreamsQuery
@@ -29,6 +29,7 @@ import com.malliina.web.Utils.randomString
 import com.malliina.web.{AuthError, Callback, GoogleAuthFlow, LoginHint, OAuthKeys, Start, Utils}
 
 object Service {
+  type Routes = Kleisli[IO, Request[IO], Response[IO]]
   private val log = AppLogger(getClass)
 
   def apply(

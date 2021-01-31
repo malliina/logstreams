@@ -28,13 +28,19 @@ class LogSockets(
   admins: Topic[IO, SourceMessage],
   db: LogsDatabase[IO]
 )(implicit cs: ContextShift[IO], timer: Timer[IO]) {
-  val sources = admins.subscribe(100).scan(LogSources(Nil)) { (acc, e) =>
-    e match {
-      case SourceMessage.SourceJoined(source) => LogSources(acc.sources :+ source)
-      case SourceMessage.SourceLeft(source)   => LogSources(acc.sources.filterNot(_ == source))
-      case SourceMessage.Ping                 => acc
+  import cats.kernel.Eq
+  import cats.implicits._
+  implicit val eqLogSources: Eq[LogSources] = Eq.fromUniversalEquals
+  val sources = admins
+    .subscribe(100)
+    .scan(LogSources(Nil)) { (acc, e) =>
+      e match {
+        case SourceMessage.SourceJoined(source) => LogSources(acc.sources :+ source)
+        case SourceMessage.SourceLeft(source)   => LogSources(acc.sources.filterNot(_ == source))
+        case SourceMessage.Ping                 => acc
+      }
     }
-  }
+    .changes
   // drains sources
   sources.compile.drain.unsafeRunAsyncAndForget()
   private val savedEvents: fs2.Stream[IO, AppLogEvents] = logs.subscribe(100).evalMap { ins =>

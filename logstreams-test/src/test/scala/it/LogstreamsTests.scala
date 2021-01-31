@@ -6,7 +6,7 @@ import com.malliina.http.FullUrl
 import com.malliina.logstreams.auth.BasicCredentials
 import com.malliina.logstreams.client.{HttpUtil, SocketClient}
 import com.malliina.logstreams.http4s.LogRoutes
-import com.malliina.logstreams.models.{AppLogEvents, AppName, LogEvent, LogEvents}
+import com.malliina.logstreams.models.{AppLogEvents, AppName, LogEvent, LogEvents, LogSources}
 import com.malliina.values.{Password, Username}
 import it.LogstreamsTests.testUsername
 import org.http4s.{Status, Uri}
@@ -80,45 +80,37 @@ class LogstreamsTests extends TestServerSuite {
       }
     }
   }
-  //
-  //  test(
-  //    "admin receives status on connect and updates when a source connects and disconnects".ignore
-  //  ) {
-  //    val status = Promise[JsValue]()
-  //    val update = Promise[JsValue]()
-  //    val disconnectedPromise = Promise[JsValue]()
-  //
-  //    val user = "u3"
-  //    await(components.users.add(creds(user)))
-  //
-  //    def onJson(json: JsValue): Unit = {
-  //      if (!status.trySuccess(json))
-  //        if (!update.trySuccess(json)) if (!disconnectedPromise.trySuccess(json)) ()
-  //    }
-  //
-  //    withAdmin(onJson) { client =>
-  //      assert(client.isConnected)
-  //      val msg = await(status.future).validate[LogSources]
-  //      assert(msg.isSuccess)
-  //      assert(msg.get.sources.isEmpty)
-  //      withSource(user) { _ =>
-  //        val upd = await(update.future).validate[LogSources]
-  //        assert(upd.isSuccess)
-  //        val sources = upd.get.sources
-  //        assert(sources.size == 1)
-  //        assert(sources.head.name.name == user)
-  //      }
-  //      val disconnectUpdate = await(disconnectedPromise.future).validate[LogSources]
-  //      assert(disconnectUpdate.isSuccess)
-  //      assert(disconnectUpdate.get.sources.isEmpty)
-  //    }
-  //  }
-  //
-  //  test("logback appender".ignore) {
-  //    Logger("test").error("This is a test event")
-  //    Thread sleep 100
-  //  }
-  //
+  test("admin receives status on connect and updates when a source connects and disconnects") {
+    val status = Promise[JsValue]()
+    val update = Promise[JsValue]()
+    val disconnectedPromise = Promise[JsValue]()
+
+    val user = "u3"
+    components.users.add(creds(user)).unsafeRunSync()
+
+    def onJson(json: JsValue): Unit = {
+      if (!status.trySuccess(json))
+        if (!update.trySuccess(json)) if (!disconnectedPromise.trySuccess(json)) ()
+    }
+
+    withAdmin(onJson) { client =>
+      assert(client.isConnected)
+      val msg = await(status.future).validate[LogSources]
+      assert(msg.isSuccess)
+      assert(msg.get.sources.isEmpty)
+      withSource(user) { _ =>
+        val upd = await(update.future).validate[LogSources]
+        assert(upd.isSuccess)
+        val sources = upd.get.sources
+        assertEquals(sources.size, 1)
+        assertEquals(sources.head.name.name, user)
+      }
+      val disconnectUpdate = await(disconnectedPromise.future).validate[LogSources]
+      assert(disconnectUpdate.isSuccess)
+      assert(disconnectUpdate.get.sources.isEmpty)
+    }
+  }
+
   def withAdmin[T](onJson: JsValue => Any)(code: SocketClient => T) =
     withWebSocket(testUser, LogRoutes.sockets.admins, onJson)(code)
 

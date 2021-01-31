@@ -84,7 +84,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
     handleValidated(payload)(onLogEvents)
 
   def onLogEvents(appLogEvents: AppLogEvents): Unit =
-    appLogEvents.events foreach onLogEvent
+    appLogEvents.events.foreach { e => onLogEvent(e) }
 
   def onLogEvent(event: AppLogEvent): Unit = {
     val entry = event.event

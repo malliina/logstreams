@@ -14,7 +14,7 @@ object BaseSocket {
   val Ping = "ping"
 }
 
-class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.noop) extends ScriptHelpers {
+class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.printer) extends ScriptHelpers {
   val statusElem = Option(elem("status"))
   val socket: dom.WebSocket = openSocket(wsPath)
 
@@ -73,11 +73,11 @@ class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.noop) extends 
   def setFeedback(feedback: String): Unit = statusElem.foreach(_.innerHTML = feedback)
 
   def onJsonException(t: Throwable): Unit = {
-    log error t
+    log.error(t)
   }
 
   protected def onJsonFailure(value: JsValue, result: JsError): Unit = {
-    log info s"JSON error for '$value': '$result'."
+    log.info(s"JSON error for '$value': '$result'.")
   }
 
   def clear(): Unit = {

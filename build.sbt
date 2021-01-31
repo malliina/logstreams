@@ -120,8 +120,6 @@ val server = project
   .enablePlugins(FileTreePlugin, JavaServerAppPackaging, SystemdPlugin, BuildInfoPlugin)
   .dependsOn(crossJvm, client)
   .settings(
-    scalaJSProjects := Seq(frontend),
-    pipelineStages in Assets := Seq(scalaJSPipeline),
     version := serverVersion,
     buildInfoKeys ++= Seq[BuildInfoKey](
       "frontName" -> (name in frontend).value
@@ -144,7 +142,6 @@ val server = project
       utilPlayDep % Test classifier "tests",
       "com.dimafeng" %% "testcontainers-scala-mysql" % testContainersVersion % Test
     ),
-    pipelineStages := Seq(digest, gzip),
     javaOptions in Universal ++= {
       Seq(
         "-J-Xmx1024m",
@@ -152,7 +149,6 @@ val server = project
         "-Dlogback.configurationFile=logback-prod.xml"
       )
     },
-    linuxPackageSymlinks := linuxPackageSymlinks.value.filterNot(_.link == "/usr/bin/starter"),
     unmanagedResourceDirectories in Compile += baseDirectory.value / "public",
     httpPort in Linux := Option(s"$prodPort"),
     dockerVersion := Option(DockerVersion(19, 3, 5, None)),

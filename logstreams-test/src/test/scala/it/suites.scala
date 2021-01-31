@@ -55,11 +55,10 @@ trait MUnitDatabaseSuite { self: munit.Suite =>
         DoobieDatabase(db(), blocker)
       }
       .use { database =>
-        val task = for {
-          l <- sql"truncate LOGS".update.run
-          u <- sql"truncate USERS".update.run
+        for {
+          l <- database.run(sql"delete from LOGS".update.run)
+          u <- database.run(sql"delete from USERS".update.run)
         } yield l + u
-        database.run(task)
       }
       .unsafeRunSync()
   }

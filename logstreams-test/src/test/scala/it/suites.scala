@@ -1,11 +1,11 @@
 package it
 
-import cats.effect.{ContextShift, IO}
+import cats.effect.{Blocker, ContextShift, IO}
 import cats.syntax.flatMap._
 import com.dimafeng.testcontainers.MySQLContainer
 import com.malliina.app.AppConf
 import com.malliina.logstreams.auth._
-import com.malliina.logstreams.db.Conf
+import com.malliina.logstreams.db.{Conf, DoobieDatabase}
 import com.malliina.logstreams.http4s.{Http4sAuth, Server, ServerComponents}
 import com.malliina.logstreams.{LocalConf, LogstreamsConf}
 import com.malliina.values.Username
@@ -39,7 +39,9 @@ trait MUnitDatabaseSuite { self: munit.Suite =>
       }
       conf = Option(testDb)
     }
-    override def afterAll(): Unit = container.foreach(_.stop())
+    override def afterAll(): Unit = {
+      container.foreach(_.stop())
+    }
   }
 
   private def testConf(): Either[ConfigReaderFailures, Conf] = {
@@ -80,10 +82,14 @@ trait ServerSuite extends MUnitDatabaseSuite { self: munit.Suite =>
     }
 
     override def afterAll(): Unit = {
-      val dataCleanup = service.fold(IO.pure(0)) { comps =>
-        import doobie.implicits._
-        comps.app.db.run(sql"truncate LOGS".update.run)
-      }
+      import doobie.implicits._
+      val dataCleanup = Blocker[IO]
+        .flatMap { blocker =>
+          DoobieDatabase(db(), blocker)
+        }
+        .use { database =>
+          database.run(sql"truncate LOGS".update.run)
+        }
       val cleanUp = for {
         removeTestData <- dataCleanup
         shutdown <- IO.fromFuture(IO(promise.future))(munitContextShift).flatten

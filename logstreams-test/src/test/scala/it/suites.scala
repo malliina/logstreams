@@ -24,6 +24,9 @@ case class TestConf(testdb: Conf)
 case class WrappedTestConf(logstreams: TestConf)
 
 trait MUnitDatabaseSuite { self: munit.Suite =>
+  implicit def munitContextShift: ContextShift[IO] =
+    IO.contextShift(munitExecutionContext)
+
   val db: Fixture[Conf] = new Fixture[Conf]("database") {
     var container: Option[MySQLContainer] = None
     var conf: Option[Conf] = None
@@ -40,8 +43,25 @@ trait MUnitDatabaseSuite { self: munit.Suite =>
       conf = Option(testDb)
     }
     override def afterAll(): Unit = {
+      truncateTestData()
       container.foreach(_.stop())
     }
+  }
+
+  private def truncateTestData() = {
+    import doobie.implicits._
+    Blocker[IO]
+      .flatMap { blocker =>
+        DoobieDatabase(db(), blocker)
+      }
+      .use { database =>
+        val task = for {
+          l <- sql"truncate LOGS".update.run
+          u <- sql"truncate USERS".update.run
+        } yield l + u
+        database.run(task)
+      }
+      .unsafeRunSync()
   }
 
   private def testConf(): Either[ConfigReaderFailures, Conf] = {
@@ -56,9 +76,6 @@ trait MUnitDatabaseSuite { self: munit.Suite =>
 }
 
 trait ServerSuite extends MUnitDatabaseSuite { self: munit.Suite =>
-  implicit def munitContextShift: ContextShift[IO] =
-    IO.contextShift(munitExecutionContext)
-
   val server: Fixture[ServerComponents] = new Fixture[ServerComponents]("server") {
     private var service: Option[ServerComponents] = None
     val promise = Promise[IO[Unit]]()
@@ -82,19 +99,7 @@ trait ServerSuite extends MUnitDatabaseSuite { self: munit.Suite =>
     }
 
     override def afterAll(): Unit = {
-      import doobie.implicits._
-      val dataCleanup = Blocker[IO]
-        .flatMap { blocker =>
-          DoobieDatabase(db(), blocker)
-        }
-        .use { database =>
-          database.run(sql"truncate LOGS".update.run)
-        }
-      val cleanUp = for {
-        removeTestData <- dataCleanup
-        shutdown <- IO.fromFuture(IO(promise.future))(munitContextShift).flatten
-      } yield removeTestData
-      cleanUp.unsafeRunSync()
+      IO.fromFuture(IO(promise.future))(munitContextShift).flatten.unsafeRunSync()
     }
   }
 

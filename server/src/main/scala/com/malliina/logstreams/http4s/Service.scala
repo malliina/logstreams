@@ -1,49 +1,43 @@
 package com.malliina.logstreams.http4s
 
+import cats.data.NonEmptyList
 import cats.effect.IO
 import com.malliina.app.AppMeta
-import com.malliina.logstreams.auth.{
-  AuthProvider,
-  Auther,
-  Auths,
-  Http4sAuthenticator,
-  UserPayload,
-  UserService
-}
-import com.malliina.logstreams.html.Htmls
-import com.malliina.logstreams.models.AppName
-import com.malliina.util.AppLogger
-import controllers.UserRequest
-import play.api.libs.json.Json
-import org.http4s._
-import Service.log
-import cats.data.{Kleisli, NonEmptyList}
 import com.malliina.logstreams.Errors
 import com.malliina.logstreams.auth.AuthProvider.{Google, PromptKey, SelectAccount}
-import com.malliina.logstreams.db.StreamsQuery
+import com.malliina.logstreams.auth._
+import com.malliina.logstreams.db.{DoobieDatabase, StreamsQuery}
+import com.malliina.logstreams.html.Htmls
 import com.malliina.logstreams.html.Htmls.{PasswordKey, UsernameKey}
 import com.malliina.logstreams.http4s.BasicService.noCache
-import org.http4s.headers.{Location, `WWW-Authenticate`}
+import com.malliina.logstreams.http4s.Service.log
+import com.malliina.logstreams.models.AppName
+import com.malliina.util.AppLogger
 import com.malliina.values.{Email, Password, Username}
 import com.malliina.web.OAuthKeys.{Nonce, State}
 import com.malliina.web.Utils.randomString
-import com.malliina.web.{AuthError, Callback, GoogleAuthFlow, LoginHint, OAuthKeys, Start, Utils}
+import com.malliina.web._
+import controllers.UserRequest
+import play.api.libs.json.Json
+import org.http4s.{Callback => _, _}
+import org.http4s.headers.{Location, `WWW-Authenticate`}
 
 object Service {
-  type Routes = Kleisli[IO, Request[IO], Response[IO]]
   private val log = AppLogger(getClass)
 
   def apply(
+    db: DoobieDatabase,
     users: UserService[IO],
     htmls: Htmls,
     auths: Auther,
     sockets: LogSockets,
     google: GoogleAuthFlow
   ): Service =
-    new Service(users, htmls, auths, sockets, google)
+    new Service(db, users, htmls, auths, sockets, google)
 }
 
 class Service(
+  val db: DoobieDatabase,
   val users: UserService[IO],
   htmls: Htmls,
   auths: Auther,
@@ -51,7 +45,7 @@ class Service(
   google: GoogleAuthFlow
 ) extends BasicService[IO] {
   val reverse = LogRoutes
-  val routes = HttpRoutes.of[IO] {
+  val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
     case GET -> Root / "health" => ok(Json.toJson(AppMeta.ThisApp))
     case GET -> Root / "ping"   => ok(Json.toJson(AppMeta.ThisApp))
     case req @ GET -> Root =>

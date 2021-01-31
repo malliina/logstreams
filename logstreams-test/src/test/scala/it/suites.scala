@@ -2,34 +2,18 @@ package it
 
 import cats.effect.{ContextShift, IO}
 import cats.syntax.flatMap._
-import ch.qos.logback.classic.Level
 import com.dimafeng.testcontainers.MySQLContainer
 import com.malliina.app.AppConf
-import com.malliina.http.FullUrl
-import com.malliina.logstreams.auth.{
-  AuthBuilder,
-  Auther,
-  Auths,
-  BasicCredentials,
-  Http4sAuthenticator,
-  UserService
-}
-import com.malliina.logstreams.client.{HttpUtil, SocketClient}
+import com.malliina.logstreams.auth._
 import com.malliina.logstreams.db.Conf
-import com.malliina.logstreams.http4s.{Http4sAuth, LogRoutes, Server, ServerComponents, Service}
-import com.malliina.logstreams.models.{AppLogEvents, AppName, LogEvent, LogEvents}
+import com.malliina.logstreams.http4s.{Http4sAuth, Server, ServerComponents}
 import com.malliina.logstreams.{LocalConf, LogstreamsConf}
-import com.malliina.values.{Password, Username}
+import com.malliina.values.Username
 import munit.FunSuite
-import org.http4s.{Status, Uri}
-import org.http4s.client.blaze.BlazeClientBuilder
-import org.http4s.implicits.http4sLiteralsSyntax
-import org.http4s.server.Server
-import play.api.libs.json.{JsValue, Json}
+import org.testcontainers.utility.DockerImageName
 import pureconfig.error.ConfigReaderFailures
 import pureconfig.{ConfigObjectSource, ConfigSource}
 
-import javax.net.ssl.SSLContext
 import scala.concurrent.Promise
 
 class LogsAppConf(override val database: Conf) extends AppConf {
@@ -47,7 +31,8 @@ trait MUnitDatabaseSuite { self: munit.Suite =>
     override def beforeAll(): Unit = {
       val localTestDb = testConf()
       val testDb = localTestDb.getOrElse {
-        val c = MySQLContainer(mysqlImageVersion = "mysql:5.7.29")
+        val image = DockerImageName.parse("mysql:5.7.29")
+        val c = MySQLContainer(mysqlImageVersion = image)
         c.start()
         container = Option(c)
         Conf(s"${c.jdbcUrl}?useSSL=false", c.username, c.password, c.driverClassName)
@@ -95,7 +80,15 @@ trait ServerSuite extends MUnitDatabaseSuite { self: munit.Suite =>
     }
 
     override def afterAll(): Unit = {
-      IO.fromFuture(IO(promise.future))(munitContextShift).flatten.unsafeRunSync()
+      val dataCleanup = service.fold(IO.pure(0)) { comps =>
+        import doobie.implicits._
+        comps.app.db.run(sql"truncate LOGS".update.run)
+      }
+      val cleanUp = for {
+        removeTestData <- dataCleanup
+        shutdown <- IO.fromFuture(IO(promise.future))(munitContextShift).flatten
+      } yield removeTestData
+      cleanUp.unsafeRunSync()
     }
   }
 

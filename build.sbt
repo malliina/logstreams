@@ -1,10 +1,7 @@
 import com.typesafe.sbt.packager.docker.DockerVersion
 import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
-import sbtcrossproject.CrossPlugin.autoImport.{
-  CrossType => PortableType,
-  crossProject => portableProject
-}
+import sbtcrossproject.CrossPlugin.autoImport.{CrossType => PortableType, crossProject => portableProject}
 import scalajsbundler.util.JSON
 import org.scalajs.sbtplugin.Stage
 import WebPlugin.makeAssetsFile
@@ -16,10 +13,10 @@ val malliinaGroup = "com.malliina"
 val utilPlayVersion = "6.0.0"
 val primitivesVersion = "1.18.0"
 val logbackStreamsVersion = "1.8.0"
-val playJsonVersion = "2.9.1"
+val playJsonVersion = "2.9.2"
 val akkaHttpVersion = "10.1.12"
-val munitVersion = "0.7.20"
-val testContainersVersion = "0.38.3"
+val munitVersion = "0.7.21"
+val testContainersVersion = "0.38.8"
 
 val utilPlayDep = malliinaGroup %% "web-auth" % utilPlayVersion
 
@@ -45,7 +42,7 @@ val client = Project("logstreams-client", file("client"))
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
     libraryDependencies ++= Seq(
-      "com.neovisionaries" % "nv-websocket-client" % "2.10",
+      "com.neovisionaries" % "nv-websocket-client" % "2.11",
       "com.malliina" %% "logback-streams" % logbackStreamsVersion,
       "com.malliina" %%% "primitives" % primitivesVersion,
       "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
@@ -76,33 +73,33 @@ val frontend = project
   .settings(
     version := "1.0.0",
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %%% "scalatags" % "0.9.1",
+      "com.lihaoyi" %%% "scalatags" % "0.9.3",
       "com.typesafe.play" %%% "play-json" % playJsonVersion
     ),
     version in webpack := "4.44.2",
     webpackEmitSourceMaps := false,
     scalaJSUseMainModuleInitializer := true,
     npmDependencies in Compile ++= Seq(
-      "@fortawesome/fontawesome-free" -> "5.14.0",
-      "bootstrap" -> "4.5.2",
+      "@fortawesome/fontawesome-free" -> "5.15.2",
+      "bootstrap" -> "4.6.0",
       "jquery" -> "3.5.1",
       "popper.js" -> "1.16.1"
     ),
     npmDevDependencies in Compile ++= Seq(
-      "autoprefixer" -> "10.0.0",
+      "autoprefixer" -> "10.2.4",
       "cssnano" -> "4.1.10",
-      "css-loader" -> "4.3.0",
-      "file-loader" -> "6.1.0",
-      "less" -> "3.12.2",
-      "less-loader" -> "7.0.1",
-      "mini-css-extract-plugin" -> "0.11.2",
-      "postcss" -> "8.0.5",
-      "postcss-import" -> "12.0.1",
-      "postcss-loader" -> "4.0.2",
+      "css-loader" -> "5.0.1",
+      "file-loader" -> "6.2.0",
+      "less" -> "4.1.1",
+      "less-loader" -> "7.3.0",
+      "mini-css-extract-plugin" -> "1.3.5",
+      "postcss" -> "8.2.4",
+      "postcss-import" -> "14.0.0",
+      "postcss-loader" -> "4.2.0",
       "postcss-preset-env" -> "6.7.0",
-      "style-loader" -> "1.2.1",
-      "url-loader" -> "4.1.0",
-      "webpack-merge" -> "5.1.4"
+      "style-loader" -> "2.0.0",
+      "url-loader" -> "4.1.1",
+      "webpack-merge" -> "5.7.3"
     ),
     additionalNpmConfig in Compile := Map(
       "engines" -> JSON.obj("node" -> JSON.str("10.x")),
@@ -132,12 +129,12 @@ val server = project
     buildInfoPackage := "com.malliina.app",
     buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, "hash" -> gitHash),
     libraryDependencies ++= http4sModules.map { m =>
-      "org.http4s" %% s"http4s-$m" % "0.21.14"
+      "org.http4s" %% s"http4s-$m" % "0.21.16"
     } ++ Seq("doobie-core", "doobie-hikari").map { d =>
-      "org.tpolecat" %% d % "0.9.4"
+      "org.tpolecat" %% d % "0.10.0"
     } ++ Seq(
       "com.github.pureconfig" %% "pureconfig" % "0.14.0",
-      "org.flywaydb" % "flyway-core" % "7.3.1",
+      "org.flywaydb" % "flyway-core" % "7.5.2",
       "mysql" % "mysql-connector-java" % "5.1.49",
       "org.slf4j" % "slf4j-api" % "1.7.30",
       "ch.qos.logback" % "logback-classic" % "1.2.3",

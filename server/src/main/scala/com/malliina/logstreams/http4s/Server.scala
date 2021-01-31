@@ -58,6 +58,7 @@ object Server extends IOApp {
     val sockets = new LogSockets(logsTopic, adminsTopic, logsDatabase)
     val google = GoogleAuthFlow(conf.google, HttpClientIO())
     Service(
+      db,
       users,
       Htmls.forApp("frontend", conf.mode == AppMode.Prod, HashedAssetsSource),
       auths,

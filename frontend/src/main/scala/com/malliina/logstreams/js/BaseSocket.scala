@@ -42,6 +42,7 @@ class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.printer) exten
       .map { json =>
         val isPing = (json \ EventKey).validate[String].filter(_ == Ping).isSuccess
         if (!isPing) {
+          log.info(s"Handling json '$json'...")
           handlePayload(json)
         }
       }

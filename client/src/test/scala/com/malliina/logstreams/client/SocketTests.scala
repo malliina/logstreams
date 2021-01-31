@@ -28,5 +28,5 @@ class SocketTests extends munit.FunSuite {
     socket.close()
   }
 
-  def await[T](f: Future[T]) = Await.result(f, 5.seconds)
+  def await[T](f: Future[T]) = Await.result(f, 10.seconds)
 }

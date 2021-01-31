@@ -13,7 +13,6 @@ object BaseLogger {
   def apply(onInfo: String => Unit, onError: Throwable => Unit): BaseLogger =
     new BaseLogger {
       override def info(message: String): Unit = onInfo(message)
-
       override def error(t: Throwable): Unit = onError(t)
     }
 }

@@ -7,17 +7,27 @@ import com.malliina.web.PermissionError
 import org.http4s.Headers
 import org.http4s.headers.Authorization
 
+trait AuthBuilder {
+  def apply(users: UserService[IO], web: Http4sAuth): Auther
+}
+
+trait Auther {
+  def web: Http4sAuth
+  def sources: Http4sAuthenticator[IO, Username]
+  def viewers: Http4sAuthenticator[IO, Username]
+}
+
 class Auths(
   val sources: Http4sAuthenticator[IO, Username],
   val web: Http4sAuth
-) {
+) extends Auther {
   val viewers = Auths.viewers(web)
 }
 
-object Auths {
+object Auths extends AuthBuilder {
   val authorizedEmail = Email("malliina123@gmail.com")
 
-  def apply(users: UserService[IO], web: Http4sAuth) =
+  def apply(users: UserService[IO], web: Http4sAuth): Auther =
     new Auths(sources(users), web)
 
   def sources(users: UserService[IO]): Http4sAuthenticator[IO, Username] =

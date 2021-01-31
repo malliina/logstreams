@@ -13,6 +13,11 @@ trait LogRoutes {
   val sources = uri"/sources"
   val allUsers = uri"/users"
   val addUser = uri"/users"
+  object sockets {
+    val admins = uri"/ws/admins"
+    val logs = uri"/ws/logs"
+    val sources = uri"/ws/sources"
+  }
 
   def removeUser(user: Username) = Uri.unsafeFromString(s"/users/$user/delete")
 }

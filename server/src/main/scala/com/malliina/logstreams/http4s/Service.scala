@@ -4,6 +4,7 @@ import cats.effect.IO
 import com.malliina.app.AppMeta
 import com.malliina.logstreams.auth.{
   AuthProvider,
+  Auther,
   Auths,
   Http4sAuthenticator,
   UserPayload,
@@ -35,7 +36,7 @@ object Service {
   def apply(
     users: UserService[IO],
     htmls: Htmls,
-    auths: Auths,
+    auths: Auther,
     sockets: LogSockets,
     google: GoogleAuthFlow
   ): Service =
@@ -43,9 +44,9 @@ object Service {
 }
 
 class Service(
-  users: UserService[IO],
+  val users: UserService[IO],
   htmls: Htmls,
-  auths: Auths,
+  auths: Auther,
   sockets: LogSockets,
   google: GoogleAuthFlow
 ) extends BasicService[IO] {
@@ -150,7 +151,7 @@ class Service(
     val redirectUrl = Urls.hostOnly(req) / LogRoutes.googleCallback.renderString
     val lastIdCookie = req.cookies.find(_.name == cookieNames.lastId)
     val promptValue = req.cookies
-      .find(_.name == auths.web.cookieNames.prompt)
+      .find(_.name == cookieNames.prompt)
       .map(_.content)
       .orElse(Option(SelectAccount).filter(_ => lastIdCookie.isEmpty))
     val extra = promptValue.map(c => Map(PromptKey -> c)).getOrElse(Map.empty)

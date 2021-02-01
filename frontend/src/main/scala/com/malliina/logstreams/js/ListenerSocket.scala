@@ -25,6 +25,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
   val Hidden = "hidden"
   val NoWrap = "no-wrap"
   val Warning = "warning"
+  val Info = "info"
   val ActiveCustom = "active-custom"
 
   val Off = "off"
@@ -114,7 +115,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
     val rowClass = entry.level match {
       case "ERROR" => Danger
       case "WARN"  => Warning
-      case _       => ""
+      case _       => Info
     }
     val entryId = UUID.randomUUID().toString take 5
     val msgCellId = s"msg-$entryId"

@@ -30,7 +30,7 @@ object SortOrder extends ValidatingCompanion[String, SortOrder] {
   val Order = "order"
   val asc: SortOrder = Ascending
   val desc: SortOrder = Descending
-  val default: SortOrder = desc
+  val default: SortOrder = asc
 
   val all: Seq[SortOrder] = Seq(asc, desc)
 

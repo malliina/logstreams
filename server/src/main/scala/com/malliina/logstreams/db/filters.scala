@@ -15,11 +15,11 @@ object StreamsQuery {
   val default = StreamsQuery(Nil, 1000, 0, SortOrder.default)
 
   def fromQuery(q: Query): Either[Errors, StreamsQuery] = for {
-//    apps <- QueryParsers.parseOrDefault[List[Username]](q, AppKey, Nil)
+    apps <- Right(q.multiParams.getOrElse(AppKey, Nil).map(s => Username(s)))
     limit <- QueryParsers.parseOrDefault[Int](q, Limit, 500)
     offset <- QueryParsers.parseOrDefault[Int](q, Offset, 0)
     sort <- SortOrder.fromQuery(q)
-  } yield StreamsQuery(Nil, limit, offset, sort)
+  } yield StreamsQuery(apps, limit, offset, sort)
 }
 
 sealed abstract class SortOrder(val name: String) {

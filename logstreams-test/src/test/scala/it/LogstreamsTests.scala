@@ -80,6 +80,7 @@ class LogstreamsTests extends TestServerSuite {
       }
     }
   }
+
   test("admin receives status on connect and updates when a source connects and disconnects") {
     val status = Promise[JsValue]()
     val update = Promise[JsValue]()
@@ -104,6 +105,11 @@ class LogstreamsTests extends TestServerSuite {
         val sources = upd.get.sources
         assertEquals(sources.size, 1)
         assertEquals(sources.head.name.name, user)
+        val status = Promise[JsValue]()
+        withAdmin(status.success) { client =>
+          val statusUpdate = await(status.future).as[LogSources]
+          assert(statusUpdate.sources.nonEmpty)
+        }
       }
       val disconnectUpdate = await(disconnectedPromise.future).validate[LogSources]
       assert(disconnectUpdate.isSuccess)

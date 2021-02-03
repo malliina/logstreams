@@ -7,8 +7,6 @@ import com.malliina.logstreams.models._
 import doobie._
 import doobie.implicits._
 
-import scala.concurrent.Future
-
 object DoobieStreamsDatabase {
   def apply(db: DoobieDatabase): DoobieStreamsDatabase = new DoobieStreamsDatabase(db)
 }

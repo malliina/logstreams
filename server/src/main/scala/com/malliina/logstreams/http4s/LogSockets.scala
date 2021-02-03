@@ -53,7 +53,7 @@ class LogSockets(
     val logEvents = fs2.Stream
       .eval(db.events(query))
       .flatMap { history =>
-        fs2.Stream(history) ++ filteredEvents.map(
+        fs2.Stream(history.reverse) ++ filteredEvents.map(
           _.filter(e => !history.events.exists(_.id == e.id))
         )
       }

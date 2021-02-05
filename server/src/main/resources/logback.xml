@@ -5,7 +5,15 @@
             <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
+    <appender name="LOGSTREAMS" class="com.malliina.logstreams.client.AkkaHttpAppender">
+        <endpoint>${LOGSTREAMS_HOST:-localhost:9000}</endpoint>
+        <secure>false</secure>
+        <enabled>true</enabled>
+        <username>${LOGSTREAMS_USER:-logstreams}</username>
+        <password>${LOGSTREAMS_PASS}</password>
+    </appender>
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
+<!--        <appender-ref ref="LOGSTREAMS"/>-->
     </root>
 </configuration>

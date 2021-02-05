@@ -26,6 +26,7 @@ class LogSockets(
   logs: Topic[IO, LogEntryInputs],
   admins: Topic[IO, LogSources],
   connectedSources: Ref[IO, LogSources],
+  logUpdates: Topic[IO, AppLogEvents],
   db: LogsDatabase[IO]
 )(implicit cs: ContextShift[IO], timer: Timer[IO]) {
   private val savedEvents: fs2.Stream[IO, AppLogEvents] = logs.subscribe(100).evalMap { ins =>
@@ -33,8 +34,11 @@ class LogSockets(
       AppLogEvents(written.rows.map(_.toEvent))
     }
   }
-  // drains log events for situations where no viewer is subscribed, so that they're always saved to the db either way
-  savedEvents.compile.drain.unsafeRunAsyncAndForget()
+  val publisher = savedEvents.evalMap { saved =>
+    logUpdates.publish1(saved)
+  }
+  // saves to the database and publishes events
+  publisher.compile.drain.unsafeRunAsyncAndForget()
   private val logIncoming: Pipe[IO, WebSocketFrame, Unit] = _.evalMap {
     case Text(message, _) => IO(log.info(message))
     case f                => IO(log.debug(s"Unknown WebSocket frame: $f"))
@@ -42,11 +46,12 @@ class LogSockets(
   val pings = fs2.Stream.awakeEvery[IO](15.seconds).map(_ => SimpleEvent.ping)
 
   def listener(query: StreamsQuery) = {
+    val subscription = logUpdates.subscribe(100).drop(1)
     val filteredEvents =
       if (query.apps.isEmpty) {
-        savedEvents
+        subscription
       } else {
-        savedEvents.map { es =>
+        subscription.map { es =>
           es.filter(e => query.apps.exists(app => app.name == e.source.name.name))
         }
       }

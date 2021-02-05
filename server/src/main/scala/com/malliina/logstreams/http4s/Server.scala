@@ -8,7 +8,7 @@ import com.malliina.http.io.HttpClientIO
 import com.malliina.logstreams.auth.{AuthBuilder, Auther, Auths, JWT}
 import com.malliina.logstreams.db.{DoobieDatabase, DoobieDatabaseAuth, DoobieStreamsDatabase}
 import com.malliina.logstreams.html.{HashedAssetsSource, Htmls}
-import com.malliina.logstreams.models.{LogEntryInputs, LogSources}
+import com.malliina.logstreams.models.{AppLogEvents, LogEntryInputs, LogSources}
 import com.malliina.logstreams.{AppMode, LogstreamsConf, SourceMessage}
 import com.malliina.util.AppLogger
 import com.malliina.web.GoogleAuthFlow
@@ -53,11 +53,12 @@ object Server extends IOApp {
     logsTopic <- Resource.liftF(Topic[IO, LogEntryInputs](LogEntryInputs(Nil)))
     adminsTopic <- Resource.liftF(Topic[IO, LogSources](LogSources(Nil)))
     connecteds <- Resource.liftF(Ref[IO].of(LogSources(Nil)))
+    logUpdates <- Resource.liftF(Topic[IO, AppLogEvents](AppLogEvents(Nil)))
   } yield {
     val logsDatabase = DoobieStreamsDatabase(db)
     val users = DoobieDatabaseAuth(db)
     val auths: Auther = authBuilder(users, Http4sAuth(JWT(conf.secret)))
-    val sockets = new LogSockets(logsTopic, adminsTopic, connecteds, logsDatabase)
+    val sockets = new LogSockets(logsTopic, adminsTopic, connecteds, logUpdates, logsDatabase)
     val google = GoogleAuthFlow(conf.google, HttpClientIO())
     Service(
       db,

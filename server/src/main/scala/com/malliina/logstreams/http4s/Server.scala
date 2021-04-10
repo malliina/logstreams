@@ -15,7 +15,7 @@ import com.malliina.web.GoogleAuthFlow
 import fs2.concurrent.Topic
 import org.http4s.server.{Router, Server}
 import org.http4s.server.blaze.BlazeServerBuilder
-import org.http4s.server.middleware.HSTS
+import org.http4s.server.middleware.{GZip, HSTS}
 import org.http4s.{HttpRoutes, Request, Response}
 
 import scala.concurrent.ExecutionContext
@@ -70,12 +70,14 @@ object Server extends IOApp {
     )
   }
 
-  def makeHandler(service: Service, blocker: Blocker) = HSTS {
-    orNotFound {
-      Router(
-        "/" -> service.routes,
-        "/assets" -> StaticService(blocker, contextShift).routes
-      )
+  def makeHandler(service: Service, blocker: Blocker) = GZip {
+    HSTS {
+      orNotFound {
+        Router(
+          "/" -> service.routes,
+          "/assets" -> StaticService(blocker, contextShift).routes
+        )
+      }
     }
   }
 

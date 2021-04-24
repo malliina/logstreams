@@ -11,12 +11,12 @@ import scala.util.Try
 
 val malliinaGroup = "com.malliina"
 val utilPlayVersion = "6.0.0"
-val primitivesVersion = "1.18.0"
+val primitivesVersion = "1.19.0"
 val logbackStreamsVersion = "1.8.0"
 val playJsonVersion = "2.9.2"
 val akkaHttpVersion = "10.1.12"
-val munitVersion = "0.7.21"
-val testContainersVersion = "0.38.8"
+val munitVersion = "0.7.23"
+val testContainersVersion = "0.39.3"
 
 val utilPlayDep = malliinaGroup %% "web-auth" % utilPlayVersion
 
@@ -73,7 +73,7 @@ val frontend = project
   .settings(
     version := "1.0.0",
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %%% "scalatags" % "0.9.3",
+      "com.lihaoyi" %%% "scalatags" % "0.9.4",
       "com.typesafe.play" %%% "play-json" % playJsonVersion
     ),
     version in webpack := "4.44.2",
@@ -157,11 +157,11 @@ val server = project
     version in Docker := gitHash,
     dockerRepository := Option("malliinacr.azurecr.io"),
     dockerExposedPorts ++= Seq(prodPort),
-    publishArtifact in (Compile, packageDoc) := false,
-    publishArtifact in packageDoc := false,
-    sources in (Compile, doc) := Seq.empty,
-    packageName in Docker := "logstreams",
-    resources in Compile ++= Def.taskDyn {
+    Compile / packageDoc / publishArtifact := false,
+    packageDoc / publishArtifact := false,
+    Compile / doc / sources := Seq.empty,
+    Docker / packageName := "logstreams",
+    Compile / resources ++= Def.taskDyn {
       val sjsStage = scalaJSStage.in(frontend).value match {
         case Stage.FastOpt => fastOptJS
         case Stage.FullOpt => fullOptJS
@@ -174,7 +174,7 @@ val server = project
     }.value,
     resourceDirectories in Compile += assetsDir.in(frontend).value.toFile,
     reStart := reStart.dependsOn(webpack.in(frontend, Compile, fastOptJS)).evaluated,
-    watchSources ++= (watchSources in frontend).value,
+    watchSources ++= (frontend / watchSources).value,
     sourceGenerators in Compile += Def.taskDyn {
       val sjsStage = scalaJSStage.in(frontend).value match {
         case Stage.FastOpt => fastOptJS

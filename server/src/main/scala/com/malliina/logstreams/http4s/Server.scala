@@ -9,13 +9,13 @@ import com.malliina.logstreams.auth.{AuthBuilder, Auther, Auths, JWT}
 import com.malliina.logstreams.db.{DoobieDatabase, DoobieDatabaseAuth, DoobieStreamsDatabase}
 import com.malliina.logstreams.html.{HashedAssetsSource, Htmls}
 import com.malliina.logstreams.models.{AppLogEvents, LogEntryInputs, LogSources}
-import com.malliina.logstreams.{AppMode, LogstreamsConf, SourceMessage}
+import com.malliina.logstreams.{AppMode, LogstreamsConf}
 import com.malliina.util.AppLogger
 import com.malliina.web.GoogleAuthFlow
 import fs2.concurrent.Topic
-import org.http4s.server.{Router, Server}
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.server.middleware.{GZip, HSTS}
+import org.http4s.server.{Router, Server}
 import org.http4s.{HttpRoutes, Request, Response}
 
 import scala.concurrent.ExecutionContext
@@ -38,7 +38,7 @@ object Server extends IOApp {
     blocker <- Blocker[IO]
     service <- appService(conf, authBuilder)
     handler = makeHandler(service, blocker)
-    _ <- Resource.liftF(
+    _ <- Resource.eval(
       IO(log.info(s"Binding on port $port using app version ${AppMeta.ThisApp.git}..."))
     )
     server <- BlazeServerBuilder[IO](ExecutionContext.global)
@@ -50,10 +50,10 @@ object Server extends IOApp {
   def appService(conf: LogstreamsConf, authBuilder: AuthBuilder): Resource[IO, Service] = for {
     blocker <- Blocker[IO]
     db <- DoobieDatabase.withMigrations(conf.db, blocker)
-    logsTopic <- Resource.liftF(Topic[IO, LogEntryInputs](LogEntryInputs(Nil)))
-    adminsTopic <- Resource.liftF(Topic[IO, LogSources](LogSources(Nil)))
-    connecteds <- Resource.liftF(Ref[IO].of(LogSources(Nil)))
-    logUpdates <- Resource.liftF(Topic[IO, AppLogEvents](AppLogEvents(Nil)))
+    logsTopic <- Resource.eval(Topic[IO, LogEntryInputs](LogEntryInputs(Nil)))
+    adminsTopic <- Resource.eval(Topic[IO, LogSources](LogSources(Nil)))
+    connecteds <- Resource.eval(Ref[IO].of(LogSources(Nil)))
+    logUpdates <- Resource.eval(Topic[IO, AppLogEvents](AppLogEvents(Nil)))
   } yield {
     val logsDatabase = DoobieStreamsDatabase(db)
     val users = DoobieDatabaseAuth(db)

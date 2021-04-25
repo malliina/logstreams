@@ -5,6 +5,14 @@
 
 This app displays logs. Deployed to [logs.malliina.com](https://logs.malliina.com).
 
+## Development
+
+    sbt ~start
+
+## Deployment
+
+Push to the `master` branch. See [azure-pipelines.yml](azure-pipelines.yml) for CI/CD details.
+
 ## Releasing the client
 
 To release the client:

@@ -37,7 +37,6 @@ val client = Project("logstreams-client", file("client"))
   .enablePlugins(MavenCentralPlugin)
   .disablePlugins(RevolverPlugin)
   .settings(
-    crossScalaVersions := scalaVersion.value :: "2.12.12" :: Nil,
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
     libraryDependencies ++= Seq(
@@ -47,7 +46,6 @@ val client = Project("logstreams-client", file("client"))
       "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion
     ),
-    releaseCrossBuild := true,
     releaseProcess := tagReleaseProcess.value
   )
 

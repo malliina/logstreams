@@ -14,8 +14,8 @@ val primitivesVersion = "1.19.0"
 val logbackStreamsVersion = "1.8.0"
 val playJsonVersion = "2.9.2"
 val akkaHttpVersion = "10.1.12"
-val munitVersion = "0.7.25"
-val testContainersVersion = "0.39.3"
+val munitVersion = "0.7.27"
+val testContainersVersion = "0.39.5"
 
 val utilPlayDep = malliinaGroup %% "web-auth" % utilPlayVersion
 
@@ -24,7 +24,7 @@ val serverVersion = "0.6.0"
 inThisBuild(
   Seq(
     organization := malliinaGroup,
-    scalaVersion := "2.13.5",
+    scalaVersion := "2.13.6",
     scalacOptions := Seq("-unchecked", "-deprecation"),
     libraryDependencies ++= Seq(
       "org.scalameta" %% "munit" % munitVersion % Test
@@ -125,12 +125,12 @@ val server = project
     buildInfoPackage := "com.malliina.app",
     buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, "hash" -> gitHash),
     libraryDependencies ++= http4sModules.map { m =>
-      "org.http4s" %% s"http4s-$m" % "0.21.22"
+      "org.http4s" %% s"http4s-$m" % "0.21.24"
     } ++ Seq("doobie-core", "doobie-hikari").map { d =>
-      "org.tpolecat" %% d % "0.13.1"
+      "org.tpolecat" %% d % "0.13.4"
     } ++ Seq(
-      "com.github.pureconfig" %% "pureconfig" % "0.14.0",
-      "org.flywaydb" % "flyway-core" % "7.5.2",
+      "com.github.pureconfig" %% "pureconfig" % "0.16.0",
+      "org.flywaydb" % "flyway-core" % "7.11.2",
       "mysql" % "mysql-connector-java" % "5.1.49",
       "org.slf4j" % "slf4j-api" % "1.7.30",
       "ch.qos.logback" % "logback-classic" % "1.2.3",

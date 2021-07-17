@@ -5,7 +5,7 @@ import com.malliina.html.{Bootstrap, HtmlTags, TagPage}
 import com.malliina.http.FullUrl
 import com.malliina.logstreams.html.Htmls._
 import com.malliina.logstreams.http4s.LogRoutes
-import com.malliina.logstreams.models.{AppName, FrontStrings}
+import com.malliina.logstreams.models.{AppName, FrontStrings, LogLevel}
 import com.malliina.values.Username
 import controllers.UserFeedback
 import org.http4s.Uri
@@ -16,10 +16,8 @@ object Htmls {
   val UsernameKey = "username"
   val PasswordKey = "password"
 
-  implicit val uriAttr: AttrValue[Uri] = new AttrValue[Uri] {
-    override def apply(t: Builder, a: Attr, v: Uri): Unit =
-      t.setAttr(a.name, Builder.GenericAttrValueSource(v.renderString))
-  }
+  implicit val uriAttr: AttrValue[Uri] = (t: Builder, a: Attr, v: Uri) =>
+    t.setAttr(a.name, Builder.GenericAttrValueSource(v.renderString))
 
   /**
     * @param appName typically the name of the Scala.js module
@@ -34,8 +32,6 @@ object Htmls {
       else Seq(s"$name-$opt-library.js", s"$name-$opt-loader.js", s"$name-$opt.js")
     new Htmls(appScripts, Nil, assets)
   }
-
-//  def asset(file: Asset): Call = routes.Logs.versioned(file)
 }
 
 class Htmls(scripts: Seq[String], externalScripts: Seq[FullUrl], assets: AssetsSource)
@@ -45,26 +41,38 @@ class Htmls(scripts: Seq[String], externalScripts: Seq[FullUrl], assets: AssetsS
   import tags._
 
   val Status = "status"
-
-//  val reverse = controllers.routes.Logs
-  val reverse = LogRoutes
+  private val reverse = LogRoutes
 
   def asset(name: String): Uri = assets.at(name)
 
   def logs(apps: Seq[AppName]) = baseIndex("logs")(
     headerRow("Logs"),
     row(
-      divClass(col.sm.eight)(
+      divClass(col.sm.two)(
+        div(id := LogLevelDropdown, `class` := "dropdown")(
+          button(
+            `class` := s"btn btn-secondary btn-sm $DropdownToggle",
+            `type` := "button",
+            dataToggle := "dropdown",
+            aria.haspopup := "true",
+            aria.expanded := "false"
+          )("Level"),
+          div(`class` := DropdownMenu, id := LogLevelDropdownMenuId)(
+            LogLevel.all.map(l => a(`class` := DropdownItem, href := "#")(l.name))
+          )
+        )
+      ),
+      divClass(col.sm.six)(
         div(id := AppsDropdown, `class` := "dropdown")(
           button(
-            `class` := "btn btn-secondary btn-sm dropdown-toggle",
+            `class` := s"btn btn-secondary btn-sm $DropdownToggle",
             `type` := "button",
             dataToggle := "dropdown",
             aria.haspopup := "true",
             aria.expanded := "false"
           )("Apps"),
-          div(`class` := DropdownMenu, id := DropdownMenuId)(
-            apps.map(app => a(`class` := DropdownItemId, href := "#")(app.name))
+          div(`class` := DropdownMenu, id := AppsDropdownMenuId)(
+            apps.map(app => a(`class` := DropdownItem, href := "#")(app.name))
           )
         ),
         div(id := AppsFiltered)

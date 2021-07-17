@@ -46,7 +46,10 @@ class LogSockets(
   val pings = fs2.Stream.awakeEvery[IO](15.seconds).map(_ => SimpleEvent.ping)
 
   def listener(query: StreamsQuery) = {
-    val subscription = logUpdates.subscribe(100).drop(1)
+    val subscription =
+      logUpdates.subscribe(100).drop(1).map { es =>
+        es.filter(_.event.level.int >= query.level.int)
+      }
     val filteredEvents =
       if (query.apps.isEmpty) {
         subscription
@@ -90,7 +93,7 @@ class LogSockets(
                   event.message,
                   event.loggerName,
                   event.threadName,
-                  Level.toLevel(event.level),
+                  event.level,
                   event.stackTrace
                 )
               })

@@ -5,8 +5,11 @@ object FrontStrings extends FrontStrings
 trait FrontStrings {
   val AppsDropdown = "apps-dropdown"
   val AppsFiltered = "apps-filtered"
-  val DropdownMenuId = "dropdown-menu"
-  val DropdownItemId = "dropdown-item"
+  val AppsDropdownMenuId = "apps-dropdown-menu"
+  val DropdownItem = "dropdown-item"
+
+  val LogLevelDropdown = "level-dropdown"
+  val LogLevelDropdownMenuId = "level-dropdown-menu"
 
   val LabelCompact = "label-compact"
   val LabelVerbose = "label-verbose"

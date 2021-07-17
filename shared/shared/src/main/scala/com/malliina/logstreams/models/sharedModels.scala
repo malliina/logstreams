@@ -1,6 +1,28 @@
 package com.malliina.logstreams.models
 
+import com.malliina.values.{EnumCompanion, WrappedString}
 import play.api.libs.json._
+
+sealed abstract class LogLevel(val name: String, val int: Int) extends WrappedString {
+  override def value = name
+}
+
+object LogLevel extends EnumCompanion[String, LogLevel] {
+  val Key = "level"
+  override val all: Seq[LogLevel] = Seq(Trace, Debug, Info, Warn, Error, Other)
+  override def write(t: LogLevel): String = t.name
+
+  case object Trace extends LogLevel("trace", 10)
+  case object Debug extends LogLevel("debug", 20)
+  case object Info extends LogLevel("info", 30)
+  case object Warn extends LogLevel("warn", 40)
+  case object Error extends LogLevel("error", 50)
+  case object Other extends LogLevel("other", 60)
+
+  def of(i: Int): Option[LogLevel] = all.find(_.int == i)
+
+  override implicit val ordering: Ordering[LogLevel] = Ordering.by[LogLevel, Int](_.int)
+}
 
 case class AppName(name: String) extends AnyVal {
   override def toString: String = name
@@ -62,7 +84,15 @@ case class LogEventOld(
   stackTrace: Option[String] = None
 ) {
   def toEvent =
-    LogEvent(timeStamp, timeFormatted, message, loggerName, threadName, level, stackTrace)
+    LogEvent(
+      timeStamp,
+      timeFormatted,
+      message,
+      loggerName,
+      threadName,
+      LogLevel.build(level).getOrElse(LogLevel.Info),
+      stackTrace
+    )
 }
 
 object LogEventOld {
@@ -75,7 +105,7 @@ case class LogEvent(
   message: String,
   loggerName: String,
   threadName: String,
-  level: String,
+  level: LogLevel,
   stackTrace: Option[String] = None
 )
 

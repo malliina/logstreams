@@ -1,17 +1,23 @@
 package com.malliina.logstreams.db
 
-import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.implicits._
 import com.malliina.logstreams.models._
+import com.malliina.util.AppLogger
 import doobie._
 import doobie.implicits._
+import DoobieStreamsDatabase.log
+import ch.qos.logback.classic.Level
 
 object DoobieStreamsDatabase {
+  private val log = AppLogger(getClass)
+
   def apply(db: DoobieDatabase): DoobieStreamsDatabase = new DoobieStreamsDatabase(db)
 }
 
 class DoobieStreamsDatabase(db: DoobieDatabase) extends LogsDatabase[IO] {
+  implicit val dbLog = db.logHandler
+
   def insert(events: List[LogEntryInput]): IO[EntriesWritten] = db.run {
     val insertions = events.traverse { e =>
       sql"""insert into LOGS(APP, ADDRESS, MESSAGE, LOGGER, THREAD, LEVEL, STACKTRACE, TIMESTAMP) 
@@ -19,7 +25,7 @@ class DoobieStreamsDatabase(db: DoobieDatabase) extends LogsDatabase[IO] {
         .withUniqueGeneratedKeys[LogEntryId]("ID")
     }
     insertions.flatMap { idList =>
-      toNonEmpty(idList)
+      idList.toNel
         .map { ids =>
           val inClause = Fragments.in(fr"ID", ids)
           sql"""select ID, APP, ADDRESS, TIMESTAMP, MESSAGE, LOGGER, THREAD, LEVEL, STACKTRACE, ADDED
@@ -36,8 +42,17 @@ class DoobieStreamsDatabase(db: DoobieDatabase) extends LogsDatabase[IO] {
   }
 
   def events(query: StreamsQuery = StreamsQuery.default): IO[AppLogEvents] = db.run {
+    val levels = LogLevel.all
+      .filter(l => l.int >= query.level.int)
+      .toList
+      .flatMap(l => Seq(l.int, toLogback(l).toInt))
+      .toNel
+    log.info(s"Query with $query using levels $levels")
     val whereClause =
-      Fragments.whereAndOpt(toNonEmpty(query.apps.toList).map(apps => Fragments.in(fr"APP", apps)))
+      Fragments.whereAndOpt(
+        query.apps.toList.toNel.map(apps => Fragments.in(fr"APP", apps)),
+        levels.map(ls => Fragments.in(fr"LEVEL", ls))
+      )
     val order = if (query.order == SortOrder.asc) fr0"asc" else fr0"desc"
     sql"""select ID, APP, ADDRESS, TIMESTAMP, MESSAGE, LOGGER, THREAD, LEVEL, STACKTRACE, ADDED
           from LOGS $whereClause 
@@ -47,8 +62,13 @@ class DoobieStreamsDatabase(db: DoobieDatabase) extends LogsDatabase[IO] {
     }
   }
 
-  def toNonEmpty[T](ts: List[T]): Option[NonEmptyList[T]] = ts match {
-    case t :: head => Option(NonEmptyList(t, head))
-    case Nil       => None
+  // Legacy, TODO rename old levels with e.g. DB migration
+  private def toLogback(l: LogLevel): Level = l match {
+    case LogLevel.Trace => Level.TRACE
+    case LogLevel.Debug => Level.DEBUG
+    case LogLevel.Info  => Level.INFO
+    case LogLevel.Warn  => Level.WARN
+    case LogLevel.Error => Level.ERROR
+    case LogLevel.Other => Level.OFF
   }
 }

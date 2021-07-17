@@ -111,11 +111,18 @@ class Service(
       }
     case req @ GET -> Root / "ws" / "logs" =>
       webAuth(req) { principal =>
+        val user = principal.user
         StreamsQuery
           .fromQuery(req.uri.query)
           .fold(
-            err => BadRequest(Json.toJson(err)),
-            ok => sockets.listener(ok)
+            err => {
+              log.warn(s"Invalid log stream request by '$user'. $err")
+              BadRequest(Json.toJson(err))
+            },
+            query => {
+              log.info(s"Opening log stream at level ${query.level} for '$user'...")
+              sockets.listener(query)
+            }
           )
       }
     case req @ GET -> Root / "ws" / "admins" =>

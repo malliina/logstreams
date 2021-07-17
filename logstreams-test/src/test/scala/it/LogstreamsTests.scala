@@ -1,16 +1,15 @@
 package it
 
 import cats.effect.IO
-import ch.qos.logback.classic.Level
 import com.malliina.http.FullUrl
 import com.malliina.logstreams.auth.BasicCredentials
 import com.malliina.logstreams.client.{HttpUtil, SocketClient}
 import com.malliina.logstreams.http4s.LogRoutes
-import com.malliina.logstreams.models.{AppLogEvents, AppName, LogEvent, LogEvents, LogSources}
+import com.malliina.logstreams.models._
 import com.malliina.values.{Password, Username}
 import it.LogstreamsTests.testUsername
-import org.http4s.{Status, Uri}
 import org.http4s.client.blaze.BlazeClientBuilder
+import org.http4s.{Status, Uri}
 import play.api.libs.json.{JsValue, Json}
 
 import javax.net.ssl.SSLContext
@@ -56,7 +55,7 @@ class LogstreamsTests extends TestServerSuite {
       message,
       getClass.getName.stripSuffix("$"),
       "this thread",
-      Level.INFO.levelStr,
+      LogLevel.Info,
       None
     )
 

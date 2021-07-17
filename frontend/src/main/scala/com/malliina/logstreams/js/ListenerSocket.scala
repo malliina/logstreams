@@ -1,8 +1,7 @@
 package com.malliina.logstreams.js
 
 import java.util.UUID
-
-import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents}
+import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents, LogLevel}
 import org.scalajs.dom
 import org.scalajs.dom.document
 import org.scalajs.dom.raw.{Event, HTMLElement, HTMLTableElement}
@@ -112,17 +111,17 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
   def toRow(event: AppLogEvent): RowContent = {
     val entry = event.event
     val rowClass = entry.level match {
-      case "ERROR" => Danger
-      case "WARN"  => Warning
-      case _       => Info
+      case LogLevel.Error => Danger
+      case LogLevel.Warn  => Warning
+      case _              => Info
     }
     val entryId = UUID.randomUUID().toString take 5
     val msgCellId = s"msg-$entryId"
     val linkId = s"link-$entryId"
     val level = entry.level
     val levelCell: Modifier = entry.stackTrace
-      .map(_ => a(href := "#", id := linkId)(level))
-      .getOrElse(level)
+      .map(_ => a(href := "#", id := linkId)(level.name))
+      .getOrElse(level.name)
     val frag = tr(`class` := rowClass)(
       cell(event.source.name.name),
       cell(entry.timeFormatted),

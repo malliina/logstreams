@@ -6,7 +6,6 @@ import ch.qos.logback.classic.Level
 import com.malliina.logback.LogbackFormatting
 import com.malliina.logstreams.models.LogEntryRow.toLevel
 import com.malliina.values.Username
-import play.api.libs.json.{Json, OFormat}
 
 case class LogEvents(events: List[LogEvent])
 

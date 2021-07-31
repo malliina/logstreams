@@ -1,11 +1,15 @@
 package com.malliina.logstreams.auth
 
-import com.malliina.logstreams.SingleError
+import com.malliina.logstreams.{ConfigReadable, SingleError}
 import com.malliina.values.{Email, Password, Username}
 import play.api.libs.json.Json
 
 case class SecretKey(value: String) extends AnyVal {
   override def toString = "****"
+}
+
+object SecretKey {
+  implicit val config: ConfigReadable[SecretKey] = ConfigReadable.string.map(apply)
 }
 
 case class BasicCredentials(username: Username, password: Password)

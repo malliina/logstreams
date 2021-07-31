@@ -1,7 +1,8 @@
 package com.malliina.logstreams.models
 
 import com.malliina.values.{EnumCompanion, WrappedString}
-import play.api.libs.json._
+import io.circe._
+import io.circe.generic.semiauto._
 
 sealed abstract class LogLevel(val name: String, val int: Int) extends WrappedString {
   override def value = name
@@ -43,8 +44,7 @@ object LogEntryId extends Companion[Long, LogEntryId] {
 case class LogSource(name: AppName, remoteAddress: String)
 
 object LogSource {
-  implicit val app = AppName.format
-  implicit val json = Json.format[LogSource]
+  implicit val json: Codec[LogSource] = deriveCodec[LogSource]
 }
 
 sealed trait GenericEvent
@@ -52,14 +52,14 @@ sealed trait GenericEvent
 case class SimpleEvent(event: String) extends FrontEvent with AdminEvent
 
 object SimpleEvent {
-  implicit val json = Json.format[SimpleEvent]
+  implicit val json: Codec[SimpleEvent] = deriveCodec[SimpleEvent]
   val ping = SimpleEvent("ping")
 }
 
 case class LogSources(sources: Seq[LogSource]) extends AdminEvent
 
 object LogSources {
-  implicit val json = Json.format[LogSources]
+  implicit val json: Codec[LogSources] = deriveCodec[LogSources]
 }
 
 sealed trait AdminEvent extends GenericEvent
@@ -96,7 +96,7 @@ case class LogEventOld(
 }
 
 object LogEventOld {
-  implicit val json = Json.format[LogEventOld]
+  implicit val json: Codec[LogEventOld] = deriveCodec[LogEventOld]
 }
 
 case class LogEvent(
@@ -123,7 +123,7 @@ case class AppLogEvent(
 )
 
 object AppLogEvent {
-  implicit val json = Json.format[AppLogEvent]
+  implicit val json: Codec[AppLogEvent] = deriveCodec[AppLogEvent]
 }
 
 case class AppLogEvents(events: Seq[AppLogEvent]) extends FrontEvent {
@@ -132,7 +132,7 @@ case class AppLogEvents(events: Seq[AppLogEvent]) extends FrontEvent {
 }
 
 object AppLogEvents {
-  implicit val json = Json.format[AppLogEvents]
+  implicit val json: Codec[AppLogEvents] = deriveCodec[AppLogEvents]
 }
 
 sealed trait FrontEvent extends GenericEvent
@@ -147,14 +147,15 @@ object FrontEvent {
   }
 }
 
-abstract class Companion[Raw, T](implicit jsonFormat: Format[Raw], o: Ordering[Raw]) {
+abstract class Companion[Raw, T](implicit d: Decoder[Raw], e: Encoder[Raw], o: Ordering[Raw]) {
   def apply(raw: Raw): T
-
   def raw(t: T): Raw
 
-  implicit val format: Format[T] = Format(
-    Reads[T](in => in.validate[Raw].map(apply)),
-    Writes[T](t => Json.toJson(raw(t)))
+  implicit val format: Codec[T] = Codec.from(
+    ???,
+    ???
+//    Reads[T](in => in.validate[Raw].map(apply)),
+//    Writes[T](t => Json.toJson(raw(t)))
   )
 
   implicit val ordering: Ordering[T] = o.on(raw)

@@ -1,6 +1,6 @@
 package com.malliina.logstreams.models
 
-import com.malliina.values.{EnumCompanion, WrappedString}
+import com.malliina.values.{EnumCompanion, ErrorMessage, WrappedString}
 import io.circe._
 import io.circe.generic.semiauto._
 import io.circe.syntax._
@@ -20,6 +20,11 @@ object LogLevel extends EnumCompanion[String, LogLevel] {
   case object Warn extends LogLevel("warn", 40)
   case object Error extends LogLevel("error", 50)
   case object Other extends LogLevel("other", 60)
+
+  override def build(input: String): Either[ErrorMessage, LogLevel] =
+    all
+      .find(i => write(i).toLowerCase == input.toLowerCase)
+      .toRight(defaultError(input))
 
   def of(i: Int): Option[LogLevel] = all.find(_.int == i)
 
@@ -66,7 +71,8 @@ object LogSources {
 sealed trait AdminEvent extends GenericEvent
 
 object AdminEvent {
-  implicit val decoder: Decoder[AdminEvent] = LogSources.json.or(SimpleEvent.json.map[AdminEvent](identity))
+  implicit val decoder: Decoder[AdminEvent] =
+    LogSources.json.or(SimpleEvent.json.map[AdminEvent](identity))
   implicit val encoder: Encoder[AdminEvent] = new Encoder[AdminEvent] {
     final def apply(a: AdminEvent): Json = a match {
       case ls @ LogSources(_)  => ls.asJson
@@ -141,7 +147,8 @@ object AppLogEvents {
 sealed trait FrontEvent extends GenericEvent
 
 object FrontEvent {
-  implicit val reader: Decoder[FrontEvent] = AppLogEvents.json.or(SimpleEvent.json.map[FrontEvent](identity))
+  implicit val reader: Decoder[FrontEvent] =
+    AppLogEvents.json.or(SimpleEvent.json.map[FrontEvent](identity))
   implicit val encoder: Encoder[FrontEvent] = new Encoder[FrontEvent] {
     final def apply(a: FrontEvent): Json = a match {
       case ale @ AppLogEvents(_) => ale.asJson

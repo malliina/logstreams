@@ -31,33 +31,32 @@ object Auths extends AuthBuilder {
     new Auths(sources(users), web)
 
   def sources(users: UserService[IO]): Http4sAuthenticator[IO, Username] =
-    new Http4sAuthenticator[IO, Username] {
-      override def authenticate(hs: Headers): IO[Either[IdentityError, Username]] =
-        basic(hs)
-          .map { creds =>
-            users
-              .isValid(creds)
-              .map { isValid =>
-                if (isValid) Right(creds.username)
-                else fail(hs)
-              }
-          }
-          .fold(err => IO.pure(Left(err)), identity)
-    }
+    (hs: Headers) =>
+      basic(hs)
+        .map { creds =>
+          users
+            .isValid(creds)
+            .map { isValid =>
+              if (isValid) Right(creds.username)
+              else fail(hs)
+            }
+        }
+        .fold(
+          err => IO.pure(Left(err)),
+          identity
+        )
 
   def viewers(auth: Http4sAuth): Http4sAuthenticator[IO, Username] =
-    new Http4sAuthenticator[IO, Username] {
-      override def authenticate(hs: Headers): IO[Either[IdentityError, Username]] =
-        IO.pure(
-          auth
-            .authenticate(hs)
-            .flatMap { u =>
-              if (u.name == authorizedEmail.value) Right(u)
-              else
-                Left(JWTError(PermissionError(ErrorMessage(s"User '$u' is not authorized.")), hs))
-            }
-        )
-    }
+    (hs: Headers) =>
+      IO.pure(
+        auth
+          .authenticate(hs)
+          .flatMap { u =>
+            if (u.name == authorizedEmail.value) Right(u)
+            else
+              Left(JWTError(PermissionError(ErrorMessage(s"User '$u' is not authorized.")), hs))
+          }
+      )
 
   private def basic[F[_]](hs: Headers) = hs
     .get[Authorization]

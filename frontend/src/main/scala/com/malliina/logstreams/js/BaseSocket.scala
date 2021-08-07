@@ -43,7 +43,6 @@ class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.printer) exten
     parse(msg.data.toString).fold(
       fail => onJsonException(fail),
       json => {
-        val e: Either[String, Int] = ???
         val isPing = json.hcursor.downField(EventKey).as[String].exists(_ == Ping)
         if (!isPing) {
           log.info(s"Handling json '$json'...")

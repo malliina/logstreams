@@ -13,7 +13,6 @@ package object js {
     }
 
     override def length: Int = nodes.length
-
     override def apply(idx: Int): T = nodes(idx)
   }
 

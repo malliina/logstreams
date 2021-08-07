@@ -13,7 +13,7 @@ import com.malliina.logstreams.{AppMode, LogstreamsConf}
 import com.malliina.util.AppLogger
 import com.malliina.web.GoogleAuthFlow
 import fs2.concurrent.Topic
-import org.http4s.server.blaze.BlazeServerBuilder
+import org.http4s.blaze.server.BlazeServerBuilder
 import org.http4s.server.middleware.{GZip, HSTS}
 import org.http4s.server.{Router, Server}
 import org.http4s.{HttpRoutes, Request, Response}
@@ -23,7 +23,7 @@ import scala.concurrent.ExecutionContext
 case class ServerComponents(
   app: Service,
   handler: Kleisli[IO, Request[IO], Response[IO]],
-  server: Server[IO]
+  server: Server
 )
 
 object Server extends IOApp {
@@ -85,5 +85,5 @@ object Server extends IOApp {
     Kleisli(req => rs.run(req).getOrElseF(BasicService.notFound(req)))
 
   override def run(args: List[String]): IO[ExitCode] =
-    server(LogstreamsConf.load, Auths).use(_ => IO.never).as(ExitCode.Success)
+    server(LogstreamsConf.parse(), Auths).use(_ => IO.never).as(ExitCode.Success)
 }

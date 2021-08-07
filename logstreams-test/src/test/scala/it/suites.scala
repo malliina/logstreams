@@ -11,10 +11,9 @@ import com.malliina.logstreams.{LocalConf, LogstreamsConf}
 import com.malliina.values.Username
 import munit.FunSuite
 import org.testcontainers.utility.DockerImageName
-import pureconfig.error.ConfigReaderFailures
-import pureconfig.{ConfigObjectSource, ConfigSource}
 
 import scala.concurrent.Promise
+import scala.util.Try
 
 class LogsAppConf(override val database: Conf) extends AppConf {
   override def close(): Unit = ()
@@ -63,12 +62,10 @@ trait MUnitDatabaseSuite { self: munit.Suite =>
       .unsafeRunSync()
   }
 
-  private def testConf(): Either[ConfigReaderFailures, Conf] = {
-    import pureconfig.generic.auto.exportReader
-    ConfigObjectSource(Right(LocalConf.localConf))
-      .withFallback(ConfigSource.default)
-      .load[WrappedTestConf]
-      .map(_.logstreams.testdb)
+  private def testConf(): Either[Throwable, Conf] = {
+    Try(
+      LogstreamsConf.parseDatabase(LocalConf.localConf.getConfig("logstreams").getConfig("testdb"))
+    ).toEither
   }
 
   override def munitFixtures: Seq[Fixture[_]] = Seq(db)
@@ -82,7 +79,7 @@ trait ServerSuite extends MUnitDatabaseSuite { self: munit.Suite =>
     override def apply(): ServerComponents = service.get
 
     override def beforeAll(): Unit = {
-      val testConf = LogstreamsConf.load.copy(db = db())
+      val testConf = LogstreamsConf.parse().copy(db = db())
       val resource = Server.server(testConf, testAuths, port = 12345)
       val resourceEffect = resource.allocated[IO, ServerComponents]
       val setupEffect =

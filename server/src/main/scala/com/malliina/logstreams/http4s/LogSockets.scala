@@ -10,10 +10,12 @@ import com.malliina.util.AppLogger
 import controllers.UserRequest
 import fs2.Pipe
 import fs2.concurrent.Topic
+import io.circe.Encoder
+import io.circe.parser._
+import io.circe.syntax.EncoderOps
 import org.http4s.server.websocket.WebSocketBuilder
 import org.http4s.websocket.WebSocketFrame
 import org.http4s.websocket.WebSocketFrame.Text
-import play.api.libs.json.{JsError, Json, Writes}
 
 import java.time.Instant
 import scala.concurrent.duration.DurationInt
@@ -81,50 +83,51 @@ class LogSockets(
   def source(user: UserRequest) = {
     val publishEvents: Pipe[IO, WebSocketFrame, Unit] = _.evalMap {
       case Text(message, _) =>
-        val event = IO(Json.parse(message)).flatMap { json =>
-          json
-            .validate[LogEvents]
-            .map { es =>
-              LogEntryInputs(es.events.map { event =>
-                LogEntryInput(
-                  user.user,
-                  user.address,
-                  Instant.ofEpochMilli(event.timestamp),
-                  event.message,
-                  event.loggerName,
-                  event.threadName,
-                  event.level,
-                  event.stackTrace
-                )
-              })
-            }
-            .fold(err => IO.raiseError(new JsonException(JsError(err), json)), ok => IO.pure(ok))
-        }
+        val event = decode[LogEvents](message).fold(
+          err => IO.raiseError(new JsonException(err, message)),
+          es => {
+            val inputs = LogEntryInputs(es.events.map { event =>
+              LogEntryInput(
+                user.user,
+                user.address,
+                Instant.ofEpochMilli(event.timestamp),
+                event.message,
+                event.loggerName,
+                event.threadName,
+                event.level,
+                event.stackTrace
+              )
+            })
+            IO.pure(inputs)
+          }
+        )
         event.flatMap { e => logs.publish1(e) }
       case f => IO(log.debug(s"Unknown WebSocket frame: $f"))
     }
     val logSource = LogSource(AppName(user.user.name), user.address)
     connected(logSource).flatMap { _ =>
-      WebSocketBuilder[IO].build(
-        pings.through(jsonTransform[SimpleEvent]),
-        publishEvents,
-        onClose = disconnected(logSource)
-      )
+      WebSocketBuilder[IO]
+        .copy(onClose = disconnected(logSource))
+        .build(
+          pings.through(jsonTransform[SimpleEvent]),
+          publishEvents
+        )
     }
   }
 
-  def connected(src: LogSource) =
+  def connected(src: LogSource): IO[Unit] =
     connectedSources.updateAndGet(olds => LogSources(olds.sources :+ src)).flatMap { connecteds =>
       admins.publish1(connecteds)
     }
 
-  def disconnected(src: LogSource) =
+  def disconnected(src: LogSource): IO[Unit] =
     connectedSources.updateAndGet(olds => LogSources(olds.sources.filterNot(_ == src))).flatMap {
       connecteds =>
         admins.publish1(connecteds)
     }
 
-  private def jsonTransform[T: Writes](src: fs2.Stream[IO, T]) = src.map { t =>
-    Text(Json.stringify(Json.toJson(t)))
+  private def jsonTransform[T: Encoder](src: fs2.Stream[IO, T]): fs2.Stream[IO, Text] = src.map {
+    t =>
+      Text(t.asJson.noSpaces)
   }
 }

@@ -60,7 +60,7 @@ object Auths extends AuthBuilder {
     }
 
   private def basic[F[_]](hs: Headers) = hs
-    .get(Authorization)
+    .get[Authorization]
     .map { h =>
       h.credentials match {
         case org.http4s.BasicCredentials(user, pass) =>

@@ -2,7 +2,6 @@ package com.malliina.logstreams.js
 
 trait BaseLogger {
   def info(message: String): Unit
-
   def error(t: Throwable): Unit
 }
 

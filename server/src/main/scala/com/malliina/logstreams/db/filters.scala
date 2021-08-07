@@ -4,7 +4,7 @@ import com.malliina.logstreams.Errors
 import com.malliina.logstreams.http4s.QueryParsers
 import com.malliina.logstreams.models.LogLevel
 import com.malliina.values.{ErrorMessage, Username, ValidatingCompanion}
-import org.http4s.Query
+import org.http4s.{Query, QueryParamDecoder}
 
 case class StreamsQuery(
   apps: Seq[Username],
@@ -46,7 +46,7 @@ object SortOrder extends ValidatingCompanion[String, SortOrder] {
 
   val all: Seq[SortOrder] = Seq(asc, desc)
 
-  implicit val queryDecoder = QueryParsers.decoder[SortOrder](build)
+  implicit val queryDecoder: QueryParamDecoder[SortOrder] = QueryParsers.decoder[SortOrder](build)
 
   override def build(input: String): Either[ErrorMessage, SortOrder] =
     all

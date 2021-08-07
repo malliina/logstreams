@@ -4,8 +4,8 @@
             <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
-    <appender name="LOGSTREAMS" class="com.malliina.logstreams.client.LogstreamsLogbackAkkaAppender">
-        <endpoint>localhost:9000</endpoint>
+    <appender name="LOGSTREAMS" class="com.malliina.logstreams.client.FS2Appender">
+        <endpoint>ws://localhost:9000</endpoint>
         <secure>false</secure>
         <username>user</username>
         <password>pass</password>

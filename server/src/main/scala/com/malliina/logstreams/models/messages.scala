@@ -6,12 +6,14 @@ import ch.qos.logback.classic.Level
 import com.malliina.logback.LogbackFormatting
 import com.malliina.logstreams.models.LogEntryRow.toLevel
 import com.malliina.values.Username
-import play.api.libs.json.{Json, OFormat}
+import io.circe._
+import io.circe.syntax._
+import io.circe.generic.semiauto._
 
 case class LogEvents(events: List[LogEvent])
 
 object LogEvents {
-  implicit val json: OFormat[LogEvents] = Json.format[LogEvents]
+  implicit val json: Codec[LogEvents] = deriveCodec[LogEvents]
 }
 
 case class LogEntryInput(
@@ -35,7 +37,7 @@ case class LogEntryRow(
   message: String,
   logger: String,
   thread: String,
-  level: Level,
+  level: LogLevel,
   stacktrace: Option[String],
   added: Instant
 ) {
@@ -48,7 +50,7 @@ case class LogEntryRow(
       message,
       logger,
       thread,
-      toLevel(level),
+      level,
       stacktrace
     ),
     added.toEpochMilli,

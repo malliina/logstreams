@@ -5,7 +5,7 @@
             <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
-    <appender name="LOGSTREAMS" class="com.malliina.logstreams.client.AkkaHttpAppender">
+    <appender name="LOGSTREAMS" class="com.malliina.logstreams.client.FS2Appender">
         <endpoint>${LOGSTREAMS_HOST:-localhost:9000}</endpoint>
         <secure>false</secure>
         <enabled>false</enabled>

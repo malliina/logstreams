@@ -2,10 +2,10 @@ package com.malliina.logstreams.js
 
 import java.util.UUID
 import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents, LogLevel}
+import io.circe.Json
 import org.scalajs.dom
 import org.scalajs.dom.document
 import org.scalajs.dom.raw.{Event, HTMLElement, HTMLTableElement}
-import play.api.libs.json.JsValue
 import scalatags.JsDom.all._
 
 case class RowContent(content: Frag, cellId: String, linkId: String)
@@ -80,7 +80,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
     e
   }
 
-  override def handlePayload(payload: JsValue): Unit =
+  override def handlePayload(payload: Json): Unit =
     handleValidated(payload)(onLogEvents)
 
   def onLogEvents(appLogEvents: AppLogEvents): Unit =

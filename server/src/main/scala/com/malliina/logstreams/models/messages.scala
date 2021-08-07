@@ -6,11 +6,14 @@ import ch.qos.logback.classic.Level
 import com.malliina.logback.LogbackFormatting
 import com.malliina.logstreams.models.LogEntryRow.toLevel
 import com.malliina.values.Username
+import io.circe._
+import io.circe.syntax._
+import io.circe.generic.semiauto._
 
 case class LogEvents(events: List[LogEvent])
 
 object LogEvents {
-  implicit val json: OFormat[LogEvents] = Json.format[LogEvents]
+  implicit val json: Codec[LogEvents] = deriveCodec[LogEvents]
 }
 
 case class LogEntryInput(

@@ -33,7 +33,7 @@ class StaticService[F[_]](blocker: Blocker)(implicit cs: ContextShift[F], s: Syn
   //  val routes = fileService(FileService.Config("./public", blocker))
   val routes = HttpRoutes.of[F] {
     case req @ GET -> rest if supportedStaticExtensions.exists(rest.toString.endsWith) =>
-      val file = UnixPath(rest.toList.mkString("/"))
+      val file = UnixPath(rest.segments.map(_.decoded()).mkString("/"))
       val isCacheable = file.value.count(_ == '.') == 2
       val cacheHeaders =
         if (isCacheable) NonEmptyList.of(`max-age`(365.days), `public`)

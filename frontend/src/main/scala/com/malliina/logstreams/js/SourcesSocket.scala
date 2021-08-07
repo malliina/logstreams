@@ -1,14 +1,14 @@
 package com.malliina.logstreams.js
 
 import com.malliina.logstreams.models.{LogSource, LogSources}
-import play.api.libs.json.JsValue
+import io.circe.Json
 import scalatags.Text
 import scalatags.Text.all._
 
 class SourcesSocket extends BaseSocket("/ws/admins?f=json") {
   val tableBody = elem(SourceTableId).getElementsByTagName("tbody").head
 
-  override def handlePayload(payload: JsValue): Unit =
+  override def handlePayload(payload: Json): Unit =
     handleValidated[LogSources](payload)(onParsed)
 
   def onParsed(data: LogSources): Unit =

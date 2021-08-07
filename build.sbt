@@ -9,7 +9,7 @@ import scala.sys.process.Process
 import scala.util.Try
 
 val malliinaGroup = "com.malliina"
-val utilHtmlVersion = "6.0.2-SNAPSHOT"
+val utilHtmlVersion = "6.0.2"
 val primitivesVersion = "2.0.2"
 val logbackStreamsVersion = "2.0.1"
 val akkaHttpVersion = "10.1.12"
@@ -24,7 +24,8 @@ val serverVersion = "0.7.0"
 inThisBuild(
   Seq(
     organization := malliinaGroup,
-    scalaVersion := "3.0.1",
+//    scalaVersion := "3.0.1",
+    scalaVersion := "2.13.6",
     scalacOptions := Seq("-unchecked", "-deprecation"),
     libraryDependencies ++= Seq(
       "org.scalameta" %% "munit" % munitVersion % Test
@@ -45,7 +46,7 @@ val client = Project("logstreams-client", file("client"))
     libraryDependencies ++= Seq(
       "com.neovisionaries" % "nv-websocket-client" % "2.14",
       "com.malliina" %% "logback-fs2" % logbackStreamsVersion,
-      "com.malliina" %%% "primitives" % primitivesVersion,
+      "com.malliina" %%% "okclient-io" % primitivesVersion,
       "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion
     ),
@@ -74,7 +75,8 @@ val frontend = project
     assetsPackage := "com.malliina.logstreams",
     version := "1.0.0",
     libraryDependencies ++= Seq(
-      ("com.lihaoyi" %%% "scalatags" % "0.9.4").cross(CrossVersion.for3Use2_13)
+//      ("com.lihaoyi" %%% "scalatags" % "0.9.4").cross(CrossVersion.for3Use2_13)
+      "com.lihaoyi" %%% "scalatags" % "0.9.4"
     ),
     webpack / version := "4.44.2",
     webpackEmitSourceMaps := false,
@@ -113,7 +115,7 @@ val frontend = project
   )
 
 val prodPort = 9000
-val http4sModules = Seq("blaze-server", "blaze-client", "dsl")
+val http4sModules = Seq("blaze-server", "blaze-client", "circe", "dsl")
 
 val server = project
   .in(file("server"))
@@ -133,7 +135,7 @@ val server = project
     buildInfoPackage := "com.malliina.app",
     buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, "hash" -> gitHash),
     libraryDependencies ++= http4sModules.map { m =>
-      "org.http4s" %% s"http4s-$m" % "0.22.0"
+      "org.http4s" %% s"http4s-$m" % "0.22.2"
     } ++ Seq("doobie-core", "doobie-hikari").map { d =>
       "org.tpolecat" %% d % "0.13.4"
     } ++ Seq(

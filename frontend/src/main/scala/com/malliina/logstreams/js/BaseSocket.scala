@@ -2,10 +2,12 @@ package com.malliina.logstreams.js
 
 import com.malliina.http.FullUrl
 import com.malliina.logstreams.js.BaseSocket.{EventKey, Ping}
+import io.circe._
+import io.circe.parser._
+import io.circe.syntax._
 import org.scalajs.dom
 import org.scalajs.dom.CloseEvent
 import org.scalajs.dom.raw.{Event, MessageEvent}
-import play.api.libs.json._
 
 import scala.util.Try
 
@@ -18,10 +20,10 @@ class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.printer) exten
   val statusElem = Option(elem("status"))
   val socket: dom.WebSocket = openSocket(wsPath)
 
-  def handlePayload(payload: JsValue): Unit = ()
+  def handlePayload(payload: Json): Unit = ()
 
-  def handleValidated[T: Reads](json: JsValue)(process: T => Unit): Unit = {
-    json.validate[T].fold(err => onJsonFailure(json, JsError(err)), process)
+  def handleValidated[T: Decoder](json: Json)(process: T => Unit): Unit = {
+    json.as[T].fold(err => onJsonFailure(json, err), process)
   }
 
   def showConnected(): Unit = {
@@ -32,21 +34,23 @@ class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.printer) exten
     setFeedback("Connection closed.")
   }
 
-  def send[T: Writes](payload: T): Unit = {
-    val asString = Json.stringify(Json.toJson(payload))
+  def send[T: Encoder](payload: T): Unit = {
+    val asString = payload.asJson.noSpaces
     socket.send(asString)
   }
 
   def onMessage(msg: MessageEvent): Unit = {
-    Try(Json.parse(msg.data.toString))
-      .map { json =>
-        val isPing = (json \ EventKey).validate[String].filter(_ == Ping).isSuccess
+    parse(msg.data.toString).fold(
+      fail => onJsonException(fail),
+      json => {
+        val e: Either[String, Int] = ???
+        val isPing = json.hcursor.downField(EventKey).as[String].exists(_ == Ping)
         if (!isPing) {
           log.info(s"Handling json '$json'...")
           handlePayload(json)
         }
       }
-      .recover { case e => onJsonException(e) }
+    )
   }
 
   def onConnected(e: Event): Unit = showConnected()
@@ -73,11 +77,11 @@ class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.printer) exten
 
   def setFeedback(feedback: String): Unit = statusElem.foreach(_.innerHTML = feedback)
 
-  def onJsonException(t: Throwable): Unit = {
-    log.error(t)
+  def onJsonException(t: ParsingFailure): Unit = {
+    log.error(t.underlying)
   }
 
-  protected def onJsonFailure(value: JsValue, result: JsError): Unit = {
+  protected def onJsonFailure(value: Json, result: DecodingFailure): Unit = {
     log.info(s"JSON error for '$value': '$result'.")
   }
 

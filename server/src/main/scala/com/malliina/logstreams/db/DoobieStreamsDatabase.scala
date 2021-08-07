@@ -16,7 +16,7 @@ object DoobieStreamsDatabase {
 }
 
 class DoobieStreamsDatabase(db: DoobieDatabase) extends LogsDatabase[IO] {
-  implicit val dbLog = db.logHandler
+  implicit val dbLog: LogHandler = db.logHandler
 
   def insert(events: List[LogEntryInput]): IO[EntriesWritten] = db.run {
     val insertions = events.traverse { e =>

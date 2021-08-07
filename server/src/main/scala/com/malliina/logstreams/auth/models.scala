@@ -2,7 +2,9 @@ package com.malliina.logstreams.auth
 
 import com.malliina.logstreams.{ConfigReadable, SingleError}
 import com.malliina.values.{Email, Password, Username}
-import play.api.libs.json.Json
+import io.circe._
+import io.circe.generic.semiauto._
+import io.circe.syntax._
 
 case class SecretKey(value: String) extends AnyVal {
   override def toString = "****"
@@ -37,7 +39,7 @@ object CookieConf {
 case class UserPayload(username: Username)
 
 object UserPayload {
-  implicit val json = Json.format[UserPayload]
+  implicit val json: Codec[UserPayload] = deriveCodec[UserPayload]
 
   def email(email: Email): UserPayload = apply(Username(email.value))
 }

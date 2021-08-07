@@ -2,7 +2,8 @@ package com.malliina.logstreams.js
 
 import com.malliina.logstreams.models.{AppName, LogLevel}
 import org.scalajs.dom
-import play.api.libs.json.Json
+import io.circe.parser._
+import io.circe.syntax.EncoderOps
 
 trait Settings {
   def isVerbose: Boolean
@@ -43,9 +44,11 @@ object StorageSettings extends Settings {
     localStorage.setItem(VerboseKey, if (newVerbose) "true" else "false")
 
   def apps: Seq[AppName] =
-    Option(localStorage.getItem(AppsKey)).map(s => Json.parse(s).as[Seq[AppName]]).getOrElse(Nil)
+    Option(localStorage.getItem(AppsKey))
+      .flatMap(s => decode[Seq[AppName]](s).toOption)
+      .getOrElse(Nil)
   def saveApps(newApps: Seq[AppName]): Unit =
-    localStorage.setItem(AppsKey, Json.stringify(Json.toJson(newApps)))
+    localStorage.setItem(AppsKey, newApps.asJson.noSpaces)
 
   def level: LogLevel = Option(localStorage.getItem(LevelKey))
     .flatMap(s => LogLevel.build(s).toOption)

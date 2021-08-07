@@ -6,8 +6,6 @@ import com.malliina.logstreams.db.Conf
 import com.malliina.values.{ErrorMessage, Readable}
 import com.malliina.web.{AuthConf, ClientId, ClientSecret}
 import com.typesafe.config.{Config, ConfigFactory}
-import pureconfig.error.{ConfigReaderException, ConfigReaderFailures}
-import pureconfig.{ConfigObjectSource, ConfigSource}
 
 import java.nio.file.Paths
 
@@ -74,13 +72,15 @@ object LogstreamsConf {
     LogstreamsConf(
       c.unsafe[AppMode]("mode"),
       c.unsafe[SecretKey]("secret"),
-      Conf(
-        db.unsafe[String]("url"),
-        db.unsafe[String]("user"),
-        db.unsafe[String]("pass"),
-        db.unsafe[String]("driver")
-      ),
+      parseDatabase(db),
       AuthConf(google.unsafe[ClientId]("clientId"), google.unsafe[ClientSecret]("clientSecret"))
     )
   }
+  
+  def parseDatabase(from: Config) = Conf(
+    from.unsafe[String]("url"),
+    from.unsafe[String]("user"),
+    from.unsafe[String]("pass"),
+    from.unsafe[String]("driver")
+  )
 }

@@ -49,7 +49,7 @@ object DoobieDatabase {
 }
 
 class DoobieDatabase(tx: DataSourceTransactor[IO]) {
-  implicit val logHandler = LogHandler {
+  implicit val logHandler: LogHandler = LogHandler {
     case Success(sql, args, exec, processing) =>
       log.info(s"OK '$sql' exec ${exec.toMillis} ms processing ${processing.toMillis} ms.")
     case ProcessingFailure(sql, args, exec, processing, failure) =>

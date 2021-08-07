@@ -18,9 +18,9 @@ import com.malliina.web.OAuthKeys.{Nonce, State}
 import com.malliina.web.Utils.randomString
 import com.malliina.web._
 import controllers.UserRequest
-import play.api.libs.json.Json
 import org.http4s.{Callback => _, _}
 import org.http4s.headers.{Location, `WWW-Authenticate`}
+import io.circe.syntax.EncoderOps
 
 object Service {
   private val log = AppLogger(getClass)
@@ -46,8 +46,8 @@ class Service(
 ) extends BasicService[IO] {
   val reverse = LogRoutes
   val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
-    case GET -> Root / "health" => ok(Json.toJson(AppMeta.ThisApp))
-    case GET -> Root / "ping"   => ok(Json.toJson(AppMeta.ThisApp))
+    case GET -> Root / "health" => ok(AppMeta.ThisApp.asJson)
+    case GET -> Root / "ping"   => ok(AppMeta.ThisApp.asJson)
     case req @ GET -> Root =>
       webAuth(req) { user =>
         users.all().flatMap { us => ok(htmls.logs(us.map(u => AppName(u.name))).tags) }
@@ -117,7 +117,7 @@ class Service(
           .fold(
             err => {
               log.warn(s"Invalid log stream request by '$user'. $err")
-              BadRequest(Json.toJson(err))
+              BadRequest(err.asJson)
             },
             query => {
               log.info(s"Opening log stream at level ${query.level} for '$user'...")
@@ -186,7 +186,7 @@ class Service(
   }.flatMap {
     case (url, sessionParams) =>
       SeeOther(Location(Uri.unsafeFromString(url.url))).map { res =>
-        val session = Json.toJsObject(sessionParams.toMap)
+        val session = sessionParams.toMap.asJson
         auths.web
           .withSession(session, isSecure, res)
           .putHeaders(noCache)
@@ -258,6 +258,6 @@ class Service(
   def unauthorizedEnd(errors: Errors) =
     Unauthorized(
       `WWW-Authenticate`(NonEmptyList.of(Challenge("myscheme", "myrealm"))),
-      Json.toJson(errors)
+      errors.asJson
     ).map(r => auths.web.clearSession(r))
 }

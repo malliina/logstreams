@@ -11,7 +11,6 @@ import scala.util.Try
 val malliinaGroup = "com.malliina"
 val utilHtmlVersion = "6.0.2"
 val primitivesVersion = "2.0.2"
-val logbackStreamsVersion = "2.0.1"
 val akkaHttpVersion = "10.1.12"
 val logbackVersion = "1.2.4"
 val munitVersion = "0.7.27"
@@ -56,7 +55,6 @@ val client = Project("logstreams-client", file("client"))
     developerName := "Michael Skogberg",
     libraryDependencies ++= Seq(
       "com.neovisionaries" % "nv-websocket-client" % "2.14",
-      "com.malliina" %% "logback-fs2" % logbackStreamsVersion,
       "com.malliina" %%% "okclient-io" % primitivesVersion,
       "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion

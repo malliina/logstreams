@@ -28,7 +28,7 @@ object LocalConf {
   val homeDir = Paths.get(sys.props("user.home"))
   val appDir = LocalConf.homeDir.resolve(".logstreams")
   val localConfFile = appDir.resolve("logstreams.conf")
-  val localConf = ConfigFactory.parseFile(localConfFile.toFile)
+  val localConf = ConfigFactory.parseFile(localConfFile.toFile).withFallback(ConfigFactory.load())
 }
 
 case class LogstreamsConf(mode: AppMode, secret: SecretKey, db: Conf, google: AuthConf)
@@ -73,10 +73,10 @@ object LogstreamsConf {
       c.unsafe[AppMode]("mode"),
       c.unsafe[SecretKey]("secret"),
       parseDatabase(db),
-      AuthConf(google.unsafe[ClientId]("clientId"), google.unsafe[ClientSecret]("clientSecret"))
+      AuthConf(google.unsafe[ClientId]("client-id"), google.unsafe[ClientSecret]("client-secret"))
     )
   }
-  
+
   def parseDatabase(from: Config) = Conf(
     from.unsafe[String]("url"),
     from.unsafe[String]("user"),

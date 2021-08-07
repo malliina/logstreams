@@ -37,7 +37,7 @@ case class LogEntryRow(
   message: String,
   logger: String,
   thread: String,
-  level: Level,
+  level: LogLevel,
   stacktrace: Option[String],
   added: Instant
 ) {
@@ -50,7 +50,7 @@ case class LogEntryRow(
       message,
       logger,
       thread,
-      toLevel(level),
+      level,
       stacktrace
     ),
     added.toEpochMilli,

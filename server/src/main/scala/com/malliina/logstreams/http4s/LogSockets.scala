@@ -11,11 +11,12 @@ import controllers.UserRequest
 import fs2.Pipe
 import fs2.concurrent.Topic
 import io.circe.Encoder
+import io.circe.parser._
+import io.circe.syntax.EncoderOps
 import org.http4s.server.websocket.WebSocketBuilder
 import org.http4s.websocket.WebSocketFrame
 import org.http4s.websocket.WebSocketFrame.Text
-import io.circe.parser._
-import io.circe.syntax.EncoderOps
+
 import java.time.Instant
 import scala.concurrent.duration.DurationInt
 
@@ -105,11 +106,12 @@ class LogSockets(
     }
     val logSource = LogSource(AppName(user.user.name), user.address)
     connected(logSource).flatMap { _ =>
-      WebSocketBuilder[IO].build(
-        pings.through(jsonTransform[SimpleEvent]),
-        publishEvents
-//        onClose = disconnected(logSource)
-      )
+      WebSocketBuilder[IO]
+        .copy(onClose = disconnected(logSource))
+        .build(
+          pings.through(jsonTransform[SimpleEvent]),
+          publishEvents
+        )
     }
   }
 

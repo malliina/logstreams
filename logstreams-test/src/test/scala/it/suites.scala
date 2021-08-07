@@ -1,10 +1,10 @@
 package it
 
 import cats.effect.{Blocker, ContextShift, IO}
-import cats.syntax.flatMap.*
+import cats.syntax.flatMap._
 import com.dimafeng.testcontainers.MySQLContainer
 import com.malliina.app.AppConf
-import com.malliina.logstreams.auth.*
+import com.malliina.logstreams.auth._
 import com.malliina.logstreams.db.{Conf, DoobieDatabase}
 import com.malliina.logstreams.http4s.{Http4sAuth, Server, ServerComponents}
 import com.malliina.logstreams.{LocalConf, LogstreamsConf}

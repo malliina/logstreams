@@ -5,7 +5,7 @@ import com.malliina.http.FullUrl
 import com.malliina.logstreams.auth.BasicCredentials
 import com.malliina.logstreams.client.{HttpUtil, SocketClient}
 import com.malliina.logstreams.http4s.LogRoutes
-import com.malliina.logstreams.models.*
+import com.malliina.logstreams.models._
 import com.malliina.values.{Password, Username}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
@@ -97,7 +97,8 @@ class LogstreamsTests extends TestServerSuite {
 
     withAdmin(onJson) { client =>
       assert(client.isConnected)
-      val msg = await(status.future).as[LogSources]
+      val statusJson = await(status.future)
+      val msg = statusJson.as[LogSources]
       assert(msg.isRight)
       assert(msg.toOption.get.sources.isEmpty)
       withSource(user) { _ =>

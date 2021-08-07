@@ -21,12 +21,14 @@ val utilPlayDep = malliinaGroup %% "web-auth" % utilHtmlVersion
 
 val serverVersion = "0.7.0"
 
+val logbackModules = Seq("classic", "core")
+val circeModules = Seq("generic", "parser")
+
 inThisBuild(
   Seq(
     organization := malliinaGroup,
 //    scalaVersion := "3.0.1",
     scalaVersion := "2.13.6",
-    scalacOptions := Seq("-unchecked", "-deprecation"),
     libraryDependencies ++= Seq(
       "org.scalameta" %% "munit" % munitVersion % Test
     ),
@@ -34,11 +36,20 @@ inThisBuild(
   )
 )
 
-val circeModules = Seq("generic", "parser")
+val common = logbackProject("common")
+
+val fs2 = logbackProject("fs2")
+  .dependsOn(common)
+  .settings(
+    libraryDependencies ++= Seq(
+      "co.fs2" %% "fs2-core" % "2.5.9"
+    )
+  )
 
 val client = Project("logstreams-client", file("client"))
   .enablePlugins(MavenCentralPlugin)
   .disablePlugins(RevolverPlugin)
+  .dependsOn(fs2)
   .settings(
     scalaVersion := "2.13.6",
     gitUserName := "malliina",
@@ -182,7 +193,7 @@ val runApp = inputKey[Unit]("Runs the app")
 
 val logstreamsRoot = project
   .in(file("."))
-  .aggregate(frontend, server, client, it)
+  .aggregate(frontend, server, client, it, common, fs2)
   .settings(
     start := (server / start).value
   )
@@ -196,3 +207,21 @@ def gitHash: String =
     .get("GITHUB_SHA")
     .orElse(Try(Process("git rev-parse HEAD").lineStream.head).toOption)
     .getOrElse("unknown")
+
+def logbackProject(name: String) = Project(name, file(name))
+  .enablePlugins(MavenCentralPlugin)
+  .settings(
+    moduleName := s"logback-$name",
+    releaseProcess := tagReleaseProcess.value,
+    scalaVersion := "2.13.6",
+    crossScalaVersions := "3.0.1" :: scalaVersion.value :: Nil,
+    gitUserName := "malliina",
+    developerName := "Michael Skogberg",
+    releaseCrossBuild := true,
+    libraryDependencies ++=
+      logbackModules.map(m => "ch.qos.logback" % s"logback-$m" % "1.2.4") ++
+        circeModules.map(m => "io.circe" %% s"circe-$m" % "0.14.1") ++
+        Seq(
+          "org.slf4j" % "slf4j-api" % "1.7.30"
+        )
+  )

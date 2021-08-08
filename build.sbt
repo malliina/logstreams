@@ -133,8 +133,8 @@ val server = project
     JavaServerAppPackaging,
     SystemdPlugin,
     BuildInfoPlugin,
-    ServerPlugin,
-    LiveReloadPlugin
+    ServerPlugin
+//    LiveReloadPlugin
   )
   .dependsOn(crossJvm, client)
   .settings(

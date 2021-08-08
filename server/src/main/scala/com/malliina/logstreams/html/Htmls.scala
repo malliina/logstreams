@@ -28,7 +28,8 @@ object Htmls {
   def forApp(appName: String, isProd: Boolean, assets: AssetsSource): Htmls = {
     val name = appName.toLowerCase
     val opt = if (isProd) "opt" else "fastopt"
-    val externalScripts = if (isProd) Nil else FullUrl.build(LiveReload.script).toSeq
+//    val externalScripts = if (isProd) Nil else FullUrl.build(LiveReload.script).toSeq
+    val externalScripts: Seq[FullUrl] = Nil
     val appScripts =
       if (isProd) Seq(s"$name-$opt-bundle.js")
       else Seq(s"$name-$opt-library.js", s"$name-$opt-loader.js", s"$name-$opt.js")

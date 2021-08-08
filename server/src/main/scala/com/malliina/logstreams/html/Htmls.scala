@@ -3,7 +3,7 @@ package com.malliina.logstreams.html
 import com.malliina.html.HtmlImplicits.fullUrl
 import com.malliina.html.{Bootstrap, HtmlTags, TagPage}
 import com.malliina.http.FullUrl
-import com.malliina.live.LiveReload
+//import com.malliina.live.LiveReload
 import com.malliina.logstreams.html.Htmls._
 import com.malliina.logstreams.http4s.LogRoutes
 import com.malliina.logstreams.models.{AppName, FrontStrings, LogLevel}

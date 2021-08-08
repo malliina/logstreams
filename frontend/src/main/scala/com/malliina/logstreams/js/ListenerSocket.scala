@@ -36,16 +36,21 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
 
   def isVerbose: Boolean = settings.isVerbose
 
+  val responsiveClass = "d-none d-md-table-cell"
+
+  val responsiveTh = th(`class` := responsiveClass)
+//  val responsiveTd = td
+
   if (verboseSupport) {
     val verboseClass = names(VerboseKey, if (isVerbose) "" else Off)
     getElem[HTMLElement](TableHeadId).appendChild(
       tr(
-        th("App"),
-        th("Time"),
+        responsiveTh("App"),
+        responsiveTh("Time"),
         th("Message"),
         th(`class` := verboseClass)("Logger"),
         th(`class` := verboseClass)("Thread"),
-        th("Level")
+        responsiveTh("Level")
       ).render
     )
     configureToggle(LabelVerbose, isVerbose)(_ => updateVerboseByClick(true))
@@ -126,17 +131,21 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
       cell(event.source.name.name),
       cell(entry.timeFormatted),
       wideCell(entry.message, msgCellId),
-      cell(entry.loggerName, hideable = true),
-      cell(entry.threadName, hideable = true),
-      td(levelCell)
+      cell(entry.loggerName, hideable = true, responsive = false),
+      cell(entry.threadName, hideable = true, responsive = false),
+      td(`class` := responsiveClass)(levelCell)
     )
     RowContent(frag, msgCellId, linkId)
   }
 
-  def cell(content: String, hideable: Boolean = false) =
+  def cell(content: String, hideable: Boolean = false, responsive: Boolean = true) =
     toCell(
       content,
-      names(CellContent, if (hideable) if (isVerbose) VerboseKey else s"$VerboseKey $Off" else "")
+      names(
+        CellContent,
+        if (hideable) if (isVerbose) VerboseKey else s"$VerboseKey $Off" else "",
+        if (responsive) responsiveClass else ""
+      )
     )
 
   def wideCell(content: String, cellId: String) =

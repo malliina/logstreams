@@ -3,6 +3,7 @@ package com.malliina.logstreams.html
 import com.malliina.html.HtmlImplicits.fullUrl
 import com.malliina.html.{Bootstrap, HtmlTags, TagPage}
 import com.malliina.http.FullUrl
+import com.malliina.live.LiveReload
 import com.malliina.logstreams.html.Htmls._
 import com.malliina.logstreams.http4s.LogRoutes
 import com.malliina.logstreams.models.{AppName, FrontStrings, LogLevel}
@@ -27,10 +28,11 @@ object Htmls {
   def forApp(appName: String, isProd: Boolean, assets: AssetsSource): Htmls = {
     val name = appName.toLowerCase
     val opt = if (isProd) "opt" else "fastopt"
+    val externalScripts = if (isProd) Nil else FullUrl.build(LiveReload.script).toSeq
     val appScripts =
       if (isProd) Seq(s"$name-$opt-bundle.js")
       else Seq(s"$name-$opt-library.js", s"$name-$opt-loader.js", s"$name-$opt.js")
-    new Htmls(appScripts, Nil, assets)
+    new Htmls(appScripts, externalScripts, assets)
   }
 }
 
@@ -48,9 +50,10 @@ class Htmls(scripts: Seq[String], externalScripts: Seq[FullUrl], assets: AssetsS
   def logs(apps: Seq[AppName]) = baseIndex("logs")(
     headerRow("Logs"),
     row(
-      divClass(col.sm.two)(
+      divClass("col-sm-2 col-md-1")(
         div(id := LogLevelDropdown, `class` := "dropdown")(
           button(
+            id := LogLevelDropdownButton,
             `class` := s"btn btn-secondary btn-sm $DropdownToggle",
             `type` := "button",
             dataToggle := "dropdown",
@@ -62,7 +65,7 @@ class Htmls(scripts: Seq[String], externalScripts: Seq[FullUrl], assets: AssetsS
           )
         )
       ),
-      divClass(col.sm.six)(
+      divClass("col-sm-6 col-md-7 mt-2 mb-2 mt-sm-0")(
         div(id := AppsDropdown, `class` := "dropdown")(
           button(
             `class` := s"btn btn-secondary btn-sm $DropdownToggle",
@@ -77,7 +80,7 @@ class Htmls(scripts: Seq[String], externalScripts: Seq[FullUrl], assets: AssetsS
         ),
         div(id := AppsFiltered)
       ),
-      div(`class` := s"${col.sm.four} mt-1 mt-sm-0")(
+      div(`class` := s"${col.sm.four} mt-1 mt-sm-0 d-none d-md-block")(
         div(
           `class` := "btn-group btn-group-toggle compact-group float-right",
           role := "group",

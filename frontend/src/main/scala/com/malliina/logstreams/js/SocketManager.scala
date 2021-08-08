@@ -47,13 +47,15 @@ class SocketManager extends ScriptHelpers {
     }
   }
 
-  private def renderActiveLevel(levels: Seq[Anchor], active: LogLevel): Unit =
+  private def renderActiveLevel(levels: Seq[Anchor], active: LogLevel): Unit = {
+    elem(LogLevelDropdownButton).innerHTML = active.name
     levels.foreach { item =>
       if (item.textContent == active.name && !item.classList.contains(ActiveClass))
         item.classList.add(ActiveClass)
       else
         item.classList.remove(ActiveClass)
     }
+  }
 
   private def updateFilter(apps: Seq[AppName]): Unit = {
     renderApps(apps)

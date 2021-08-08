@@ -9,6 +9,7 @@ trait FrontStrings {
   val DropdownItem = "dropdown-item"
 
   val LogLevelDropdown = "level-dropdown"
+  val LogLevelDropdownButton = "level-dropdown-button"
   val LogLevelDropdownMenuId = "level-dropdown-menu"
 
   val LabelCompact = "label-compact"

@@ -3,7 +3,6 @@ import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType => PortableType, crossProject => portableProject}
 import scalajsbundler.util.JSON
-import org.scalajs.sbtplugin.Stage
 
 import scala.sys.process.Process
 import scala.util.Try
@@ -196,7 +195,7 @@ val server = project
 val it = Project("logstreams-test", file("logstreams-test"))
   .dependsOn(server % "test->test", client)
   .settings(
-    libraryDependencies += "com.malliina" %% "okclient-io" % "2.0.2"
+    libraryDependencies += "com.malliina" %% "okclient-io" % primitivesVersion
   )
 
 val runApp = inputKey[Unit]("Runs the app")

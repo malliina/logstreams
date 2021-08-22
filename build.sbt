@@ -34,29 +34,42 @@ inThisBuild(
   )
 )
 
-val common = logbackProject("common")
-
-val fs2 = logbackProject("fs2")
-  .dependsOn(common)
+val fs2 = project
+  .in(file("fs2"))
+  .enablePlugins(MavenCentralPlugin)
   .settings(
     libraryDependencies ++= Seq(
+      "com.malliina" %%% "primitives" % primitivesVersion,
       "co.fs2" %% "fs2-core" % "2.5.9"
-    )
+    ),
+    moduleName := "logback-fs2",
+    releaseProcess := tagReleaseProcess.value,
+    scalaVersion := "2.13.6",
+    crossScalaVersions := "2.13.6" :: "3.0.1" :: Nil,
+    gitUserName := "malliina",
+    developerName := "Michael Skogberg",
+    releaseCrossBuild := true,
+    libraryDependencies ++=
+      logbackModules.map(m => "ch.qos.logback" % s"logback-$m" % "1.2.4") ++ Seq(
+        "org.slf4j" % "slf4j-api" % "1.7.30"
+      )
   )
 
-val client = Project("logstreams-client", file("client"))
+val client = project
+  .in(file("client"))
   .enablePlugins(MavenCentralPlugin)
   .disablePlugins(RevolverPlugin)
   .dependsOn(fs2)
   .settings(
+    moduleName := "logstreams-client",
     scalaVersion := "2.13.6",
-    crossScalaVersions := "3.0.1" :: "2.13.6" :: Nil,
+    crossScalaVersions := "2.13.6" :: "3.0.1" :: Nil,
     releaseCrossBuild := true,
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
     libraryDependencies ++= Seq(
       "com.neovisionaries" % "nv-websocket-client" % "2.14",
-      "com.malliina" %%% "okclient-io" % primitivesVersion
+      "com.malliina" %% "okclient-io" % primitivesVersion
     ),
     releaseProcess := tagReleaseProcess.value
   )
@@ -65,10 +78,9 @@ val cross = portableProject(JSPlatform, JVMPlatform)
   .crossType(PortableType.Full)
   .in(file("shared"))
   .settings(
-    libraryDependencies ++= circeModules.map(m => "io.circe" %%% s"circe-$m" % "0.14.1") ++
-      Seq(
-        "com.malliina" %%% "primitives" % primitivesVersion
-      ),
+    libraryDependencies ++= Seq(
+      "com.malliina" %%% "primitives" % primitivesVersion
+    ),
     testFrameworks += new TestFramework("munit.Framework")
   )
 val crossJvm = cross.jvm
@@ -191,7 +203,7 @@ val runApp = inputKey[Unit]("Runs the app")
 
 val logstreamsRoot = project
   .in(file("."))
-  .aggregate(frontend, server, client, it, common, fs2)
+  .aggregate(frontend, server, client, it, fs2)
   .settings(
     start := (server / start).value
   )
@@ -205,21 +217,3 @@ def gitHash: String =
     .get("GITHUB_SHA")
     .orElse(Try(Process("git rev-parse HEAD").lineStream.head).toOption)
     .getOrElse("unknown")
-
-def logbackProject(name: String) = Project(name, file(name))
-  .enablePlugins(MavenCentralPlugin)
-  .settings(
-    moduleName := s"logback-$name",
-    releaseProcess := tagReleaseProcess.value,
-    scalaVersion := "2.13.6",
-    crossScalaVersions := "3.0.1" :: scalaVersion.value :: Nil,
-    gitUserName := "malliina",
-    developerName := "Michael Skogberg",
-    releaseCrossBuild := true,
-    libraryDependencies ++=
-      logbackModules.map(m => "ch.qos.logback" % s"logback-$m" % "1.2.4") ++
-        circeModules.map(m => "io.circe" %% s"circe-$m" % "0.14.1") ++
-        Seq(
-          "org.slf4j" % "slf4j-api" % "1.7.30"
-        )
-  )

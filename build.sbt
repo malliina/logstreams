@@ -11,7 +11,6 @@ import scala.util.Try
 val malliinaGroup = "com.malliina"
 val utilHtmlVersion = "6.0.2"
 val primitivesVersion = "2.0.2"
-val akkaHttpVersion = "10.1.12"
 val logbackVersion = "1.2.4"
 val munitVersion = "0.7.27"
 val testContainersVersion = "0.39.5"
@@ -51,13 +50,13 @@ val client = Project("logstreams-client", file("client"))
   .dependsOn(fs2)
   .settings(
     scalaVersion := "2.13.6",
+    crossScalaVersions := "3.0.1" :: "2.13.6" :: Nil,
+    releaseCrossBuild := true,
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
     libraryDependencies ++= Seq(
       "com.neovisionaries" % "nv-websocket-client" % "2.14",
-      "com.malliina" %%% "okclient-io" % primitivesVersion,
-      "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
-      "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion
+      "com.malliina" %%% "okclient-io" % primitivesVersion
     ),
     releaseProcess := tagReleaseProcess.value
   )

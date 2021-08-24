@@ -10,9 +10,9 @@ import scala.util.Try
 val malliinaGroup = "com.malliina"
 val utilHtmlVersion = "6.0.2"
 val primitivesVersion = "2.0.2"
-val logbackVersion = "1.2.4"
-val munitVersion = "0.7.27"
-val testContainersVersion = "0.39.5"
+val logbackVersion = "1.2.5"
+val munitVersion = "0.7.28"
+val testContainersVersion = "0.39.6"
 
 val utilPlayDep = malliinaGroup %% "web-auth" % utilHtmlVersion
 
@@ -20,12 +20,14 @@ val serverVersion = "0.7.0"
 
 val logbackModules = Seq("classic", "core")
 val circeModules = Seq("generic", "parser")
+val scala213 = "2.13.6"
+val scala3 = "3.0.1"
 
 inThisBuild(
   Seq(
     organization := malliinaGroup,
 //    scalaVersion := "3.0.1",
-    scalaVersion := "2.13.6",
+    scalaVersion := scala213,
     libraryDependencies ++= Seq(
       "org.scalameta" %% "munit" % munitVersion % Test
     ),
@@ -43,14 +45,14 @@ val fs2 = project
     ),
     moduleName := "logback-fs2",
     releaseProcess := tagReleaseProcess.value,
-    scalaVersion := "2.13.6",
-    crossScalaVersions := "2.13.6" :: "3.0.1" :: Nil,
+    scalaVersion := scala213,
+    crossScalaVersions := scala213 :: scala3 :: Nil,
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
     releaseCrossBuild := true,
     libraryDependencies ++=
-      logbackModules.map(m => "ch.qos.logback" % s"logback-$m" % "1.2.4") ++ Seq(
-        "org.slf4j" % "slf4j-api" % "1.7.30"
+      logbackModules.map(m => "ch.qos.logback" % s"logback-$m" % logbackVersion) ++ Seq(
+        "org.slf4j" % "slf4j-api" % "1.7.32"
       )
   )
 
@@ -61,8 +63,8 @@ val client = project
   .dependsOn(fs2)
   .settings(
     moduleName := "logstreams-client",
-    scalaVersion := "2.13.6",
-    crossScalaVersions := "2.13.6" :: "3.0.1" :: Nil,
+    scalaVersion := scala213,
+    crossScalaVersions := scala213 :: scala3 :: Nil,
     releaseCrossBuild := true,
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
@@ -77,7 +79,7 @@ val cross = portableProject(JSPlatform, JVMPlatform)
   .crossType(PortableType.Full)
   .in(file("shared"))
   .settings(
-    libraryDependencies ++= Seq(
+    libraryDependencies ++= circeModules.map(m => "io.circe" %%% s"circe-$m" % "0.14.1") ++ Seq(
       "com.malliina" %%% "primitives" % primitivesVersion
     ),
     testFrameworks += new TestFramework("munit.Framework")
@@ -158,25 +160,23 @@ val server = project
       "org.http4s" %% s"http4s-$m" % "0.22.2"
     } ++ Seq("doobie-core", "doobie-hikari").map { d =>
       "org.tpolecat" %% d % "0.13.4"
+    } ++ logbackModules.map { m =>
+      "ch.qos.logback" % s"logback-$m" % logbackVersion
     } ++ Seq(
       "com.typesafe" % "config" % "1.4.1",
-      "org.flywaydb" % "flyway-core" % "7.11.2",
+      "org.flywaydb" % "flyway-core" % "7.12.1",
       "mysql" % "mysql-connector-java" % "5.1.49",
-      "org.slf4j" % "slf4j-api" % "1.7.30",
-      "ch.qos.logback" % "logback-classic" % logbackVersion,
-      "ch.qos.logback" % "logback-core" % logbackVersion,
+      "org.slf4j" % "slf4j-api" % "1.7.32",
       "com.malliina" %% "util-html" % utilHtmlVersion,
       utilPlayDep,
       utilPlayDep % Test classifier "tests",
       "com.dimafeng" %% "testcontainers-scala-mysql" % testContainersVersion % Test
     ),
-    Universal / javaOptions ++= {
-      Seq(
-        "-J-Xmx1024m",
-        s"-Dhttp.port=$prodPort",
-        "-Dlogback.configurationFile=logback-prod.xml"
-      )
-    },
+    Universal / javaOptions ++= Seq(
+      "-J-Xmx1024m",
+      s"-Dhttp.port=$prodPort",
+      "-Dlogback.configurationFile=logback-prod.xml"
+    ),
     Compile / unmanagedResourceDirectories += baseDirectory.value / "public",
     Linux / httpPort := Option(s"$prodPort"),
     dockerVersion := Option(DockerVersion(19, 3, 5, None)),
@@ -206,8 +206,6 @@ val logstreamsRoot = project
   .settings(
     start := (server / start).value
   )
-
-addCommandAlias("web", ";logstreams/run")
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 

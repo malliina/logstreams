@@ -17,4 +17,4 @@ Push to the `master` branch. See [azure-pipelines.yml](azure-pipelines.yml) for 
 
 To release the client:
 
-    sbt "project logstreams-client" release
+    sbt "project client" release

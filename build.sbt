@@ -204,7 +204,14 @@ val logstreamsRoot = project
   .in(file("."))
   .aggregate(frontend, server, client, it, fs2)
   .settings(
-    start := (server / start).value
+    start := (server / start).value,
+    publishTo := Some(Resolver.file("Unused transient repository", file("target/unusedrepo"))),
+    publish / skip := true,
+    publishArtifact := false,
+    packagedArtifacts := Map.empty,
+    publish := {},
+    publishLocal := {},
+    releaseProcess := (client / tagReleaseProcess).value
   )
 
 Global / onChangedBuildSource := ReloadOnSourceChanges

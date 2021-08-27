@@ -47,7 +47,7 @@ class DoobieStreamsDatabase(db: DoobieDatabase) extends LogsDatabase[IO] {
       .toList
       .flatMap(l => Seq(l.int, toLogback(l).toInt))
       .toNel
-    log.info(s"Query with $query using levels $levels")
+    log.debug(s"Query with $query using levels $levels")
     val whereClause =
       Fragments.whereAndOpt(
         query.apps.toList.toNel.map(apps => Fragments.in(fr"APP", apps)),

@@ -26,8 +26,7 @@ val scala3 = "3.0.1"
 inThisBuild(
   Seq(
     organization := malliinaGroup,
-//    scalaVersion := "3.0.1",
-    scalaVersion := scala213,
+    scalaVersion := scala3,
     libraryDependencies ++= Seq(
       "org.scalameta" %% "munit" % munitVersion % Test
     ),
@@ -45,8 +44,8 @@ val fs2 = project
     ),
     moduleName := "logback-fs2",
     releaseProcess := tagReleaseProcess.value,
-    scalaVersion := scala213,
-    crossScalaVersions := scala213 :: scala3 :: Nil,
+    scalaVersion := scala3,
+    crossScalaVersions := scala3 :: scala213 :: Nil,
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
     releaseCrossBuild := true,
@@ -63,8 +62,8 @@ val client = project
   .dependsOn(fs2)
   .settings(
     moduleName := "logstreams-client",
-    scalaVersion := scala213,
-    crossScalaVersions := scala213 :: scala3 :: Nil,
+    scalaVersion := scala3,
+    crossScalaVersions := scala3 :: scala213 :: Nil,
     releaseCrossBuild := true,
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
@@ -96,8 +95,7 @@ val frontend = project
     assetsPackage := "com.malliina.logstreams",
     version := "1.0.0",
     libraryDependencies ++= Seq(
-//      ("com.lihaoyi" %%% "scalatags" % "0.9.4").cross(CrossVersion.for3Use2_13)
-      "com.lihaoyi" %%% "scalatags" % "0.9.4"
+      ("com.lihaoyi" %%% "scalatags" % "0.9.4").cross(CrossVersion.for3Use2_13)
     ),
     webpack / version := "4.44.2",
     webpackEmitSourceMaps := false,

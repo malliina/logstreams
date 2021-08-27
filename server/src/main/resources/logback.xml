@@ -6,12 +6,13 @@
         </encoder>
     </appender>
     <appender name="LOGSTREAMS" class="com.malliina.logstreams.client.FS2Appender">
-        <endpoint>${LOGSTREAMS_HOST:-localhost:9000}</endpoint>
+        <endpoint>${LOGSTREAMS_HOST:-ws://localhost:9000}</endpoint>
         <secure>false</secure>
         <enabled>false</enabled>
         <username>${LOGSTREAMS_USER:-logstreams}</username>
         <password>${LOGSTREAMS_PASS}</password>
     </appender>
+    <logger name="org.http4s.blaze.channel.nio1.NIO1HeadStage" level="ERROR"/>
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
 <!--        <appender-ref ref="LOGSTREAMS"/>-->

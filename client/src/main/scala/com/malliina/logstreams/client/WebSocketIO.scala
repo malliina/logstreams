@@ -49,28 +49,19 @@ class WebSocketIO(
 ) extends WebSocketOps {
   private val backoffTime: FiniteDuration = 10.seconds
   private val active = new AtomicReference[Option[WebSocket]](None)
-  private def connectSocket(): IO[WebSocket] = connectOnce.flatMap { socket =>
-    IO(active.set(Option(socket))).map(_ => socket)
-  }
-  private val backoff =
-    Stream.eval(IO(log.info(s"Reconnecting to '$url' in $backoffTime..."))).flatMap { _ =>
-      Stream.sleep(backoffTime).map(_ => Idle)
-    }
+
   val allEvents: Stream[IO, SocketEvent] = topic.subscribe(10)
   val messages: Stream[IO, String] = allEvents.collect {
     case TextMessage(_, message) => message
   }
-  private val untilFailure = allEvents.drop(1).takeWhile {
-    case Failure(_, _, _) => false
-    case _                => true
+  val jsonMessages: Stream[IO, Json] = messages.flatMap { message =>
+    parser
+      .parse(message)
+      .fold(
+        err => Stream.raiseError(new Exception(s"Not JSON: '$message'.")),
+        ok => Stream.emit(ok)
+      )
   }
-  val events: Stream[IO, SocketEvent] = Stream
-    .eval(connectSocket())
-    .flatMap(_ => untilFailure ++ backoff)
-    .repeat
-    .interruptWhen(interrupter)
-
-  def open(): Unit = events.compile.toList.unsafeRunAsyncAndForget()
 
   private val listener: WebSocketListener = new WebSocketListener {
     override def onClosed(webSocket: WebSocket, code: Int, reason: String) = {
@@ -100,6 +91,34 @@ class WebSocketIO(
   }
   val request = requestFor(url, headers).build()
   val connectOnce = IO(client.newWebSocket(request, listener))
+
+  private val connectSocket: IO[WebSocket] = connectOnce.flatMap { socket =>
+    IO(active.set(Option(socket))).map(_ => socket)
+  }
+  private val backoff =
+    Stream.eval(IO(log.info(s"Reconnecting to '$url' in $backoffTime..."))).flatMap { _ =>
+      Stream.sleep(backoffTime).map(_ => Idle)
+    }
+  private val untilFailure = allEvents.drop(1).takeWhile {
+    case Failure(_, _, _) => false
+    case _                => true
+  }
+  val events: Stream[IO, SocketEvent] = Stream
+    .eval(connectSocket)
+    .flatMap(_ => untilFailure ++ backoff)
+    .repeat
+    .interruptWhen(interrupter)
+
+  def messagesAs[T: Decoder]: Stream[IO, T] = jsonMessages.flatMap { json =>
+    json
+      .as[T]
+      .fold(
+        err => Stream.raiseError(new Exception(s"Failed to decode '$json'.")),
+        ok => Stream.emit(ok)
+      )
+  }
+
+  def open(): Unit = events.compile.toList.unsafeRunAsyncAndForget()
 
   def sendMessage(message: String): Boolean = active.get().exists(_.send(message))
 

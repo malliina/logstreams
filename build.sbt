@@ -192,7 +192,9 @@ val server = project
 val it = Project("logstreams-test", file("logstreams-test"))
   .dependsOn(server % "test->test", client)
   .settings(
-    libraryDependencies += "com.malliina" %% "okclient-io" % primitivesVersion
+    libraryDependencies += "com.malliina" %% "okclient-io" % primitivesVersion,
+    publish / skip := true,
+    publishLocal := {}
   )
 
 val runApp = inputKey[Unit]("Runs the app")

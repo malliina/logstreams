@@ -19,7 +19,7 @@ class FS2IOAppenderTests extends FunSuite {
   }
 
   test("hi") {
-    val appender = DefaultFS2IOAppender()
+    val appender = DefaultFS2IOAppender(global)
     LogbackUtils.installAppender(appender)
 
     val f = appender.logEvents

@@ -4,8 +4,8 @@ import cats.effect.IO
 import cats.effect.unsafe.{IORuntime, IORuntimeConfig, Scheduler}
 import com.malliina.http.OkClient
 import com.malliina.http.io.WebSocketIO
-import io.circe.syntax.*
-import FS2Appender.ec
+import com.malliina.logstreams.client.FS2Appender.ec
+import io.circe.syntax._
 
 import java.util.concurrent.Executors
 import scala.concurrent.ExecutionContext

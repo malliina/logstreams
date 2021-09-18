@@ -33,7 +33,7 @@ class DoobieStreamsDatabase(db: DoobieDatabase) extends LogsDatabase[IO] {
                 where $inClause""".query[LogEntryRow].to[List]
         }
         .getOrElse {
-          AsyncConnectionIO.pure(Nil)
+          List.empty[LogEntryRow].pure[ConnectionIO]
         }
         .map { list =>
           EntriesWritten(events, list)

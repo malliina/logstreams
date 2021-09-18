@@ -1,7 +1,8 @@
 package com.malliina.logstreams.http4s
 
-import cats.effect.concurrent.Ref
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.kernel.Ref
+import cats.effect.unsafe.implicits.global
+import cats.effect.IO
 import ch.qos.logback.classic.Level
 import com.malliina.logstreams.db.{LogsDatabase, StreamsQuery}
 import com.malliina.logstreams.http4s.LogSockets.log
@@ -30,7 +31,7 @@ class LogSockets(
   connectedSources: Ref[IO, LogSources],
   logUpdates: Topic[IO, AppLogEvents],
   db: LogsDatabase[IO]
-)(implicit cs: ContextShift[IO], timer: Timer[IO]) {
+) {
   private val savedEvents: fs2.Stream[IO, AppLogEvents] = logs.subscribe(100).evalMap { ins =>
     db.insert(ins.events).map { written =>
       AppLogEvents(written.rows.map(_.toEvent))
@@ -40,7 +41,7 @@ class LogSockets(
     logUpdates.publish1(saved)
   }
   // saves to the database and publishes events
-  publisher.compile.drain.unsafeRunAsyncAndForget()
+  publisher.compile.drain.unsafeRunAndForget()
   private val logIncoming: Pipe[IO, WebSocketFrame, Unit] = _.evalMap {
     case Text(message, _) => IO(log.info(message))
     case f                => IO(log.debug(s"Unknown WebSocket frame: $f"))
@@ -101,7 +102,7 @@ class LogSockets(
             IO.pure(inputs)
           }
         )
-        event.flatMap { e => logs.publish1(e) }
+        event.flatMap { e => logs.publish1(e).map(_ => ()) }
       case f => IO(log.debug(s"Unknown WebSocket frame: $f"))
     }
     val logSource = LogSource(AppName(user.user.name), user.address)
@@ -117,13 +118,13 @@ class LogSockets(
 
   def connected(src: LogSource): IO[Unit] =
     connectedSources.updateAndGet(olds => LogSources(olds.sources :+ src)).flatMap { connecteds =>
-      admins.publish1(connecteds)
+      admins.publish1(connecteds).map(_ => ())
     }
 
   def disconnected(src: LogSource): IO[Unit] =
     connectedSources.updateAndGet(olds => LogSources(olds.sources.filterNot(_ == src))).flatMap {
       connecteds =>
-        admins.publish1(connecteds)
+        admins.publish1(connecteds).map(_ => ())
     }
 
   private def jsonTransform[T: Encoder](src: fs2.Stream[IO, T]): fs2.Stream[IO, Text] = src.map {

@@ -1,3 +1,4 @@
+import com.malliina.sbtutils.SbtUtils
 import com.typesafe.sbt.packager.docker.DockerVersion
 import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
@@ -9,19 +10,17 @@ import scala.util.Try
 
 val malliinaGroup = "com.malliina"
 val utilHtmlVersion = "6.0.2"
-val primitivesVersion = "2.0.2"
+val primitivesVersion = "3.0.0"
 val logbackVersion = "1.2.5"
-val munitVersion = "0.7.28"
-val testContainersVersion = "0.39.6"
+val munitVersion = "0.7.29"
 
 val utilPlayDep = malliinaGroup %% "web-auth" % utilHtmlVersion
 
 val serverVersion = "0.7.0"
 
-val logbackModules = Seq("classic", "core")
 val circeModules = Seq("generic", "parser")
 val scala213 = "2.13.6"
-val scala3 = "3.0.1"
+val scala3 = "3.0.2"
 
 inThisBuild(
   Seq(
@@ -40,7 +39,7 @@ val fs2 = project
   .settings(
     libraryDependencies ++= Seq(
       "com.malliina" %%% "primitives" % primitivesVersion,
-      "co.fs2" %% "fs2-core" % "2.5.9"
+      "co.fs2" %% "fs2-core" % "3.1.2"
     ),
     moduleName := "logback-fs2",
     releaseProcess := tagReleaseProcess.value,
@@ -49,10 +48,7 @@ val fs2 = project
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
     releaseCrossBuild := true,
-    libraryDependencies ++=
-      logbackModules.map(m => "ch.qos.logback" % s"logback-$m" % logbackVersion) ++ Seq(
-        "org.slf4j" % "slf4j-api" % "1.7.32"
-      )
+    libraryDependencies ++= SbtUtils.loggingDeps
   )
 
 val client = project
@@ -79,7 +75,8 @@ val cross = portableProject(JSPlatform, JVMPlatform)
   .in(file("shared"))
   .settings(
     libraryDependencies ++= circeModules.map(m => "io.circe" %%% s"circe-$m" % "0.14.1") ++ Seq(
-      "com.malliina" %%% "primitives" % primitivesVersion
+      "com.malliina" %%% "primitives" % primitivesVersion,
+      ("com.lihaoyi" %%% "scalatags" % "0.9.4").cross(CrossVersion.for3Use2_13)
     )
   )
 val crossJvm = cross.jvm
@@ -142,8 +139,8 @@ val server = project
     JavaServerAppPackaging,
     SystemdPlugin,
     BuildInfoPlugin,
-    ServerPlugin
-//    LiveReloadPlugin
+    ServerPlugin,
+    LiveRevolverPlugin
   )
   .dependsOn(crossJvm, client)
   .settings(
@@ -153,21 +150,18 @@ val server = project
     ),
     buildInfoPackage := "com.malliina.app",
     buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, "hash" -> gitHash),
-    libraryDependencies ++= http4sModules.map { m =>
-      "org.http4s" %% s"http4s-$m" % "0.22.2"
+    libraryDependencies ++= SbtUtils.loggingDeps ++ http4sModules.map { m =>
+      "org.http4s" %% s"http4s-$m" % "0.23.3"
     } ++ Seq("doobie-core", "doobie-hikari").map { d =>
-      "org.tpolecat" %% d % "0.13.4"
-    } ++ logbackModules.map { m =>
-      "ch.qos.logback" % s"logback-$m" % logbackVersion
+      "org.tpolecat" %% d % "1.0.0-RC1"
     } ++ Seq(
       "com.typesafe" % "config" % "1.4.1",
-      "org.flywaydb" % "flyway-core" % "7.12.1",
+      "org.flywaydb" % "flyway-core" % "7.15.0",
       "mysql" % "mysql-connector-java" % "5.1.49",
-      "org.slf4j" % "slf4j-api" % "1.7.32",
       "com.malliina" %% "util-html" % utilHtmlVersion,
       utilPlayDep,
       utilPlayDep % Test classifier "tests",
-      "com.dimafeng" %% "testcontainers-scala-mysql" % testContainersVersion % Test
+      "com.dimafeng" %% "testcontainers-scala-mysql" % "0.39.7" % Test
     ),
     Universal / javaOptions ++= Seq(
       "-J-Xmx1024m",

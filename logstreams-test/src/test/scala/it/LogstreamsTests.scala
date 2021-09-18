@@ -1,5 +1,6 @@
 package it
 
+import cats.effect.unsafe.implicits.global
 import cats.effect.IO
 import com.malliina.http.FullUrl
 import com.malliina.logstreams.auth.BasicCredentials

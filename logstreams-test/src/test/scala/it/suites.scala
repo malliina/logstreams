@@ -1,6 +1,7 @@
 package it
 
-import cats.effect.{Blocker, ContextShift, IO}
+import cats.effect.unsafe.implicits.global
+import cats.effect.IO
 import cats.syntax.flatMap._
 import com.dimafeng.testcontainers.MySQLContainer
 import com.malliina.app.AppConf
@@ -23,9 +24,6 @@ case class TestConf(testdb: Conf)
 case class WrappedTestConf(logstreams: TestConf)
 
 trait MUnitDatabaseSuite { self: munit.Suite =>
-  implicit def munitContextShift: ContextShift[IO] =
-    IO.contextShift(munitExecutionContext)
-
   val db: Fixture[Conf] = new Fixture[Conf]("database") {
     var container: Option[MySQLContainer] = None
     var conf: Option[Conf] = None
@@ -49,10 +47,7 @@ trait MUnitDatabaseSuite { self: munit.Suite =>
 
   private def truncateTestData() = {
     import doobie.implicits._
-    Blocker[IO]
-      .flatMap { blocker =>
-        DoobieDatabase(db(), blocker)
-      }
+    DoobieDatabase(db())
       .use { database =>
         for {
           l <- database.run(sql"delete from LOGS".update.run)
@@ -81,21 +76,19 @@ trait ServerSuite extends MUnitDatabaseSuite { self: munit.Suite =>
     override def beforeAll(): Unit = {
       val testConf = LogstreamsConf.parse().copy(db = db())
       val resource = Server.server(testConf, testAuths, port = 12345)
-      val resourceEffect = resource.allocated[IO, ServerComponents]
-      val setupEffect =
-        resourceEffect
-          .map {
-            case (t, release) =>
-              promise.success(release)
-              t
-          }
-          .flatTap(t => IO.pure(()))
+      val setupEffect = resource.allocated
+        .map {
+          case (t, release) =>
+            promise.success(release)
+            t
+        }
+        .flatTap(t => IO.pure(()))
 
       service = Option(setupEffect.unsafeRunSync())
     }
 
     override def afterAll(): Unit = {
-      IO.fromFuture(IO(promise.future))(munitContextShift).flatten.unsafeRunSync()
+      IO.fromFuture(IO(promise.future)).flatten.unsafeRunSync()
     }
   }
 

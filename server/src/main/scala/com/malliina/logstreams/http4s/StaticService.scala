@@ -1,7 +1,7 @@
 package com.malliina.logstreams.http4s
 
 import cats.data.NonEmptyList
-import cats.effect.{Blocker, ContextShift, Sync}
+import cats.effect.Sync
 import cats.implicits._
 import com.malliina.logstreams.HashedAssets
 import com.malliina.logstreams.http4s.StaticService.log
@@ -16,14 +16,10 @@ import scala.concurrent.duration.DurationInt
 object StaticService {
   private val log = AppLogger(getClass)
 
-  def apply[F[_]](blocker: Blocker, contextShift: ContextShift[F])(implicit
-    s: Sync[F]
-  ): StaticService[F] =
-    new StaticService[F](blocker)(contextShift, s)
+  def apply[F[_]]()(implicit s: Sync[F]): StaticService[F] = new StaticService[F]()(s)
 }
 
-class StaticService[F[_]](blocker: Blocker)(implicit cs: ContextShift[F], s: Sync[F])
-  extends BasicService[F] {
+class StaticService[F[_]]()(implicit s: Sync[F]) extends BasicService[F] {
   val fontExtensions = List(".woff", ".woff2", ".eot", ".ttf")
   val supportedStaticExtensions =
     List(".html", ".js", ".map", ".css", ".png", ".ico") ++ fontExtensions
@@ -41,7 +37,7 @@ class StaticService[F[_]](blocker: Blocker)(implicit cs: ContextShift[F], s: Syn
       val res = s"/$prefix/$file"
       log.debug(s"Searching for '$file' at resource '$res'...")
       StaticFile
-        .fromResource(res, blocker, Option(req))
+        .fromResource(res, Option(req))
         .map(_.putHeaders(`Cache-Control`(cacheHeaders)))
         .fold(onNotFound(req))(_.pure[F])
         .flatten

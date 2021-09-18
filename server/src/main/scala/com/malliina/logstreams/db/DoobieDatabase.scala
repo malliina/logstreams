@@ -1,7 +1,7 @@
 package com.malliina.logstreams.db
 
 import cats.effect.IO._
-import cats.effect.{Blocker, ContextShift, IO, Resource}
+import cats.effect.{IO, Resource}
 import com.malliina.logstreams.db.DoobieDatabase.log
 import com.malliina.util.AppLogger
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
@@ -17,11 +17,11 @@ import scala.concurrent.duration.DurationInt
 object DoobieDatabase {
   private val log = AppLogger(getClass)
 
-  def apply(conf: Conf, blocker: Blocker)(implicit cs: ContextShift[IO]) =
-    transactor(dataSource(conf), blocker).map { tx => new DoobieDatabase(tx) }
+  def apply(conf: Conf): Resource[IO, DoobieDatabase] =
+    transactor(dataSource(conf)).map { tx => new DoobieDatabase(tx) }
 
-  def withMigrations(conf: Conf, blocker: Blocker)(implicit cs: ContextShift[IO]) =
-    Resource.pure[IO, MigrateResult](migrate(conf)).flatMap { _ => apply(conf, blocker) }
+  def withMigrations(conf: Conf) =
+    Resource.pure[IO, MigrateResult](migrate(conf)).flatMap { _ => apply(conf) }
 
   def migrate(conf: Conf): MigrateResult = {
     val flyway = Flyway.configure.dataSource(conf.url, conf.user, conf.pass).load()
@@ -40,12 +40,10 @@ object DoobieDatabase {
     new HikariDataSource(hikari)
   }
 
-  def transactor(ds: HikariDataSource, blocker: Blocker)(implicit
-    cs: ContextShift[IO]
-  ): Resource[IO, DataSourceTransactor[IO]] =
+  def transactor(ds: HikariDataSource): Resource[IO, DataSourceTransactor[IO]] =
     for {
       ec <- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
-    } yield Transactor.fromDataSource[IO](ds, ec, blocker)
+    } yield Transactor.fromDataSource[IO](ds, ec)
 }
 
 class DoobieDatabase(tx: DataSourceTransactor[IO]) {

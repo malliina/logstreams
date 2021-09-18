@@ -1,7 +1,9 @@
 package com.malliina.logstreams.client
 
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.unsafe.implicits.global
+import cats.effect.IO
 import com.malliina.http.OkClient
+import com.malliina.http.io.WebSocketIO
 import io.circe.syntax._
 
 import scala.concurrent.ExecutionContext
@@ -9,9 +11,6 @@ import scala.concurrent.ExecutionContext
 class FS2Appender extends SocketAppender[WebSocketIO] {
   override def start(): Unit = {
     if (getEnabled) {
-      val ec = ExecutionContext.Implicits.global
-      implicit val cs: ContextShift[IO] = IO.contextShift(ec)
-      implicit val t: Timer[IO] = IO.timer(ec)
       val result = for {
         url <- toMissing(endpoint, "endpoint")
         user <- toMissing(username, "username")
@@ -22,7 +21,7 @@ class FS2Appender extends SocketAppender[WebSocketIO] {
         val socket =
           WebSocketIO(url, headers.map(kv => kv.key -> kv.value).toMap, OkClient.okHttpClient)
             .unsafeRunSync()
-        socket.events.compile.drain.unsafeRunAsyncAndForget()
+        socket.events.compile.drain.unsafeRunAndForget()
         client = Option(socket)
         val task = logEvents
           .map(e => socket.send(e.asJson.spaces2))
@@ -33,7 +32,7 @@ class FS2Appender extends SocketAppender[WebSocketIO] {
           }
           .compile
           .drain
-          .unsafeRunAsyncAndForget()
+          .unsafeRunAndForget()
         super.start()
       }
       result.left.toOption foreach addError

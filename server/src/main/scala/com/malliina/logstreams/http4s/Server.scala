@@ -1,8 +1,8 @@
 package com.malliina.logstreams.http4s
 
 import cats.data.Kleisli
-import cats.effect.concurrent.Ref
-import cats.effect.{Blocker, ExitCode, IO, IOApp, Resource}
+import cats.effect.kernel.Ref
+import cats.effect.{ExitCode, IO, IOApp, Resource}
 import com.malliina.app.AppMeta
 import com.malliina.http.io.HttpClientIO
 import com.malliina.logstreams.auth.{AuthBuilder, Auther, Auths, JWT}
@@ -35,9 +35,8 @@ object Server extends IOApp {
     authBuilder: AuthBuilder,
     port: Int = port
   ): Resource[IO, ServerComponents] = for {
-    blocker <- Blocker[IO]
     service <- appService(conf, authBuilder)
-    handler = makeHandler(service, blocker)
+    handler = makeHandler(service)
     _ <- Resource.eval(
       IO(log.info(s"Binding on port $port using app version ${AppMeta.ThisApp.git}..."))
     )
@@ -48,12 +47,11 @@ object Server extends IOApp {
   } yield ServerComponents(service, handler, server)
 
   def appService(conf: LogstreamsConf, authBuilder: AuthBuilder): Resource[IO, Service] = for {
-    blocker <- Blocker[IO]
-    db <- DoobieDatabase.withMigrations(conf.db, blocker)
-    logsTopic <- Resource.eval(Topic[IO, LogEntryInputs](LogEntryInputs(Nil)))
-    adminsTopic <- Resource.eval(Topic[IO, LogSources](LogSources(Nil)))
+    db <- DoobieDatabase.withMigrations(conf.db)
+    logsTopic <- Resource.eval(Topic[IO, LogEntryInputs])
+    adminsTopic <- Resource.eval(Topic[IO, LogSources])
     connecteds <- Resource.eval(Ref[IO].of(LogSources(Nil)))
-    logUpdates <- Resource.eval(Topic[IO, AppLogEvents](AppLogEvents(Nil)))
+    logUpdates <- Resource.eval(Topic[IO, AppLogEvents])
   } yield {
     val logsDatabase = DoobieStreamsDatabase(db)
     val users = DoobieDatabaseAuth(db)
@@ -70,12 +68,12 @@ object Server extends IOApp {
     )
   }
 
-  def makeHandler(service: Service, blocker: Blocker) = GZip {
+  def makeHandler(service: Service) = GZip {
     HSTS {
       orNotFound {
         Router(
           "/" -> service.routes,
-          "/assets" -> StaticService(blocker, contextShift).routes
+          "/assets" -> StaticService[IO]().routes
         )
       }
     }

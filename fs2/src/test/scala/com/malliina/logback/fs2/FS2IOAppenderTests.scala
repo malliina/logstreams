@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 import fs2.Stream
+import cats.effect.unsafe.implicits.global
 
 class FS2IOAppenderTests extends FunSuite {
   val log = LoggerFactory.getLogger(getClass)

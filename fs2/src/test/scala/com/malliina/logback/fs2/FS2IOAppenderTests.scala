@@ -1,14 +1,14 @@
 package com.malliina.logback.fs2
 
 import cats.effect.IO
+import cats.effect.unsafe.implicits.global
 import com.malliina.logback.LogbackUtils
+import fs2.Stream
 import munit.FunSuite
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
-import fs2.Stream
-import cats.effect.unsafe.implicits.global
 
 class FS2IOAppenderTests extends FunSuite {
   val log = LoggerFactory.getLogger(getClass)

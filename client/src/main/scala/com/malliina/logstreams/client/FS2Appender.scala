@@ -1,14 +1,28 @@
 package com.malliina.logstreams.client
 
-import cats.effect.unsafe.implicits.global
 import cats.effect.IO
+import cats.effect.unsafe.{IORuntime, IORuntimeConfig, Scheduler}
 import com.malliina.http.OkClient
 import com.malliina.http.io.WebSocketIO
-import io.circe.syntax._
+import io.circe.syntax.*
+import FS2Appender.ec
 
+import java.util.concurrent.Executors
 import scala.concurrent.ExecutionContext
 
-class FS2Appender extends SocketAppender[WebSocketIO] {
+object FS2Appender {
+  val executor = Executors.newCachedThreadPool()
+  val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
+
+  def customRuntime: IORuntime = {
+    val (scheduler, finalizer) = IORuntime.createDefaultScheduler()
+    IORuntime(ec, ec, scheduler, finalizer, IORuntimeConfig())
+  }
+}
+
+class FS2Appender(rt: IORuntime) extends SocketAppender[WebSocketIO](rt) {
+  def this() = this(FS2Appender.customRuntime)
+  implicit val runtime: IORuntime = rt
   override def start(): Unit = {
     if (getEnabled) {
       val result = for {
@@ -39,5 +53,10 @@ class FS2Appender extends SocketAppender[WebSocketIO] {
     } else {
       addInfo("Logstreams client is disabled.")
     }
+  }
+
+  override def stop(): Unit = {
+    rt.shutdown()
+    FS2Appender.executor.shutdown()
   }
 }

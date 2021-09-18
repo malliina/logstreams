@@ -1,18 +1,17 @@
 package com.malliina.logstreams.http4s
 
 import cats.effect.kernel.Ref
-import cats.effect.unsafe.implicits.global
-import cats.effect.IO
+import cats.effect.{IO, Resource}
 import ch.qos.logback.classic.Level
 import com.malliina.logstreams.db.{LogsDatabase, StreamsQuery}
 import com.malliina.logstreams.http4s.LogSockets.log
-import com.malliina.logstreams.models._
+import com.malliina.logstreams.models.*
 import com.malliina.util.AppLogger
 import controllers.UserRequest
 import fs2.Pipe
 import fs2.concurrent.Topic
 import io.circe.Encoder
-import io.circe.parser._
+import io.circe.parser.*
 import io.circe.syntax.EncoderOps
 import org.http4s.server.websocket.WebSocketBuilder
 import org.http4s.websocket.WebSocketFrame
@@ -37,11 +36,10 @@ class LogSockets(
       AppLogEvents(written.rows.map(_.toEvent))
     }
   }
+  // saves to the database and publishes events
   val publisher = savedEvents.evalMap { saved =>
     logUpdates.publish1(saved)
   }
-  // saves to the database and publishes events
-  publisher.compile.drain.unsafeRunAndForget()
   private val logIncoming: Pipe[IO, WebSocketFrame, Unit] = _.evalMap {
     case Text(message, _) => IO(log.info(message))
     case f                => IO(log.debug(s"Unknown WebSocket frame: $f"))

@@ -9,13 +9,12 @@ import fs2.Stream
 import scala.concurrent.ExecutionContext
 
 object DefaultFS2IOAppender {
-  def apply(): DefaultFS2IOAppender = new DefaultFS2IOAppender()
+  def apply(rt: IORuntime): DefaultFS2IOAppender = new DefaultFS2IOAppender(rt)
 }
 
 class DefaultFS2IOAppender(rt: IORuntime)
   extends FS2IOAppender[ILoggingEvent]()(rt)
   with TimeFormatting[ILoggingEvent] {
-  def this() = this(cats.effect.unsafe.implicits.global)
   val logEvents: Stream[IO, LogEvent] =
     source.map(e => LogEvent.fromLogbackEvent(e, format))
 }

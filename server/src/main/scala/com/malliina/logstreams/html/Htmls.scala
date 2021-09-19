@@ -4,7 +4,6 @@ import com.malliina.html.HtmlImplicits.fullUrl
 import com.malliina.html.{Bootstrap, HtmlTags, TagPage}
 import com.malliina.http.FullUrl
 import com.malliina.live.LiveReload
-//import com.malliina.live.LiveReload
 import com.malliina.logstreams.html.Htmls._
 import com.malliina.logstreams.http4s.LogRoutes
 import com.malliina.logstreams.models.{AppName, FrontStrings, LogLevel}
@@ -189,6 +188,7 @@ class Htmls(scripts: Seq[String], externalScripts: Seq[FullUrl], assets: AssetsS
         head(
           titleTag(titleLabel),
           deviceWidthViewport,
+          link(rel := "shortcut icon", `type` := "image/png", href := asset("img/jag-16x16.png")),
           cssLink(asset("vendors.css")),
           cssLink(asset("styles.css")),
           extraHeader

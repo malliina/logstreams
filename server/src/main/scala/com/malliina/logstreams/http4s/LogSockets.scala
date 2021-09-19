@@ -1,18 +1,19 @@
 package com.malliina.logstreams.http4s
 
-import cats.effect.concurrent.Ref
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.kernel.Ref
+import cats.effect.{IO, Resource}
 import ch.qos.logback.classic.Level
 import com.malliina.logstreams.db.{LogsDatabase, StreamsQuery}
 import com.malliina.logstreams.http4s.LogSockets.log
-import com.malliina.logstreams.models._
+import com.malliina.logstreams.models.*
 import com.malliina.util.AppLogger
 import controllers.UserRequest
-import fs2.Pipe
+import fs2.{Pipe, Stream}
 import fs2.concurrent.Topic
 import io.circe.Encoder
-import io.circe.parser._
+import io.circe.parser.*
 import io.circe.syntax.EncoderOps
+import org.http4s.Response
 import org.http4s.server.websocket.WebSocketBuilder
 import org.http4s.websocket.WebSocketFrame
 import org.http4s.websocket.WebSocketFrame.Text
@@ -30,26 +31,25 @@ class LogSockets(
   connectedSources: Ref[IO, LogSources],
   logUpdates: Topic[IO, AppLogEvents],
   db: LogsDatabase[IO]
-)(implicit cs: ContextShift[IO], timer: Timer[IO]) {
-  private val savedEvents: fs2.Stream[IO, AppLogEvents] = logs.subscribe(100).evalMap { ins =>
+) {
+  private val savedEvents: Stream[IO, AppLogEvents] = logs.subscribe(100).evalMap { ins =>
     db.insert(ins.events).map { written =>
       AppLogEvents(written.rows.map(_.toEvent))
     }
   }
+  // saves to the database and publishes events
   val publisher = savedEvents.evalMap { saved =>
     logUpdates.publish1(saved)
   }
-  // saves to the database and publishes events
-  publisher.compile.drain.unsafeRunAsyncAndForget()
   private val logIncoming: Pipe[IO, WebSocketFrame, Unit] = _.evalMap {
     case Text(message, _) => IO(log.info(message))
     case f                => IO(log.debug(s"Unknown WebSocket frame: $f"))
   }
-  val pings = fs2.Stream.awakeEvery[IO](15.seconds).map(_ => SimpleEvent.ping)
+  val pings = Stream.awakeEvery[IO](5.seconds).map(_ => SimpleEvent.ping)
 
-  def listener(query: StreamsQuery) = {
+  def listener(query: StreamsQuery): IO[Response[IO]] = {
     val subscription =
-      logUpdates.subscribe(100).drop(1).map { es =>
+      logUpdates.subscribe(100).map { es =>
         es.filter(_.event.level.int >= query.level.int)
       }
     val filteredEvents =
@@ -60,10 +60,10 @@ class LogSockets(
           es.filter(e => query.apps.exists(app => app.name == e.source.name.name))
         }
       }
-    val logEvents = fs2.Stream
+    val logEvents = Stream
       .eval(db.events(query))
       .flatMap { history =>
-        fs2.Stream(history.reverse) ++ filteredEvents.map(
+        Stream(history.reverse) ++ filteredEvents.map(
           _.filter(e => !history.events.exists(_.id == e.id))
         )
       }
@@ -74,13 +74,17 @@ class LogSockets(
     WebSocketBuilder[IO].build(toClient, logIncoming)
   }
 
-  def admin(user: UserRequest) =
-    WebSocketBuilder[IO].build(
-      pings.mergeHaltBoth(admins.subscribe(100)).through(jsonTransform[AdminEvent]),
-      logIncoming
-    )
+  def admin(user: UserRequest): IO[Response[IO]] =
+    WebSocketBuilder[IO]
+      .copy(onClose = IO(log.info(s"Admin '${user.user}' disconnected.")))
+      .build(
+        Stream.eval(IO(log.info(s"Admin '${user.user}' connected."))) >> pings
+          .mergeHaltBoth(Stream.eval(connectedSources.get) ++ admins.subscribe(100))
+          .through(jsonTransform[AdminEvent]),
+        logIncoming
+      )
 
-  def source(user: UserRequest) = {
+  def source(user: UserRequest): IO[Response[IO]] = {
     val publishEvents: Pipe[IO, WebSocketFrame, Unit] = _.evalMap {
       case Text(message, _) =>
         val event = decode[LogEvents](message).fold(
@@ -101,7 +105,14 @@ class LogSockets(
             IO.pure(inputs)
           }
         )
-        event.flatMap { e => logs.publish1(e) }
+        event.flatMap { e =>
+          logs.publish1(e).map { res =>
+            res.fold(
+              closed => log.warn(s"Published $e to closed topic."),
+              _ => log.debug(s"Published $e to topic.")
+            )
+          }
+        }
       case f => IO(log.debug(s"Unknown WebSocket frame: $f"))
     }
     val logSource = LogSource(AppName(user.user.name), user.address)
@@ -117,17 +128,16 @@ class LogSockets(
 
   def connected(src: LogSource): IO[Unit] =
     connectedSources.updateAndGet(olds => LogSources(olds.sources :+ src)).flatMap { connecteds =>
-      admins.publish1(connecteds)
+      admins.publish1(connecteds).map(_ => ())
     }
 
   def disconnected(src: LogSource): IO[Unit] =
     connectedSources.updateAndGet(olds => LogSources(olds.sources.filterNot(_ == src))).flatMap {
       connecteds =>
-        admins.publish1(connecteds)
+        admins.publish1(connecteds).map(_ => ())
     }
 
-  private def jsonTransform[T: Encoder](src: fs2.Stream[IO, T]): fs2.Stream[IO, Text] = src.map {
-    t =>
-      Text(t.asJson.noSpaces)
+  private def jsonTransform[T: Encoder](src: Stream[IO, T]): Stream[IO, Text] = src.map { t =>
+    Text(t.asJson.noSpaces)
   }
 }

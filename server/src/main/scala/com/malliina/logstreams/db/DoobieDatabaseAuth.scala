@@ -1,12 +1,16 @@
 package com.malliina.logstreams.db
 
 import cats.effect.IO
+import cats.*
+import cats.effect.*
+import cats.implicits.*
 import com.malliina.logstreams.auth.UserError.{AlreadyExists, DoesNotExist}
 import com.malliina.logstreams.auth.{BasicCredentials, UserService}
 import com.malliina.logstreams.db.DoobieDatabaseAuth.log
 import com.malliina.util.AppLogger
 import com.malliina.values.{Password, Username}
-import doobie.implicits._
+import doobie.free.connection.ConnectionIO
+import doobie.implicits.*
 
 object DoobieDatabaseAuth {
   private val log = AppLogger(getClass)
@@ -21,7 +25,7 @@ class DoobieDatabaseAuth(db: DoobieDatabase) extends UserService[IO] {
       .unique
     existsIO.flatMap[Either[AlreadyExists, Unit]] { exists =>
       if (exists) {
-        AsyncConnectionIO.pure[Either[AlreadyExists, Unit]](Left(AlreadyExists(creds.username)))
+        Left[AlreadyExists, Unit](AlreadyExists(creds.username)).pure[ConnectionIO]
       } else {
         val hashed = hash(creds)
         sql"""insert into USERS(USER, PASS_HASH) values (${creds.username}, $hashed)""".update.run

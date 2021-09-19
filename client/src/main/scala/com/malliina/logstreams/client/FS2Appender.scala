@@ -1,17 +1,30 @@
 package com.malliina.logstreams.client
 
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.IO
+import cats.effect.unsafe.{IORuntime, IORuntimeConfig, Scheduler}
 import com.malliina.http.OkClient
+import com.malliina.http.io.WebSocketIO
+import com.malliina.logstreams.client.FS2Appender.ec
 import io.circe.syntax._
 
+import java.util.concurrent.Executors
 import scala.concurrent.ExecutionContext
 
-class FS2Appender extends SocketAppender[WebSocketIO] {
+object FS2Appender {
+  val executor = Executors.newCachedThreadPool()
+  val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
+
+  def customRuntime: IORuntime = {
+    val (scheduler, finalizer) = IORuntime.createDefaultScheduler()
+    IORuntime(ec, ec, scheduler, finalizer, IORuntimeConfig())
+  }
+}
+
+class FS2Appender(rt: IORuntime) extends SocketAppender[WebSocketIO](rt) {
+  def this() = this(FS2Appender.customRuntime)
+  implicit val runtime: IORuntime = rt
   override def start(): Unit = {
     if (getEnabled) {
-      val ec = ExecutionContext.Implicits.global
-      implicit val cs: ContextShift[IO] = IO.contextShift(ec)
-      implicit val t: Timer[IO] = IO.timer(ec)
       val result = for {
         url <- toMissing(endpoint, "endpoint")
         user <- toMissing(username, "username")
@@ -22,7 +35,7 @@ class FS2Appender extends SocketAppender[WebSocketIO] {
         val socket =
           WebSocketIO(url, headers.map(kv => kv.key -> kv.value).toMap, OkClient.okHttpClient)
             .unsafeRunSync()
-        socket.events.compile.drain.unsafeRunAsyncAndForget()
+        socket.events.compile.drain.unsafeRunAndForget()
         client = Option(socket)
         val task = logEvents
           .map(e => socket.send(e.asJson.spaces2))
@@ -33,12 +46,17 @@ class FS2Appender extends SocketAppender[WebSocketIO] {
           }
           .compile
           .drain
-          .unsafeRunAsyncAndForget()
+          .unsafeRunAndForget()
         super.start()
       }
       result.left.toOption foreach addError
     } else {
       addInfo("Logstreams client is disabled.")
     }
+  }
+
+  override def stop(): Unit = {
+    rt.shutdown()
+    FS2Appender.executor.shutdown()
   }
 }

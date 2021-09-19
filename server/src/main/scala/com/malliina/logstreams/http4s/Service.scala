@@ -131,6 +131,7 @@ class Service(
       }
     case req @ GET -> Root / "ws" / "sources" =>
       sourceAuth(req.headers) { src =>
+        log.info(s"Connection authenticated for source '$src'.")
         sockets.source(UserRequest(src, req.headers, Urls.address(req)))
       }
     case req @ GET -> Root / "oauth" =>

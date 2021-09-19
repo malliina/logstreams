@@ -6,7 +6,7 @@ import com.malliina.http.FullUrl
 import com.malliina.logstreams.auth.BasicCredentials
 import com.malliina.logstreams.client.{HttpUtil, SocketClient}
 import com.malliina.logstreams.http4s.LogRoutes
-import com.malliina.logstreams.models._
+import com.malliina.logstreams.models.*
 import com.malliina.values.{Password, Username}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
@@ -14,6 +14,7 @@ import io.circe.parser.parse
 import it.LogstreamsTests.testUsername
 import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.{Status, Uri}
+import org.slf4j.LoggerFactory
 
 import javax.net.ssl.SSLContext
 import scala.concurrent.Promise
@@ -23,6 +24,8 @@ object LogstreamsTests {
 }
 
 class LogstreamsTests extends TestServerSuite {
+  val log = LoggerFactory.getLogger(getClass)
+
   val testUser = testUsername.name
   val testPass = "p"
   val testCreds = creds(testUser)
@@ -70,7 +73,8 @@ class LogstreamsTests extends TestServerSuite {
       val p = Promise[Json]()
       withListener(p.success) { listener =>
         await(listener.initialConnection)
-        source.send(LogEvents(List(testEvent)).asJson.noSpaces)
+        val payload = LogEvents(List(testEvent)).asJson.noSpaces
+        source.send(payload)
         val receivedEvent = await(p.future)
         val jsonResult = receivedEvent.as[AppLogEvents]
         assert(jsonResult.isRight)

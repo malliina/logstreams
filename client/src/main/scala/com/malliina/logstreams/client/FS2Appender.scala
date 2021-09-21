@@ -2,7 +2,7 @@ package com.malliina.logstreams.client
 
 import cats.effect.IO
 import cats.effect.unsafe.{IORuntime, IORuntimeConfig, Scheduler}
-import com.malliina.http.OkClient
+import com.malliina.http.{OkClient, OkHttpBackend}
 import com.malliina.http.io.WebSocketIO
 import com.malliina.logstreams.client.FS2Appender.ec
 import io.circe.syntax._
@@ -20,8 +20,8 @@ object FS2Appender {
   }
 }
 
-class FS2Appender(rt: IORuntime) extends SocketAppender[WebSocketIO](rt) {
-  def this() = this(FS2Appender.customRuntime)
+class FS2Appender(rt: IORuntime, http: OkHttpBackend) extends SocketAppender[WebSocketIO](rt) {
+  def this() = this(FS2Appender.customRuntime, OkClient.default)
   implicit val runtime: IORuntime = rt
   override def start(): Unit = {
     if (getEnabled) {
@@ -33,12 +33,12 @@ class FS2Appender(rt: IORuntime) extends SocketAppender[WebSocketIO](rt) {
         val headers: List[KeyValue] = List(HttpUtil.basicAuth(user, pass))
         addInfo(s"Connecting to logstreams URL '$url' for Logback...")
         val socket =
-          WebSocketIO(url, headers.map(kv => kv.key -> kv.value).toMap, OkClient.okHttpClient)
+          WebSocketIO(url, headers.map(kv => kv.key -> kv.value).toMap, http.client)
             .unsafeRunSync()
         socket.events.compile.drain.unsafeRunAndForget()
         client = Option(socket)
         val task = logEvents
-          .map(e => socket.send(e.asJson.spaces2))
+          .map(e => socket.send(e))
           .onComplete {
             fs2.Stream
               .eval(IO(addInfo(s"Appender [$name] completed.")))
@@ -58,5 +58,6 @@ class FS2Appender(rt: IORuntime) extends SocketAppender[WebSocketIO](rt) {
   override def stop(): Unit = {
     rt.shutdown()
     FS2Appender.executor.shutdown()
+    http.close()
   }
 }

@@ -9,7 +9,7 @@ class MissingCredentialsException(error: MissingCredentials) extends IdentityExc
 class IdentityException(val error: IdentityError) extends Exception
 
 class JsonException(val error: io.circe.Error, val message: String)
-  extends Exception(s"JSON exception for '$message'.")
+  extends Exception(s"JSON exception $error for '$message'.")
 
 object IdentityException {
   def apply(error: IdentityError): IdentityException = error match {

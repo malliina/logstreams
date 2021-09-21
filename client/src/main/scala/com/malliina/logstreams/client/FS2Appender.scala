@@ -38,7 +38,7 @@ class FS2Appender(rt: IORuntime, http: OkHttpBackend) extends SocketAppender[Web
         socket.events.compile.drain.unsafeRunAndForget()
         client = Option(socket)
         val task = logEvents
-          .map(e => socket.send(e))
+          .map(e => socket.send(LogEvents(Seq(e))))
           .onComplete {
             fs2.Stream
               .eval(IO(addInfo(s"Appender [$name] completed.")))

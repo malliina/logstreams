@@ -29,15 +29,20 @@ object Htmls {
     val name = appName.toLowerCase
     val opt = if (isProd) "opt" else "fastopt"
     val externalScripts = if (isProd) Nil else FullUrl.build(LiveReload.script).toSeq
+    val assetPrefix = s"$name-$opt"
     val appScripts =
-      if (isProd) Seq(s"$name-$opt-bundle.js")
-      else Seq(s"$name-$opt-library.js", s"$name-$opt-loader.js", s"$name-$opt.js")
-    new Htmls(appScripts, externalScripts, assets)
+      if (isProd) Seq(s"$assetPrefix-bundle.js")
+      else Seq(s"$assetPrefix-library.js", s"$assetPrefix-loader.js", s"$assetPrefix.js")
+    new Htmls(appScripts, externalScripts, Seq(s"$assetPrefix.css", "styles.css"), assets)
   }
 }
 
-class Htmls(scripts: Seq[String], externalScripts: Seq[FullUrl], assets: AssetsSource)
-  extends Bootstrap(HtmlTags)
+class Htmls(
+  scripts: Seq[String],
+  externalScripts: Seq[FullUrl],
+  cssFiles: Seq[String],
+  assets: AssetsSource
+) extends Bootstrap(HtmlTags)
   with FrontStrings {
 
   import tags._
@@ -189,8 +194,7 @@ class Htmls(scripts: Seq[String], externalScripts: Seq[FullUrl], assets: AssetsS
           titleTag(titleLabel),
           deviceWidthViewport,
           link(rel := "shortcut icon", `type` := "image/png", href := asset("img/jag-16x16.png")),
-          cssLink(asset("vendors.css")),
-          cssLink(asset("styles.css")),
+          cssFiles.map(file => cssLink(asset(file))),
           extraHeader
         ),
         body(

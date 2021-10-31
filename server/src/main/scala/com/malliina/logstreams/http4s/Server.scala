@@ -17,12 +17,13 @@ import org.http4s.blaze.server.BlazeServerBuilder
 import org.http4s.server.middleware.{GZip, HSTS}
 import org.http4s.server.{Router, Server}
 import org.http4s.{HttpRoutes, Request, Response}
+import org.http4s.server.websocket.WebSocketBuilder2
 
 import scala.concurrent.ExecutionContext
 
 case class ServerComponents(
   app: Service,
-  handler: Kleisli[IO, Request[IO], Response[IO]],
+//  handler: Kleisli[IO, Request[IO], Response[IO]],
   server: Server
 )
 
@@ -36,15 +37,15 @@ object Server extends IOApp {
     port: Int = port
   ): Resource[IO, ServerComponents] = for {
     service <- appService(conf, authBuilder)
-    handler = makeHandler(service)
     _ <- Resource.eval(
       IO(log.info(s"Binding on port $port using app version ${AppMeta.ThisApp.git}..."))
     )
-    server <- BlazeServerBuilder[IO](ExecutionContext.global)
-      .bindHttp(port = port, "0.0.0.0")
-      .withHttpApp(handler)
-      .resource
-  } yield ServerComponents(service, handler, server)
+    server <-
+      BlazeServerBuilder[IO]
+        .bindHttp(port = port, "0.0.0.0")
+        .withHttpWebSocketApp(socketBuilder => makeHandler(service, socketBuilder))
+        .resource
+  } yield ServerComponents(service, server)
 
   def appService(conf: LogstreamsConf, authBuilder: AuthBuilder): Resource[IO, Service] = for {
     db <- DoobieDatabase.withMigrations(conf.db)
@@ -69,11 +70,11 @@ object Server extends IOApp {
     )
   }
 
-  def makeHandler(service: Service) = GZip {
+  def makeHandler(service: Service, socketBuilder: WebSocketBuilder2[IO]) = GZip {
     HSTS {
       orNotFound {
         Router(
-          "/" -> service.routes,
+          "/" -> service.routes(socketBuilder),
           "/assets" -> StaticService[IO]().routes
         )
       }

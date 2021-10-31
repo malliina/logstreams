@@ -36,7 +36,7 @@ class LogstreamsTests extends TestServerSuite {
   def users = components.users
 
   test("can ping server") {
-    val response = BlazeClientBuilder[IO](munitExecutionContext).resource
+    val response = BlazeClientBuilder[IO].resource
       .use { client =>
         client.get(Uri.unsafeFromString(s"http://localhost:$port/ping"))(res => IO.pure(res))
       }

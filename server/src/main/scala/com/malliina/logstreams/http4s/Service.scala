@@ -21,6 +21,7 @@ import controllers.UserRequest
 import org.http4s.{Callback => _, _}
 import org.http4s.headers.{Location, `WWW-Authenticate`}
 import io.circe.syntax.EncoderOps
+import org.http4s.server.websocket.WebSocketBuilder2
 
 object Service {
   private val log = AppLogger(getClass)
@@ -45,7 +46,8 @@ class Service(
   google: GoogleAuthFlow
 ) extends BasicService[IO] {
   val reverse = LogRoutes
-  val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
+
+  def routes(socketBuilder: WebSocketBuilder2[IO]): HttpRoutes[IO] = HttpRoutes.of[IO] {
     case GET -> Root / "health" => ok(AppMeta.ThisApp.asJson)
     case GET -> Root / "ping"   => ok(AppMeta.ThisApp.asJson)
     case req @ GET -> Root =>
@@ -121,18 +123,18 @@ class Service(
             },
             query => {
               log.info(s"Opening log stream at level ${query.level} for '$user'...")
-              sockets.listener(query)
+              sockets.listener(query, socketBuilder)
             }
           )
       }
     case req @ GET -> Root / "ws" / "admins" =>
       webAuth(req) { principal =>
-        sockets.admin(principal)
+        sockets.admin(principal, socketBuilder)
       }
     case req @ GET -> Root / "ws" / "sources" =>
       sourceAuth(req.headers) { src =>
         log.info(s"Connection authenticated for source '$src'.")
-        sockets.source(UserRequest(src, req.headers, Urls.address(req)))
+        sockets.source(UserRequest(src, req.headers, Urls.address(req)), socketBuilder)
       }
     case req @ GET -> Root / "oauth" =>
       startHinted(Google, google, req)

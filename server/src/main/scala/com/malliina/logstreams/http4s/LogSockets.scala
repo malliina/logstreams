@@ -14,9 +14,9 @@ import io.circe.Encoder
 import io.circe.parser.*
 import io.circe.syntax.EncoderOps
 import org.http4s.Response
-import org.http4s.server.websocket.WebSocketBuilder
 import org.http4s.websocket.WebSocketFrame
 import org.http4s.websocket.WebSocketFrame.Text
+import org.http4s.server.websocket.WebSocketBuilder2
 
 import java.time.Instant
 import scala.concurrent.duration.DurationInt
@@ -47,7 +47,7 @@ class LogSockets(
   }
   val pings = Stream.awakeEvery[IO](5.seconds).map(_ => SimpleEvent.ping)
 
-  def listener(query: StreamsQuery): IO[Response[IO]] = {
+  def listener(query: StreamsQuery, socketBuilder: WebSocketBuilder2[IO]): IO[Response[IO]] = {
     val subscription =
       logUpdates.subscribe(100).map { es =>
         es.filter(_.event.level.int >= query.level.int)
@@ -71,12 +71,12 @@ class LogSockets(
     val toClient = pings
       .mergeHaltBoth(logEvents)
       .through(jsonTransform[FrontEvent])
-    WebSocketBuilder[IO].build(toClient, logIncoming)
+    socketBuilder.build(toClient, logIncoming)
   }
 
-  def admin(user: UserRequest): IO[Response[IO]] =
-    WebSocketBuilder[IO]
-      .copy(onClose = IO(log.info(s"Admin '${user.user}' disconnected.")))
+  def admin(user: UserRequest, socketBuilder: WebSocketBuilder2[IO]): IO[Response[IO]] =
+    socketBuilder
+      .withOnClose(IO(log.info(s"Admin '${user.user}' disconnected.")))
       .build(
         Stream.eval(IO(log.info(s"Admin '${user.user}' connected."))) >> pings
           .mergeHaltBoth(Stream.eval(connectedSources.get) ++ admins.subscribe(100))
@@ -84,7 +84,7 @@ class LogSockets(
         logIncoming
       )
 
-  def source(user: UserRequest): IO[Response[IO]] = {
+  def source(user: UserRequest, socketBuilder: WebSocketBuilder2[IO]): IO[Response[IO]] = {
     val publishEvents: Pipe[IO, WebSocketFrame, Unit] = _.evalMap {
       case Text(message, _) =>
         val event = decode[LogEvents](message).fold(
@@ -117,8 +117,8 @@ class LogSockets(
     }
     val logSource = LogSource(AppName(user.user.name), user.address)
     connected(logSource).flatMap { _ =>
-      WebSocketBuilder[IO]
-        .copy(onClose = disconnected(logSource))
+      socketBuilder
+        .withOnClose(disconnected(logSource))
         .build(
           pings.through(jsonTransform[SimpleEvent]),
           publishEvents

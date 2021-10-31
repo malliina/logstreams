@@ -90,17 +90,13 @@ val frontend = project
   .settings(
     assetsPackage := "com.malliina.logstreams",
     version := "1.0.0",
-    libraryDependencies ++= Seq(
-      ("com.lihaoyi" %%% "scalatags" % "0.9.4").cross(CrossVersion.for3Use2_13)
-    ),
     webpack / version := "4.44.2",
     webpackEmitSourceMaps := false,
     scalaJSUseMainModuleInitializer := true,
     Compile / npmDependencies ++= Seq(
-      "@fortawesome/fontawesome-free" -> "5.15.2",
-      "bootstrap" -> "4.6.0",
-      "jquery" -> "3.6.0",
-      "popper.js" -> "1.16.1"
+      "@fortawesome/fontawesome-free" -> "5.15.4",
+      "@popperjs/core" -> "2.10.2",
+      "bootstrap" -> "5.1.3"
     ),
     Compile / npmDevDependencies ++= Seq(
       "autoprefixer" -> "10.2.5",
@@ -151,7 +147,7 @@ val server = project
     buildInfoPackage := "com.malliina.app",
     buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, "hash" -> gitHash),
     libraryDependencies ++= SbtUtils.loggingDeps ++ http4sModules.map { m =>
-      "org.http4s" %% s"http4s-$m" % "0.23.4"
+      "org.http4s" %% s"http4s-$m" % "0.23.6"
     } ++ Seq("doobie-core", "doobie-hikari").map { d =>
       "org.tpolecat" %% d % "1.0.0-RC1"
     } ++ Seq(

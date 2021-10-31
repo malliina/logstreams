@@ -8,7 +8,6 @@ import scala.scalajs.js.annotation.JSImport
 object Frontend {
   var app: Option[Any] = None
 
-  private val jq = MyJQuery
   private val p = Popper
   private val b = Bootstrap
   private val bootstrapCss = BootstrapCss
@@ -26,11 +25,7 @@ object Frontend {
 }
 
 @js.native
-@JSImport("jquery", JSImport.Namespace)
-object MyJQuery extends js.Object
-
-@js.native
-@JSImport("popper.js", JSImport.Namespace)
+@JSImport("@popperjs/core", JSImport.Namespace)
 object Popper extends js.Object
 
 @js.native

@@ -14,6 +14,8 @@ trait FrontStrings {
 
   val LabelCompact = "label-compact"
   val LabelVerbose = "label-verbose"
+  val OptionCompact = "option-compact"
+  val OptionVerbose = "option-verbose"
 
   val LogTableId = "log-table"
 

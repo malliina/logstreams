@@ -5,8 +5,8 @@ import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents, LogLevel}
 import io.circe.Json
 import org.scalajs.dom
 import org.scalajs.dom.document
-import org.scalajs.dom.raw.{Event, HTMLElement, HTMLTableElement}
-import scalatags.JsDom.all._
+import org.scalajs.dom.raw.{Event, HTMLElement, HTMLInputElement, HTMLTableElement}
+import scalatags.JsDom.all.*
 
 case class RowContent(content: Frag, cellId: String, linkId: String)
 
@@ -58,11 +58,14 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
   }
 
   updateVerbose(isVerbose)
+  document.getElementById(OptionCompact).asInstanceOf[HTMLInputElement].checked = !isVerbose
+  document.getElementById(OptionVerbose).asInstanceOf[HTMLInputElement].checked = isVerbose
 
   def updateVerbose(newVerbose: Boolean): Unit = {
     settings.saveVerbose(newVerbose)
     document.getElementsByClassName(VerboseKey).foreach { e =>
-      val classes = e.asInstanceOf[HTMLElement].classList
+      val element = e.asInstanceOf[HTMLElement]
+      val classes = element.classList
       if (newVerbose) classes.remove(Off) else classes.add(Off)
     }
   }

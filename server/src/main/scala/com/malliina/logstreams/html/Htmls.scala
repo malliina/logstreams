@@ -95,7 +95,7 @@ class Htmls(
             input(
               `type` := "radio",
               name := "options",
-              id := "option-verbose",
+              id := OptionVerbose,
               autocomplete := "off"
             )(" Verbose")
           ),
@@ -103,7 +103,7 @@ class Htmls(
             input(
               `type` := "radio",
               name := "options",
-              id := "option-compact",
+              id := OptionCompact,
               autocomplete := "off"
             )(" Compact")
           )

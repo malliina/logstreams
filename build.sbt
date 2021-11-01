@@ -9,9 +9,9 @@ import scala.sys.process.Process
 import scala.util.Try
 
 val malliinaGroup = "com.malliina"
-val utilHtmlVersion = "6.0.3"
+val utilHtmlVersion = "6.0.5"
 val primitivesVersion = "3.0.2"
-val logbackVersion = "1.2.5"
+val logbackVersion = "1.2.6"
 val munitVersion = "0.7.29"
 
 val utilPlayDep = malliinaGroup %% "web-auth" % utilHtmlVersion
@@ -20,7 +20,7 @@ val serverVersion = "0.7.0"
 
 val circeModules = Seq("generic", "parser")
 val scala213 = "2.13.6"
-val scala3 = "3.0.2"
+val scala3 = "3.1.0"
 
 inThisBuild(
   Seq(
@@ -76,7 +76,6 @@ val cross = portableProject(JSPlatform, JVMPlatform)
   .settings(
     libraryDependencies ++= circeModules.map(m => "io.circe" %%% s"circe-$m" % "0.14.1") ++ Seq(
       "com.malliina" %%% "primitives" % primitivesVersion,
-      "com.malliina" %%% "util-html" % utilHtmlVersion, // temporary
       ("com.lihaoyi" %%% "scalatags" % "0.9.4").cross(CrossVersion.for3Use2_13)
     )
   )

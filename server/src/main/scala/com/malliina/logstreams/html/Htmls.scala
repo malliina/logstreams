@@ -6,7 +6,7 @@ import com.malliina.http.FullUrl
 import com.malliina.live.LiveReload
 import com.malliina.logstreams.html.Htmls.*
 import com.malliina.logstreams.http4s.LogRoutes
-import com.malliina.logstreams.models.{AppName, Bootstrap5, FrontStrings, LogLevel}
+import com.malliina.logstreams.models.{AppName, FrontStrings, LogLevel}
 import com.malliina.values.Username
 import controllers.UserFeedback
 import org.http4s.Uri
@@ -42,7 +42,7 @@ class Htmls(
   externalScripts: Seq[FullUrl],
   cssFiles: Seq[String],
   assets: AssetsSource
-) extends Bootstrap5(HtmlTags)
+) extends Bootstrap(HtmlTags)
   with FrontStrings {
 
   import tags._

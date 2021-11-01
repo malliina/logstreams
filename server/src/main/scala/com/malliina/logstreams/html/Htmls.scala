@@ -4,13 +4,13 @@ import com.malliina.html.HtmlImplicits.fullUrl
 import com.malliina.html.{Bootstrap, HtmlTags, TagPage}
 import com.malliina.http.FullUrl
 import com.malliina.live.LiveReload
-import com.malliina.logstreams.html.Htmls._
+import com.malliina.logstreams.html.Htmls.*
 import com.malliina.logstreams.http4s.LogRoutes
-import com.malliina.logstreams.models.{AppName, FrontStrings, LogLevel}
+import com.malliina.logstreams.models.{AppName, Bootstrap5, FrontStrings, LogLevel}
 import com.malliina.values.Username
 import controllers.UserFeedback
 import org.http4s.Uri
-import scalatags.Text.all._
+import scalatags.Text.all.*
 import scalatags.text.Builder
 
 object Htmls {
@@ -42,7 +42,7 @@ class Htmls(
   externalScripts: Seq[FullUrl],
   cssFiles: Seq[String],
   assets: AssetsSource
-) extends Bootstrap(HtmlTags)
+) extends Bootstrap5(HtmlTags)
   with FrontStrings {
 
   import tags._
@@ -61,7 +61,7 @@ class Htmls(
             id := LogLevelDropdownButton,
             `class` := s"btn btn-secondary btn-sm $DropdownToggle",
             `type` := "button",
-            dataToggle := "dropdown",
+            data("bs-toggle") := "dropdown",
             aria.haspopup := "true",
             aria.expanded := "false"
           )("Level"),
@@ -75,7 +75,7 @@ class Htmls(
           button(
             `class` := s"btn btn-secondary btn-sm $DropdownToggle",
             `type` := "button",
-            dataToggle := "dropdown",
+            data("bs-toggle") := "dropdown",
             aria.haspopup := "true",
             aria.expanded := "false"
           )("Apps"),

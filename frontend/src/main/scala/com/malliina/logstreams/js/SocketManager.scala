@@ -1,9 +1,10 @@
 package com.malliina.logstreams.js
 
 import com.malliina.logstreams.models.{AppName, LogLevel}
+import org.scalajs.dom.KeyboardEvent
 import org.scalajs.dom.html.Anchor
-import org.scalajs.dom.raw.MouseEvent
-import scalatags.JsDom.all._
+import org.scalajs.dom.raw.{Event, HTMLButtonElement, HTMLInputElement, MouseEvent}
+import scalatags.JsDom.all.*
 
 object SocketManager {
   def apply() = new SocketManager
@@ -14,7 +15,7 @@ class SocketManager extends ScriptHelpers {
   val settings: Settings = StorageSettings
   private val availableApps =
     elem(AppsDropdownMenuId).getElementsByClassName(DropdownItem).map(_.asInstanceOf[Anchor])
-  private var socket: ListenerSocket = socketFor(settings.apps, settings.level)
+  private var socket: ListenerSocket = socketFor(settings.apps, settings.level, settings.query)
 
   availableApps.foreach { item =>
     item.onclick =
@@ -28,11 +29,23 @@ class SocketManager extends ScriptHelpers {
         updateLogLevel(level)
       }
   }
+  val searchInput = getElem[HTMLInputElement](SearchInput)
+  settings.query.foreach { q =>
+    searchInput.value = q
+  }
+  getElem[HTMLButtonElement](SearchButton).onclick = (e: MouseEvent) => {
+    updateSearch()
+  }
+  searchInput.onkeydown = (ke: KeyboardEvent) => {
+    if (ke.key == "Enter") {
+      updateSearch()
+    }
+  }
   renderActiveLevel(availableLogLevels, settings.level)
   renderApps(settings.apps)
 
-  def socketFor(apps: Seq[AppName], level: LogLevel) =
-    ListenerSocket(urlFor(apps, level), settings, verboseSupport = true)
+  def socketFor(apps: Seq[AppName], level: LogLevel, query: Option[String]) =
+    ListenerSocket(urlFor(apps, level, query), settings, verboseSupport = true)
 
   def renderApps(apps: Seq[AppName]): Unit = {
     val buttons = apps.map { app =>
@@ -59,24 +72,32 @@ class SocketManager extends ScriptHelpers {
 
   private def updateFilter(apps: Seq[AppName]): Unit = {
     renderApps(apps)
-    reconnect(apps, settings.level)
+    reconnect(apps, settings.level, settings.query)
   }
 
   private def updateLogLevel(level: LogLevel): Unit = {
     settings.saveLevel(level)
     renderActiveLevel(availableLogLevels, level)
-    reconnect(settings.apps, level)
+    reconnect(settings.apps, level, settings.query)
   }
 
-  private def urlFor(apps: Seq[AppName], level: LogLevel): String = {
+  private def updateSearch(): Unit = {
+    val text = searchInput.value
+    val query = Option(text).filter(_.length >= 3)
+    settings.saveQuery(query)
+    reconnect(settings.apps, settings.level, query)
+  }
+
+  private def urlFor(apps: Seq[AppName], level: LogLevel, query: Option[String]): String = {
     val appsQuery = if (apps.isEmpty) "" else "&" + apps.map(app => s"app=$app").mkString("&")
     val levelQuery = s"&${LogLevel.Key}=${level.name}"
-    s"/ws/logs?f=json$appsQuery$levelQuery"
+    val searchQuery = query.fold("")(q => s"&q=$q")
+    s"/ws/logs?f=json$appsQuery$levelQuery$searchQuery"
   }
 
-  private def reconnect(apps: Seq[AppName], level: LogLevel): Unit = {
+  private def reconnect(apps: Seq[AppName], level: LogLevel, query: Option[String]): Unit = {
     socket.close()
     socket.clear()
-    socket = socketFor(apps, level)
+    socket = socketFor(apps, level, query)
   }
 }

@@ -116,6 +116,20 @@ class Htmls(
         )
       )
     ),
+    row(
+      div(`class` := "input-group mb-3")(
+        input(
+          `type` := "text",
+          `class` := "form-control search-control",
+          aria.label := "Search input",
+          id := SearchInput,
+          placeholder := "Message, stacktrace, thread, ..."
+        ),
+        button(`type` := "button", `class` := "btn btn-outline-primary", id := SearchButton)(
+          "Search"
+        )
+      )
+    ),
     logEntriesTable(LogTableId)(thead(id := TableHeadId), tbody(id := TableBodyId))
   )
 

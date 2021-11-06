@@ -48,11 +48,13 @@ class DoobieStreamsDatabase(db: DoobieDatabase) extends LogsDatabase[IO] {
       .flatMap(l => Seq(l.int, toLogback(l).toInt))
       .toNel
     log.debug(s"Query with $query using levels $levels")
-    val whereClause =
-      Fragments.whereAndOpt(
-        query.apps.toList.toNel.map(apps => Fragments.in(fr"APP", apps)),
-        levels.map(ls => Fragments.in(fr"LEVEL", ls))
+    val whereClause = Fragments.whereAndOpt(
+      query.apps.toList.toNel.map(apps => Fragments.in(fr"APP", apps)),
+      levels.map(ls => Fragments.in(fr"LEVEL", ls)),
+      query.queryStar.map(q =>
+        fr"MATCH(APP, ADDRESS, MESSAGE, LOGGER, THREAD, STACKTRACE) AGAINST($q)"
       )
+    )
     val order = if (query.order == SortOrder.asc) fr0"asc" else fr0"desc"
     sql"""select ID, APP, ADDRESS, TIMESTAMP, MESSAGE, LOGGER, THREAD, LEVEL, STACKTRACE, ADDED
           from LOGS $whereClause 

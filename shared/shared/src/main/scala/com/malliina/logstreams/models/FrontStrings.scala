@@ -24,4 +24,7 @@ trait FrontStrings {
   val TableHeadId = "table-head"
 
   val VerboseKey = "verbose"
+
+  val SearchInput = "search-input"
+  val SearchButton = "search-button"
 }

@@ -12,6 +12,8 @@ trait Settings {
   def saveApps(apps: Seq[AppName]): Unit
   def level: LogLevel
   def saveLevel(newLevel: LogLevel): Unit
+  def query: Option[String]
+  def saveQuery(newQuery: Option[String]): Unit
 
   def appendDistinct(app: AppName): Seq[AppName] = {
     val before = apps
@@ -35,6 +37,7 @@ object StorageSettings extends Settings {
   private val VerboseKey = "verbose"
   private val AppsKey = "apps"
   private val LevelKey = "level"
+  private val QueryKey = "query"
 
   val localStorage = dom.window.localStorage
 
@@ -53,5 +56,11 @@ object StorageSettings extends Settings {
   def level: LogLevel = Option(localStorage.getItem(LevelKey))
     .flatMap(s => LogLevel.build(s).toOption)
     .getOrElse(LogLevel.Info)
-  def saveLevel(newLevel: LogLevel): Unit = localStorage.setItem(LevelKey, newLevel.name)
+  def saveLevel(newLevel: LogLevel): Unit =
+    localStorage.setItem(LevelKey, newLevel.name)
+
+  def query: Option[String] =
+    Option(localStorage.getItem(QueryKey)).filter(_.length >= 3)
+  def saveQuery(newQuery: Option[String]): Unit =
+    localStorage.setItem(QueryKey, newQuery.getOrElse(""))
 }

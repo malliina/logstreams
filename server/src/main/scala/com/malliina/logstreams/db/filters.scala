@@ -3,7 +3,7 @@ package com.malliina.logstreams.db
 import com.malliina.logstreams.Errors
 import com.malliina.logstreams.http4s.QueryParsers
 import com.malliina.logstreams.models.LogLevel
-import com.malliina.values.{ErrorMessage, Username, ValidatingCompanion}
+import com.malliina.values.{ErrorMessage, Username, StringEnumCompanion}
 import org.http4s.{Query, QueryParamDecoder}
 
 case class StreamsQuery(
@@ -11,15 +11,19 @@ case class StreamsQuery(
   level: LogLevel,
   limit: Int,
   offset: Int,
-  order: SortOrder
-)
+  order: SortOrder,
+  query: Option[String]
+) {
+  def queryStar = query.map(q => s"$q*")
+}
 
 object StreamsQuery {
   val AppKey = "app"
   val Limit = "limit"
   val Offset = "offset"
+  val Query = "q"
 
-  val default = StreamsQuery(Nil, LogLevel.Info, 1000, 0, SortOrder.default)
+  val default = StreamsQuery(Nil, LogLevel.Info, 1000, 0, SortOrder.default, None)
 
   def fromQuery(q: Query): Either[Errors, StreamsQuery] = for {
     apps <- Right(q.multiParams.getOrElse(AppKey, Nil).map(s => Username(s)))
@@ -31,14 +35,15 @@ object StreamsQuery {
     limit <- QueryParsers.parseOrDefault[Int](q, Limit, 500)
     offset <- QueryParsers.parseOrDefault[Int](q, Offset, 0)
     sort <- SortOrder.fromQuery(q)
-  } yield StreamsQuery(apps, level, limit, offset, sort)
+    query <- QueryParsers.parseOpt[String](q, Query).map(_.map(Option.apply)).getOrElse(Right(None))
+  } yield StreamsQuery(apps, level, limit, offset, sort, query.filter(_.length >= 3))
 }
 
 sealed abstract class SortOrder(val name: String) {
-  override def toString = name
+  override def toString: String = name
 }
 
-object SortOrder extends ValidatingCompanion[String, SortOrder] {
+object SortOrder extends StringEnumCompanion[SortOrder] {
   val Order = "order"
   val asc: SortOrder = Ascending
   val desc: SortOrder = Descending
@@ -46,17 +51,12 @@ object SortOrder extends ValidatingCompanion[String, SortOrder] {
 
   val all: Seq[SortOrder] = Seq(asc, desc)
 
-  implicit val queryDecoder: QueryParamDecoder[SortOrder] = QueryParsers.decoder[SortOrder](build)
+  case object Ascending extends SortOrder("asc")
+  case object Descending extends SortOrder("desc")
 
-  override def build(input: String): Either[ErrorMessage, SortOrder] =
-    all
-      .find(_.name.toLowerCase == input.toLowerCase)
-      .toRight(ErrorMessage(s"Invalid input: '$input'. Must be one of: '${all.mkString(", ")}'."))
+  implicit val queryDecoder: QueryParamDecoder[SortOrder] = QueryParsers.decoder[SortOrder](build)
 
   override def write(t: SortOrder): String = t.name
 
   def fromQuery(q: Query) = QueryParsers.parseOrDefault(q, Order, default)
 }
-
-case object Ascending extends SortOrder("asc")
-case object Descending extends SortOrder("desc")

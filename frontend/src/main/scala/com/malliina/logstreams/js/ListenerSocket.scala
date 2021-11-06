@@ -76,10 +76,6 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
     }
   }
 
-  def updateVerboseByClick(newVerbose: Boolean) = {
-    updateVerbose(newVerbose)
-  }
-
   override def handlePayload(payload: Json): Unit =
     handleValidated(payload)(onLogEvents)
 

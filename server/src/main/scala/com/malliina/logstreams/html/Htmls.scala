@@ -59,7 +59,7 @@ class Htmls(
         div(id := LogLevelDropdown, `class` := "dropdown")(
           button(
             id := LogLevelDropdownButton,
-            `class` := s"btn btn-info btn-secondary btn-sm $DropdownToggle",
+            `class` := s"btn btn-info btn-sm $DropdownToggle",
             `type` := "button",
             data("bs-toggle") := "dropdown",
             aria.haspopup := "true",

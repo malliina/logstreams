@@ -25,7 +25,6 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
   val NoWrap = "no-wrap"
   val Warning = "warning"
   val Info = "info"
-  val ActiveCustom = "active-custom"
 
   val Off = "off"
 
@@ -39,7 +38,6 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
   val responsiveClass = "d-none d-md-table-cell"
 
   val responsiveTh = th(`class` := responsiveClass)
-//  val responsiveTd = td
 
   if (verboseSupport) {
     val verboseClass = names(VerboseKey, if (isVerbose) "" else Off)
@@ -53,13 +51,21 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
         responsiveTh("Level")
       ).render
     )
-    configureToggle(LabelVerbose, isVerbose)(_ => updateVerboseByClick(true))
-    configureToggle(LabelCompact, !isVerbose)(_ => updateVerboseByClick(false))
   }
-
-  updateVerbose(isVerbose)
-  document.getElementById(OptionCompact).asInstanceOf[HTMLInputElement].checked = !isVerbose
-  document.getElementById(OptionVerbose).asInstanceOf[HTMLInputElement].checked = isVerbose
+  val compactInput = getElem[HTMLInputElement](OptionCompact)
+  val verboseInput = getElem[HTMLInputElement](OptionVerbose)
+  compactInput.onchange = (e: Event) => {
+    if (compactInput.checked) {
+      updateVerbose(false)
+    }
+  }
+  verboseInput.onchange = (e: Event) => {
+    if (verboseInput.checked) {
+      updateVerbose(true)
+    }
+  }
+  compactInput.checked = !isVerbose
+  verboseInput.checked = isVerbose
 
   def updateVerbose(newVerbose: Boolean): Unit = {
     settings.saveVerbose(newVerbose)
@@ -72,20 +78,6 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
 
   def updateVerboseByClick(newVerbose: Boolean) = {
     updateVerbose(newVerbose)
-    activateCustom(LabelVerbose, false)
-    activateCustom(LabelCompact, false)
-  }
-
-  def configureToggle(on: String, isActive: Boolean)(onClick: Event => Unit): Unit = {
-    val e = activateCustom(on, isActive)
-    e.addEventListener("click", onClick)
-  }
-
-  private def activateCustom(id: String, isActive: Boolean) = {
-    val e = getElem[HTMLElement](id)
-    if (isActive) e.classList.add(ActiveCustom)
-    else e.classList.remove(ActiveCustom)
-    e
   }
 
   override def handlePayload(payload: Json): Unit =

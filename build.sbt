@@ -105,7 +105,7 @@ val frontend = project
       "file-loader" -> "6.2.0",
       "less" -> "4.1.1",
       "less-loader" -> "7.3.0",
-      "mini-css-extract-plugin" -> "1.4.1",
+      "mini-css-extract-plugin" -> "1.6.2",
       "postcss" -> "8.2.9",
       "postcss-import" -> "14.0.1",
       "postcss-loader" -> "4.2.0",

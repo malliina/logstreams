@@ -59,7 +59,7 @@ class Htmls(
         div(id := LogLevelDropdown, `class` := "dropdown")(
           button(
             id := LogLevelDropdownButton,
-            `class` := s"btn btn-secondary btn-sm $DropdownToggle",
+            `class` := s"btn btn-info btn-secondary btn-sm $DropdownToggle",
             `type` := "button",
             data("bs-toggle") := "dropdown",
             aria.haspopup := "true",
@@ -73,7 +73,7 @@ class Htmls(
       divClass("col-sm-6 col-md-7 mt-2 mb-2 mt-sm-0")(
         div(id := AppsDropdown, `class` := "dropdown")(
           button(
-            `class` := s"btn btn-secondary btn-sm $DropdownToggle",
+            `class` := s"btn btn-primary btn-sm $DropdownToggle",
             `type` := "button",
             data("bs-toggle") := "dropdown",
             aria.haspopup := "true",
@@ -87,26 +87,32 @@ class Htmls(
       ),
       div(`class` := s"${col.sm.four} mt-1 mt-sm-0 d-none d-md-block")(
         div(
-          `class` := "btn-group btn-group-toggle compact-group float-right",
+          `class` := "btn-group",
           role := "group",
-          data("toggle") := "buttons"
+          aria.label := "Verbose or compact"
         )(
-          label(`class` := "btn btn-info btn-sm", id := LabelVerbose)(
-            input(
-              `type` := "radio",
-              name := "options",
-              id := OptionVerbose,
-              autocomplete := "off"
-            )(" Verbose")
+          input(
+            `class` := "btn-check",
+            `type` := "radio",
+            name := "options",
+            id := OptionVerbose,
+            autocomplete := "off"
           ),
-          label(`class` := "btn btn-info btn-sm ", id := LabelCompact)(
-            input(
-              `type` := "radio",
-              name := "options",
-              id := OptionCompact,
-              autocomplete := "off"
-            )(" Compact")
-          )
+          label(
+            `class` := "btn btn-sm btn-outline-primary",
+            `for` := OptionVerbose
+          )("Verbose"),
+          input(
+            `class` := "btn-check",
+            `type` := "radio",
+            name := "options",
+            id := OptionCompact,
+            autocomplete := "off"
+          ),
+          label(
+            `class` := "btn btn-sm btn-outline-primary",
+            `for` := OptionCompact
+          )("Compact")
         )
       )
     ),

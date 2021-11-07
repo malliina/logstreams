@@ -55,37 +55,7 @@ class Htmls(
   def logs(apps: Seq[AppName]) = baseIndex("logs")(
     headerRow("Logs"),
     row(
-      divClass("col-sm-2 col-md-1")(
-        div(id := LogLevelDropdown, `class` := "dropdown")(
-          button(
-            id := LogLevelDropdownButton,
-            `class` := s"btn btn-info btn-sm $DropdownToggle",
-            `type` := "button",
-            data("bs-toggle") := "dropdown",
-            aria.haspopup := "true",
-            aria.expanded := "false"
-          )("Level"),
-          div(`class` := DropdownMenu, id := LogLevelDropdownMenuId)(
-            LogLevel.all.map(l => a(`class` := DropdownItem, href := "#")(l.name))
-          )
-        )
-      ),
-      divClass("col-sm-6 col-md-7 mt-2 mb-2 mt-sm-0")(
-        div(id := AppsDropdown, `class` := "dropdown")(
-          button(
-            `class` := s"btn btn-primary btn-sm $DropdownToggle",
-            `type` := "button",
-            data("bs-toggle") := "dropdown",
-            aria.haspopup := "true",
-            aria.expanded := "false"
-          )("Apps"),
-          div(`class` := DropdownMenu, id := AppsDropdownMenuId)(
-            apps.map(app => a(`class` := DropdownItem, href := "#")(app.name))
-          )
-        ),
-        div(id := AppsFiltered)
-      ),
-      div(`class` := s"${col.sm.four} mt-1 mt-sm-0 d-none d-md-block")(
+      div(`class` := s"col-sm-2 col-md-3 mt-1 mt-sm-0 d-none d-md-block")(
         div(
           `class` := "btn-group",
           role := "group",
@@ -114,10 +84,40 @@ class Htmls(
             `for` := OptionCompact
           )("Compact")
         )
+      ),
+      divClass("col-sm-2 col-md-2 col-lg-1")(
+        div(id := LogLevelDropdown, `class` := "dropdown")(
+          button(
+            id := LogLevelDropdownButton,
+            `class` := s"btn btn-info btn-sm $DropdownToggle",
+            `type` := "button",
+            data("bs-toggle") := "dropdown",
+            aria.haspopup := "true",
+            aria.expanded := "false"
+          )("Level"),
+          div(`class` := DropdownMenu, id := LogLevelDropdownMenuId)(
+            LogLevel.all.map(l => a(`class` := DropdownItem, href := "#")(l.name))
+          )
+        )
+      ),
+      divClass("col-sm-6 col-md-7 mt-2 mb-2 mt-sm-0")(
+        div(id := AppsDropdown, `class` := "dropdown")(
+          button(
+            `class` := s"btn btn-primary btn-sm $DropdownToggle",
+            `type` := "button",
+            data("bs-toggle") := "dropdown",
+            aria.haspopup := "true",
+            aria.expanded := "false"
+          )("Apps"),
+          div(`class` := DropdownMenu, id := AppsDropdownMenuId)(
+            apps.map(app => a(`class` := DropdownItem, href := "#")(app.name))
+          )
+        ),
+        div(id := AppsFiltered)
       )
     ),
     row(
-      div(`class` := "input-group mb-3")(
+      div(`class` := "input-group mt-3 mb-3")(
         input(
           `type` := "text",
           `class` := "form-control search-control",
@@ -209,7 +209,7 @@ class Htmls(
 
   def root(titleLabel: String, extraHeader: Modifier*)(inner: Modifier*) =
     TagPage(
-      html(
+      html(lang := "en")(
         head(
           titleTag(titleLabel),
           deviceWidthViewport,

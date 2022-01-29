@@ -6,6 +6,5 @@ import io.circe.generic.semiauto.deriveCodec
 
 case class LogEvents(events: Seq[LogEvent])
 
-object LogEvents {
+object LogEvents:
   implicit val json: Codec[LogEvents] = deriveCodec[LogEvents]
-}

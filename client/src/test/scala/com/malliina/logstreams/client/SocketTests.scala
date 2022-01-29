@@ -6,7 +6,7 @@ import com.neovisionaries.ws.client.WebSocketException
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
-class SocketTests extends munit.FunSuite {
+class SocketTests extends munit.FunSuite:
   def failSocket = new SocketClient(FullUrl("http", "kjdhfkdshfds.com", "/blaa"), null, Nil)
 
   test("network failure fails with WebSocketException".ignore) {
@@ -29,4 +29,3 @@ class SocketTests extends munit.FunSuite {
   }
 
   def await[T](f: Future[T]) = Await.result(f, 10.seconds)
-}

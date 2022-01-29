@@ -9,11 +9,10 @@ import com.typesafe.config.{Config, ConfigFactory}
 
 import java.nio.file.Paths
 
-sealed trait AppMode {
+sealed trait AppMode:
   def isProd = this == AppMode.Prod
-}
 
-object AppMode {
+object AppMode:
   case object Prod extends AppMode
   case object Dev extends AppMode
 
@@ -22,31 +21,27 @@ object AppMode {
     case "dev"  => Right(Dev)
     case other  => Left(ErrorMessage(s"Invalid mode: '$other'. Mode must be 'prod' or 'dev'."))
   }
-}
 
-object LocalConf {
+object LocalConf:
   val homeDir = Paths.get(sys.props("user.home"))
   val appDir = LocalConf.homeDir.resolve(".logstreams")
   val localConfFile = appDir.resolve("logstreams.conf")
   val localConf = ConfigFactory.parseFile(localConfFile.toFile).withFallback(ConfigFactory.load())
-}
 
 case class LogstreamsConf(mode: AppMode, secret: SecretKey, db: Conf, google: AuthConf)
 
 case class WrappedConf(logstreams: LogstreamsConf)
 
-trait ConfigReadable[T] {
+trait ConfigReadable[T]:
   def read(key: String, c: Config): Either[ErrorMessage, T]
-  def flatMap[U](f: T => ConfigReadable[U]): ConfigReadable[U] = {
+  def flatMap[U](f: T => ConfigReadable[U]): ConfigReadable[U] =
     val parent = this
     (key: String, c: Config) => parent.read(key, c).flatMap(t => f(t).read(key, c))
-  }
   def emap[U](f: T => Either[ErrorMessage, U]): ConfigReadable[U] = (key: String, c: Config) =>
     read(key, c).flatMap(f)
   def map[U](f: T => U): ConfigReadable[U] = emap(t => Right(f(t)))
-}
 
-object ConfigReadable {
+object ConfigReadable:
   implicit val string: ConfigReadable[String] = (key: String, c: Config) => Right(c.getString(key))
   implicit val url: ConfigReadable[FullUrl] = string.emap(s => FullUrl.build(s))
   implicit val int: ConfigReadable[Int] = (key: String, c: Config) => Right(c.getInt(key))
@@ -55,17 +50,15 @@ object ConfigReadable {
 
   implicit def readable[T](implicit r: Readable[T]): ConfigReadable[T] =
     string.emap(s => r.read(s))
-}
 
-object LogstreamsConf {
-  implicit class ConfigOps(c: Config) {
+object LogstreamsConf:
+  implicit class ConfigOps(c: Config):
     def read[T](key: String)(implicit r: ConfigReadable[T]): Either[ErrorMessage, T] =
       r.read(key, c)
     def unsafe[T: ConfigReadable](key: String): T =
       c.read[T](key).fold(err => throw new IllegalArgumentException(err.message), identity)
-  }
 
-  def parse(): LogstreamsConf = {
+  def parse(): LogstreamsConf =
     val c = ConfigFactory.load(LocalConf.localConf).resolve().getConfig("logstreams")
     val db = c.getConfig("db")
     val google = c.getConfig("google")
@@ -75,7 +68,6 @@ object LogstreamsConf {
       parseDatabase(db),
       AuthConf(google.unsafe[ClientId]("client-id"), google.unsafe[ClientSecret]("client-secret"))
     )
-  }
 
   def parseDatabase(from: Config) = Conf(
     from.unsafe[String]("url"),
@@ -83,4 +75,3 @@ object LogstreamsConf {
     from.unsafe[String]("pass"),
     from.unsafe[String]("driver")
   )
-}

@@ -6,7 +6,7 @@ import org.scalajs.dom.html.Anchor
 import org.scalajs.dom.raw.{Event, HTMLButtonElement, HTMLInputElement, MouseEvent}
 import scalatags.JsDom.all.*
 
-class SocketManager extends ScriptHelpers {
+class SocketManager extends ScriptHelpers:
   val ActiveClass = "active"
   val settings: Settings = StorageSettings
   private val availableApps =
@@ -29,21 +29,15 @@ class SocketManager extends ScriptHelpers {
   settings.query.foreach { q =>
     searchInput.value = q
   }
-  getElem[HTMLButtonElement](SearchButton).onclick = (e: MouseEvent) => {
-    updateSearch()
-  }
-  searchInput.onkeydown = (ke: KeyboardEvent) => {
-    if (ke.key == "Enter") {
-      updateSearch()
-    }
-  }
+  getElem[HTMLButtonElement](SearchButton).onclick = (e: MouseEvent) => updateSearch()
+  searchInput.onkeydown = (ke: KeyboardEvent) => if ke.key == "Enter" then updateSearch()
   renderActiveLevel(availableLogLevels, settings.level)
   renderApps(settings.apps)
 
   def socketFor(apps: Seq[AppName], level: LogLevel, query: Option[String]) =
     ListenerSocket(pathFor(apps, level, query), settings, verboseSupport = true)
 
-  def renderApps(apps: Seq[AppName]): Unit = {
+  def renderApps(apps: Seq[AppName]): Unit =
     val buttons = apps.map { app =>
       val selected = button(`type` := "button", `class` := "btn btn-info btn-sm")(app.name).render
       selected.onclick = (_: MouseEvent) => updateFilter(settings.remove(app))
@@ -54,46 +48,37 @@ class SocketManager extends ScriptHelpers {
     buttons.foreach { btn =>
       target.appendChild(btn)
     }
-  }
 
-  private def renderActiveLevel(levels: Seq[Anchor], active: LogLevel): Unit = {
+  private def renderActiveLevel(levels: Seq[Anchor], active: LogLevel): Unit =
     elem(LogLevelDropdownButton).innerHTML = active.name
     levels.foreach { item =>
-      if (item.textContent == active.name && !item.classList.contains(ActiveClass))
+      if item.textContent == active.name && !item.classList.contains(ActiveClass) then
         item.classList.add(ActiveClass)
-      else
-        item.classList.remove(ActiveClass)
+      else item.classList.remove(ActiveClass)
     }
-  }
 
-  private def updateFilter(apps: Seq[AppName]): Unit = {
+  private def updateFilter(apps: Seq[AppName]): Unit =
     renderApps(apps)
     reconnect(apps, settings.level, settings.query)
-  }
 
-  private def updateLogLevel(level: LogLevel): Unit = {
+  private def updateLogLevel(level: LogLevel): Unit =
     settings.saveLevel(level)
     renderActiveLevel(availableLogLevels, level)
     reconnect(settings.apps, level, settings.query)
-  }
 
-  private def updateSearch(): Unit = {
+  private def updateSearch(): Unit =
     val text = searchInput.value
     val query = Option(text).filter(_.length >= 3)
     settings.saveQuery(query)
     reconnect(settings.apps, settings.level, query)
-  }
 
-  private def pathFor(apps: Seq[AppName], level: LogLevel, query: Option[String]): String = {
-    val appsQuery = if (apps.isEmpty) "" else "&" + apps.map(app => s"app=$app").mkString("&")
+  private def pathFor(apps: Seq[AppName], level: LogLevel, query: Option[String]): String =
+    val appsQuery = if apps.isEmpty then "" else "&" + apps.map(app => s"app=$app").mkString("&")
     val levelQuery = s"&${LogLevel.Key}=${level.name}"
     val searchQuery = query.fold("")(q => s"&q=$q")
     s"/ws/logs?f=json$appsQuery$levelQuery$searchQuery"
-  }
 
-  private def reconnect(apps: Seq[AppName], level: LogLevel, query: Option[String]): Unit = {
+  private def reconnect(apps: Seq[AppName], level: LogLevel, query: Option[String]): Unit =
     socket.close()
     socket.clear()
     socket = socketFor(apps, level, query)
-  }
-}

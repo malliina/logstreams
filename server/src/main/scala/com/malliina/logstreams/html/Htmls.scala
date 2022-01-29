@@ -13,29 +13,29 @@ import org.http4s.Uri
 import scalatags.Text.all.*
 import scalatags.text.Builder
 
-object Htmls {
+object Htmls:
   val UsernameKey = "username"
   val PasswordKey = "password"
 
   implicit val uriAttr: AttrValue[Uri] = (t: Builder, a: Attr, v: Uri) =>
     t.setAttr(a.name, Builder.GenericAttrValueSource(v.renderString))
 
-  /**
-    * @param appName typically the name of the Scala.js module
-    * @param isProd  true if the app runs in production, false otherwise
-    * @return HTML templates with either prod or dev javascripts
+  /** @param appName
+    *   typically the name of the Scala.js module
+    * @param isProd
+    *   true if the app runs in production, false otherwise
+    * @return
+    *   HTML templates with either prod or dev javascripts
     */
-  def forApp(appName: String, isProd: Boolean, assets: AssetsSource): Htmls = {
+  def forApp(appName: String, isProd: Boolean, assets: AssetsSource): Htmls =
     val name = appName.toLowerCase
-    val opt = if (isProd) "opt" else "fastopt"
-    val externalScripts = if (isProd) Nil else FullUrl.build(LiveReload.script).toSeq
+    val opt = if isProd then "opt" else "fastopt"
+    val externalScripts = if isProd then Nil else FullUrl.build(LiveReload.script).toSeq
     val assetPrefix = s"$name-$opt"
     val appScripts =
-      if (isProd) Seq(s"$assetPrefix-bundle.js")
+      if isProd then Seq(s"$assetPrefix-bundle.js")
       else Seq(s"$assetPrefix-library.js", s"$assetPrefix-loader.js", s"$assetPrefix.js")
     new Htmls(appScripts, externalScripts, Seq(s"$assetPrefix.css", "styles.css"), assets)
-  }
-}
 
 class Htmls(
   scripts: Seq[String],
@@ -43,9 +43,9 @@ class Htmls(
   cssFiles: Seq[String],
   assets: AssetsSource
 ) extends Bootstrap(HtmlTags)
-  with FrontStrings {
+  with FrontStrings:
 
-  import tags._
+  import tags.*
 
   val Status = "status"
   private val reverse = LogRoutes
@@ -140,16 +140,15 @@ class Htmls(
     )
   )
 
-  def users(us: Seq[Username], feedback: Option[UserFeedback]) = {
+  def users(us: Seq[Username], feedback: Option[UserFeedback]) =
 //    val csrfInput = input(`type` := "hidden", name := csrf.name, value := raw(csrf.value).render)
     baseIndex("users")(
       headerRow("Users"),
       fullRow(feedback.fold(empty)(feedbackDiv)),
       row(
         div6(
-          if (us.isEmpty) {
-            leadPara("No users.")
-          } else {
+          if us.isEmpty then leadPara("No users.")
+          else
             headeredTable(tables.stripedHover, Seq("Username", "Actions"))(
               tbody(us.map { user =>
                 tr(
@@ -162,7 +161,6 @@ class Htmls(
                 )
               })
             )
-          }
         ),
         div6(
           postableForm(reverse.addUser)(
@@ -173,7 +171,6 @@ class Htmls(
         )
       )
     )
-  }
 
   def logEntriesTable(tableId: String) =
     table(`class` := tables.defaultClass, id := tableId)
@@ -187,11 +184,10 @@ class Htmls(
       tbody
     )
 
-  def baseIndex(tabName: String)(inner: Modifier*) = {
-    def navItem(thisTabName: String, tabId: String, url: Uri, faName: String) = {
-      val itemClass = if (tabId == tabName) "nav-item active" else "nav-item"
+  def baseIndex(tabName: String)(inner: Modifier*) =
+    def navItem(thisTabName: String, tabId: String, url: Uri, faName: String) =
+      val itemClass = if tabId == tabName then "nav-item active" else "nav-item"
       li(`class` := itemClass)(a(href := url, `class` := "nav-link")(fa(faName), s" $thisTabName"))
-    }
 
     root("logstreams")(
       navbar.simple(
@@ -205,7 +201,6 @@ class Htmls(
       ),
       div(`class` := "wide-content", id := "page-content")(inner)
     )
-  }
 
   def root(titleLabel: String, extraHeader: Modifier*)(inner: Modifier*) =
     TagPage(
@@ -229,11 +224,10 @@ class Htmls(
       )
     )
 
-  def feedbackDiv(feedback: UserFeedback) = {
+  def feedbackDiv(feedback: UserFeedback) =
     val message = feedback.message
-    if (feedback.isError) alertDanger(message)
+    if feedback.isError then alertDanger(message)
     else alertSuccess(message)
-  }
 
   def postableForm(onAction: Uri, more: Modifier*) =
     form(role := FormRole, action := onAction, method := Post, more)
@@ -251,4 +245,3 @@ class Htmls(
 
   def fa(faName: String) =
     i(`class` := s"fas fa-$faName", title := faName, aria.hidden := tags.True)
-}

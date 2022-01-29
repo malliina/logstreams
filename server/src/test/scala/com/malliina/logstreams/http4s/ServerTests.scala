@@ -6,7 +6,7 @@ import fs2.Stream
 import cats.effect.unsafe.implicits.global
 import concurrent.duration.DurationInt
 
-class ServerTests extends FunSuite {
+class ServerTests extends FunSuite:
   // https://gitter.im/functional-streams-for-scala/fs2?at=5d83c2b62438b53a64dec29a
   test("running side effects in a Resource".ignore) {
     val cache = Stream.fixedRate[IO](2.seconds) >> Stream.eval(IO(println("cached")))
@@ -15,4 +15,3 @@ class ServerTests extends FunSuite {
     }
     hm.unsafeRunSync()
   }
-}

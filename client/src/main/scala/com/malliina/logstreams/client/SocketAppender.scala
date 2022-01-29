@@ -6,7 +6,7 @@ import com.malliina.logback.fs2.DefaultFS2IOAppender
 
 import java.io.Closeable
 
-class SocketAppender[T <: Closeable](rt: IORuntime) extends DefaultFS2IOAppender(rt) {
+class SocketAppender[T <: Closeable](rt: IORuntime) extends DefaultFS2IOAppender(rt):
   var endpoint: Option[FullUrl] = None
   var username: Option[String] = None
   var password: Option[String] = None
@@ -16,52 +16,44 @@ class SocketAppender[T <: Closeable](rt: IORuntime) extends DefaultFS2IOAppender
 
   def getEndpoint: String = endpoint.map(_.url).orNull
 
-  def setEndpoint(dest: String): Unit = {
+  def setEndpoint(dest: String): Unit =
     FullUrl
       .build(dest)
       .fold(
         err => addError(err.message),
-        url => {
+        url =>
           addInfo(s"Setting endpoint '$url' for appender [$name].")
           endpoint = Option(url)
-        }
       )
-  }
 
   def getUsername: String = username.orNull
 
-  def setUsername(user: String): Unit = {
+  def setUsername(user: String): Unit =
     addInfo(s"Setting username '$user' for appender [$name].")
     username = Option(user)
-  }
 
   def getPassword: String = password.orNull
 
-  def setPassword(pass: String): Unit = {
+  def setPassword(pass: String): Unit =
     addInfo(s"Setting password for appender [$name].")
     password = Option(pass)
-  }
 
   def getSecure: Boolean = secure
 
-  def setSecure(isSecure: Boolean): Unit = {
+  def setSecure(isSecure: Boolean): Unit =
     addInfo(s"Setting secure '$isSecure' for appender [$name].")
     secure = isSecure
-  }
 
   def getEnabled: Boolean = enabled
 
-  def setEnabled(isEnabled: Boolean): Unit = {
+  def setEnabled(isEnabled: Boolean): Unit =
     addInfo(s"Setting enabled '$isEnabled' for appender [$name].")
     enabled = isEnabled
-  }
 
   def toMissing[O](o: Option[O], fieldName: String) = o.toRight(missing(fieldName))
 
   def missing(fieldName: String) = s"No '$fieldName' is set for appender [$name]."
 
-  override def stop(): Unit = {
+  override def stop(): Unit =
     client.foreach(_.close())
     super.stop()
-  }
-}

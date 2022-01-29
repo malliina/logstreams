@@ -3,9 +3,9 @@ package com.malliina.logstreams.js
 import com.malliina.logstreams.models.{LogSource, LogSources}
 import io.circe.Json
 import scalatags.Text
-import scalatags.Text.all._
+import scalatags.Text.all.*
 
-class SourcesSocket extends BaseSocket("/ws/admins?f=json") {
+class SourcesSocket extends BaseSocket("/ws/admins?f=json"):
   val tableBody = elem(SourceTableId).getElementsByTagName("tbody").head
 
   override def handlePayload(payload: Json): Unit =
@@ -19,4 +19,3 @@ class SourcesSocket extends BaseSocket("/ws/admins?f=json") {
       td(source.name.name),
       td(source.remoteAddress)
     )
-}

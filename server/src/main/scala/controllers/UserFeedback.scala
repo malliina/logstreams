@@ -2,7 +2,7 @@ package controllers
 
 case class UserFeedback(message: String, isError: Boolean)
 
-object UserFeedback {
+object UserFeedback:
   val Feedback = "feedback"
   val Success = "success"
   val Yes = "yes"
@@ -10,4 +10,3 @@ object UserFeedback {
 
   def success(message: String) = UserFeedback(message, isError = false)
   def error(message: String) = UserFeedback(message, isError = true)
-}

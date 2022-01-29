@@ -10,14 +10,13 @@ import org.http4s.{Headers, HttpDate, Request, Response, ResponseCookie}
 
 import scala.concurrent.duration.DurationInt
 
-object Http4sAuth {
+object Http4sAuth:
   def apply(jwt: JWT): Http4sAuth = new Http4sAuth(jwt)
-}
 
 class Http4sAuth(
   val jwt: JWT,
   val cookieNames: CookieConf = CookieConf.prefixed("logstreams")
-) {
+):
   val cookiePath = Option("/")
 
   def authenticate(headers: Headers): Either[IdentityError, Username] =
@@ -29,10 +28,10 @@ class Http4sAuth(
   def token(headers: Headers) = headers
     .get[Authorization]
     .toRight(MissingCredentials("Missing Authorization header", headers))
-    .flatMap(_.credentials match {
+    .flatMap(_.credentials match
       case Token(_, token) => Right(IdToken(token))
       case _               => Left(MissingCredentials("Missing token.", headers))
-    })
+    )
 
   def withSession[T: Encoder](t: T, req: Request[IO], res: Response[IO]): res.Self =
     withJwt(cookieNames.session, t, req, res)
@@ -61,7 +60,7 @@ class Http4sAuth(
     t: T,
     req: Request[IO],
     res: Response[IO]
-  ): res.Self = {
+  ): res.Self =
     val signed = jwt.sign[T](t, 12.hours)
     val top = Urls.topDomainFrom(req)
     res.addCookie(
@@ -74,7 +73,6 @@ class Http4sAuth(
         domain = Option.when(top.nonEmpty)(top)
       )
     )
-  }
 
   def responseCookie(name: String, value: String) = ResponseCookie(
     name,
@@ -89,7 +87,7 @@ class Http4sAuth(
     read[UserPayload](cookieName, headers).map(_.username)
 
   private def read[T: Decoder](cookieName: String, headers: Headers): Either[IdentityError, T] =
-    for {
+    for
       header <- headers.get[Cookie].toRight(MissingCredentials("Cookie parsing error.", headers))
       cookie <-
         header.values
@@ -99,5 +97,4 @@ class Http4sAuth(
       t <- jwt.verify[T](cookie).left.map { err =>
         JWTError(err, headers)
       }
-    } yield t
-}
+    yield t

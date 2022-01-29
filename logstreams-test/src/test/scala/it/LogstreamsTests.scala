@@ -19,11 +19,10 @@ import org.slf4j.LoggerFactory
 import javax.net.ssl.SSLContext
 import scala.concurrent.Promise
 
-object LogstreamsTests {
+object LogstreamsTests:
   val testUsername = Username("u")
-}
 
-class LogstreamsTests extends TestServerSuite {
+class LogstreamsTests extends TestServerSuite:
   val log = LoggerFactory.getLogger(getClass)
 
   val testUser = testUsername.name
@@ -36,10 +35,9 @@ class LogstreamsTests extends TestServerSuite {
   def users = components.users
 
   test("can ping server") {
-    val response = BlazeClientBuilder[IO].resource
-      .use { client =>
-        client.get(Uri.unsafeFromString(s"http://localhost:$port/ping"))(res => IO.pure(res))
-      }
+    val response = BlazeClientBuilder[IO].resource.use { client =>
+      client.get(Uri.unsafeFromString(s"http://localhost:$port/ping"))(res => IO.pure(res))
+    }
       .unsafeRunSync()
     assertEquals(response.status, Status.Ok)
   }
@@ -95,10 +93,9 @@ class LogstreamsTests extends TestServerSuite {
     val user = "u3"
     components.users.add(creds(user)).unsafeRunSync()
 
-    def onJson(json: Json): Unit = {
-      if (!status.trySuccess(json))
-        if (!update.trySuccess(json)) if (!disconnectedPromise.trySuccess(json)) ()
-    }
+    def onJson(json: Json): Unit =
+      if !status.trySuccess(json) then
+        if !update.trySuccess(json) then if !disconnectedPromise.trySuccess(json) then ()
 
     withAdmin(onJson) { client =>
       assert(client.isConnected)
@@ -135,13 +132,12 @@ class LogstreamsTests extends TestServerSuite {
 
   def withWebSocket[T](username: String, path: Uri, onJson: Json => Any)(
     code: TestSocket => T
-  ) = {
+  ) =
     val wsUri = FullUrl("ws", s"localhost:$port", path.renderString)
     using(new TestSocket(wsUri, onJson, username)) { client =>
       await(client.initialConnection)
       code(client)
     }
-  }
 
   def using[T <: AutoCloseable, U](res: T)(code: T => U) =
     try code(res)
@@ -152,8 +148,6 @@ class LogstreamsTests extends TestServerSuite {
       wsUri,
       SSLContext.getDefault.getSocketFactory,
       Seq(HttpUtil.Authorization -> HttpUtil.authorizationValue(username, testPass))
-    ) {
+    ):
     override def onText(message: String): Unit =
       parse(message).fold(err => println(err), ok => onJson(ok))
-  }
-}

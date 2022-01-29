@@ -2,7 +2,7 @@ package com.malliina.logstreams.db
 
 case class Conf(url: String, user: String, pass: String, driver: String)
 
-object Conf {
+object Conf:
   val MySQLDriver = "com.mysql.jdbc.Driver"
   val DefaultDriver = MySQLDriver
 
@@ -18,4 +18,3 @@ object Conf {
 //      pass <- read("pass")
 //    } yield Conf(url, user, pass, read("driver").getOrElse(DefaultDriver))
 //  }
-}

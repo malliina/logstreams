@@ -4,19 +4,17 @@ import _root_.scalatags.generic.Frag
 import cats.effect.IO
 import com.malliina.html.ScalatagsInstances
 import com.malliina.values.Username
-import org.http4s._
+import org.http4s.*
 import org.http4s.dsl.Http4sDsl
 import org.http4s.circe.CirceInstances
 import org.http4s.headers.`Content-Type`
 
-trait Extractors {
-  object UsernameVar {
+trait Extractors:
+  object UsernameVar:
     def unapply(str: String): Option[Username] =
-      if (str.trim.nonEmpty) Option(Username(str.trim)) else None
-  }
-}
+      if str.trim.nonEmpty then Option(Username(str.trim)) else None
 
-trait MyScalatagsInstances {
+trait MyScalatagsInstances:
   implicit def scalatagsEncoder[F[_], C <: Frag[?, String]](implicit
     charset: Charset = DefaultCharset
   ): EntityEncoder[F, C] =
@@ -29,7 +27,6 @@ trait MyScalatagsInstances {
       .stringEncoder[F]
       .contramap[C](content => content.render)
       .withContentType(`Content-Type`(mediaType, charset))
-}
 
 abstract class Implicits[F[_]]
   extends syntax.AllSyntax

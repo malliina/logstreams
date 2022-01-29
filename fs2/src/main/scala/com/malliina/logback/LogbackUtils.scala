@@ -5,7 +5,7 @@ import ch.qos.logback.classic.{Logger, LoggerContext}
 import ch.qos.logback.core.Appender
 import org.slf4j.LoggerFactory
 
-object LogbackUtils {
+object LogbackUtils:
   def appender[T](
     appenderName: String,
     loggerName: String = org.slf4j.Logger.ROOT_LOGGER_NAME
@@ -29,15 +29,10 @@ object LogbackUtils {
   def installAppender(
     appender: Appender[ILoggingEvent],
     loggerName: String = org.slf4j.Logger.ROOT_LOGGER_NAME
-  ): Unit = {
-    if (appender.getContext == null) {
+  ): Unit =
+    if appender.getContext == null then
       appender setContext LoggerFactory.getILoggerFactory
         .asInstanceOf[LoggerContext]
-    }
-    if (!appender.isStarted) {
-      appender.start()
-    }
+    if !appender.isStarted then appender.start()
     val logger = LoggerFactory.getLogger(loggerName).asInstanceOf[Logger]
     logger addAppender appender
-  }
-}

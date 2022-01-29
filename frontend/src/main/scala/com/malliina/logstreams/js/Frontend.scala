@@ -6,7 +6,7 @@ import org.scalajs.dom
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport
 
-object Frontend {
+object Frontend:
   var app: Option[Any] = None
 
   private val p = Popper
@@ -14,7 +14,7 @@ object Frontend {
   private val bootstrapCss = BootstrapCss
   private val fontAwesomeCss = FontAwesomeCss
 
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit =
     val location = dom.window.location
     val path = location.pathname
     val jsImpl: PartialFunction[String, Any] = {
@@ -23,8 +23,6 @@ object Frontend {
     }
 
     app = jsImpl.lift(path)
-  }
-}
 
 @js.native
 @JSImport("@popperjs/core", JSImport.Namespace)

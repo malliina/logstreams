@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
-class FS2IOAppenderTests extends FunSuite {
+class FS2IOAppenderTests extends FunSuite:
   val log = LoggerFactory.getLogger(getClass)
 
   test("Stream.toList") {
@@ -39,4 +39,3 @@ class FS2IOAppenderTests extends FunSuite {
   }
 
   def await[T](f: Future[T]): T = Await.result(f, 3.seconds)
-}

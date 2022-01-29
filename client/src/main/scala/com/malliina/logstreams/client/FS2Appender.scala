@@ -5,31 +5,29 @@ import cats.effect.unsafe.{IORuntime, IORuntimeConfig, Scheduler}
 import com.malliina.http.{OkClient, OkHttpBackend}
 import com.malliina.http.io.WebSocketIO
 import com.malliina.logstreams.client.FS2Appender.ec
-import io.circe.syntax._
+import io.circe.syntax.*
 
 import java.util.concurrent.Executors
 import scala.concurrent.ExecutionContext
 
-object FS2Appender {
+object FS2Appender:
   val executor = Executors.newCachedThreadPool()
   val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
 
-  def customRuntime: IORuntime = {
+  def customRuntime: IORuntime =
     val (scheduler, finalizer) = IORuntime.createDefaultScheduler()
     IORuntime(ec, ec, scheduler, finalizer, IORuntimeConfig())
-  }
-}
 
-class FS2Appender(rt: IORuntime, http: OkHttpBackend) extends SocketAppender[WebSocketIO](rt) {
+class FS2Appender(rt: IORuntime, http: OkHttpBackend) extends SocketAppender[WebSocketIO](rt):
   def this() = this(FS2Appender.customRuntime, OkClient.default)
   implicit val runtime: IORuntime = rt
-  override def start(): Unit = {
-    if (getEnabled) {
-      val result = for {
+  override def start(): Unit =
+    if getEnabled then
+      val result = for
         url <- toMissing(endpoint, "endpoint")
         user <- toMissing(username, "username")
         pass <- toMissing(password, "password")
-      } yield {
+      yield
         val headers: List[KeyValue] = List(HttpUtil.basicAuth(user, pass))
         addInfo(s"Connecting to logstreams URL '$url' for Logback...")
         val socket =
@@ -48,16 +46,10 @@ class FS2Appender(rt: IORuntime, http: OkHttpBackend) extends SocketAppender[Web
           .drain
           .unsafeRunAndForget()
         super.start()
-      }
       result.left.toOption foreach addError
-    } else {
-      addInfo("Logstreams client is disabled.")
-    }
-  }
+    else addInfo("Logstreams client is disabled.")
 
-  override def stop(): Unit = {
+  override def stop(): Unit =
     rt.shutdown()
     FS2Appender.executor.shutdown()
     http.close()
-  }
-}

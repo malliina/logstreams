@@ -9,16 +9,13 @@ import doobie.util.fragment.Fragment
 //  val truncator = new Truncator(doobieDb)
 //}
 
-class Truncator(db: DoobieDatabase) {
-  def truncate(): IO[Int] = {
-    import cats.implicits._
-    import doobie.implicits._
-    val io = List("LOGS", "TOKENS", "USERS")
-      .traverse { tableName =>
-        val table = Fragment.const0(tableName)
-        sql"delete from $table".update(db.logHandler).run
-      }
+class Truncator(db: DoobieDatabase):
+  def truncate(): IO[Int] =
+    import cats.implicits.*
+    import doobie.implicits.*
+    val io = List("LOGS", "TOKENS", "USERS").traverse { tableName =>
+      val table = Fragment.const0(tableName)
+      sql"delete from $table".update(db.logHandler).run
+    }
       .map(_.sum)
     db.run(io)
-  }
-}

@@ -11,7 +11,7 @@ import scalatags.JsDom.all.*
 case class RowContent(content: Frag, cellId: String, linkId: String)
 
 class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean)
-  extends BaseSocket(wsPath) {
+  extends BaseSocket(wsPath):
   val CellContent = "cell-content"
   val CellWide = "cell-wide"
   val ColumnCount = 6
@@ -34,8 +34,8 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
 
   val responsiveTh = th(`class` := responsiveClass)
 
-  if (verboseSupport) {
-    val verboseClass = names(VerboseKey, if (isVerbose) "" else Off)
+  if verboseSupport then
+    val verboseClass = names(VerboseKey, if isVerbose then "" else Off)
     getElem[HTMLElement](TableHeadId).appendChild(
       tr(
         responsiveTh("App"),
@@ -46,30 +46,20 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
         responsiveTh("Level")
       ).render
     )
-  }
   val compactInput = getElem[HTMLInputElement](OptionCompact)
   val verboseInput = getElem[HTMLInputElement](OptionVerbose)
-  compactInput.onchange = (e: Event) => {
-    if (compactInput.checked) {
-      updateVerbose(false)
-    }
-  }
-  verboseInput.onchange = (e: Event) => {
-    if (verboseInput.checked) {
-      updateVerbose(true)
-    }
-  }
+  compactInput.onchange = (e: Event) => if compactInput.checked then updateVerbose(false)
+  verboseInput.onchange = (e: Event) => if verboseInput.checked then updateVerbose(true)
   compactInput.checked = !isVerbose
   verboseInput.checked = isVerbose
 
-  def updateVerbose(newVerbose: Boolean): Unit = {
+  def updateVerbose(newVerbose: Boolean): Unit =
     settings.saveVerbose(newVerbose)
     document.getElementsByClassName(VerboseKey).foreach { e =>
       val element = e.asInstanceOf[HTMLElement]
       val classes = element.classList
-      if (newVerbose) classes.remove(Off) else classes.add(Off)
+      if newVerbose then classes.remove(Off) else classes.add(Off)
     }
-  }
 
   override def handlePayload(payload: Json): Unit =
     handleValidated(payload)(onLogEvents)
@@ -77,7 +67,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
   def onLogEvents(appLogEvents: AppLogEvents): Unit =
     appLogEvents.events.foreach { e => onLogEvent(e) }
 
-  def onLogEvent(event: AppLogEvent): Unit = {
+  def onLogEvent(event: AppLogEvent): Unit =
     val entry = event.event
     val row: RowContent = toRow(event)
     val stackId = s"stack-${row.linkId}"
@@ -92,20 +82,16 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
     getElem[HTMLElement](row.cellId).onClickToggleClass(CellContent)
     // Shows stacktrace if present
     elemOptAs[HTMLElement](row.linkId).foreach { e =>
-      e.onclick = _ => {
-        elem(stackId).asInstanceOf[HTMLElement].toggleClass(Hidden)
-      }
+      e.onclick = _ => elem(stackId).asInstanceOf[HTMLElement].toggleClass(Hidden)
     }
-  }
 
   // "App", "Time", "Message", "Logger", "Thread", "Level"
-  def toRow(event: AppLogEvent): RowContent = {
+  def toRow(event: AppLogEvent): RowContent =
     val entry = event.event
-    val rowClass = entry.level match {
+    val rowClass = entry.level match
       case LogLevel.Error => Danger
       case LogLevel.Warn  => Warning
       case _              => Info
-    }
     val entryId = UUID.randomUUID().toString take 5
     val msgCellId = s"msg-$entryId"
     val linkId = s"link-$entryId"
@@ -122,15 +108,14 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
       td(`class` := responsiveClass)(levelCell)
     )
     RowContent(frag, msgCellId, linkId)
-  }
 
   def cell(content: String, hideable: Boolean = false, responsive: Boolean = true) =
     toCell(
       content,
       names(
         CellContent,
-        if (hideable) if (isVerbose) VerboseKey else s"$VerboseKey $Off" else "",
-        if (responsive) responsiveClass else ""
+        if hideable then if isVerbose then VerboseKey else s"$VerboseKey $Off" else "",
+        if responsive then responsiveClass else ""
       )
     )
 
@@ -141,4 +126,3 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
     td(`class` := clazz)(content)
 
   def names(ns: String*): String = ns.map(_.trim).filter(_.nonEmpty).mkString(" ")
-}

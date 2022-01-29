@@ -14,12 +14,12 @@ import com.nimbusds.jose.{JWSAlgorithm, JWSHeader}
 import com.nimbusds.jwt.{JWTClaimsSet, SignedJWT}
 import io.circe.{Decoder, Encoder, Json}
 import io.circe.parser.parse
-import io.circe.syntax._
+import io.circe.syntax.*
 
 import scala.concurrent.duration.{DurationLong, FiniteDuration}
 import scala.util.Try
 
-object JWT {
+object JWT:
   private val log = AppLogger(getClass)
 
   def apply(secret: SecretKey): JWT = new JWT(secret)
@@ -29,26 +29,24 @@ object JWT {
     jwt: SignedJWT,
     claims: JWTClaimsSet,
     claimsJson: Json
-  ) {
+  ):
     val exp = Option(claims.getExpirationTime).map(_.toInstant)
     val iss = Option(claims.getIssuer).map(Issuer.apply)
 
     def readString(key: String): Either[JWTError, String] =
       read(token, claims.getStringClaim(key), s"Claim missing: '$key'.")
-  }
 
-  object Parsed {
+  object Parsed:
     def apply(token: TokenValue): Either[JWTError, Parsed] =
-      for {
+      for
         signed <- read(token, SignedJWT.parse(token.value), s"Invalid JWT: '$token'.")
         claims <- read(token, signed.getJWTClaimsSet, s"Missing claims: '$token'.")
         json <- parse(claims.toString).left.map(_ =>
           InvalidClaims(token, ErrorMessage("Claims must be JSON."))
         )
-      } yield Parsed(token, signed, claims, json)
-  }
+      yield Parsed(token, signed, claims, json)
 
-  case class Verified private (parsed: Parsed) {
+  case class Verified private (parsed: Parsed):
     def expiresIn(now: Instant): Option[FiniteDuration] = parsed.exp.map { exp =>
       (exp.toEpochMilli - now.toEpochMilli).millis
     }
@@ -62,38 +60,32 @@ object JWT {
       readString(key).flatMap { s =>
         r.read(s).left.map(err => InvalidClaims(token, err))
       }
-  }
 
-  object Verified {
+  object Verified:
     // No expiration => never expired
     def checkExpiration(parsed: Parsed, now: Instant) = parsed.exp.flatMap { e =>
-      if (now.isBefore(e)) None else Option(Expired(parsed.token, e, now))
+      if now.isBefore(e) then None else Option(Expired(parsed.token, e, now))
     }
 
-    def verify(parsed: Parsed, secret: SecretKey, now: Instant): Either[JWTError, Verified] = {
+    def verify(parsed: Parsed, secret: SecretKey, now: Instant): Either[JWTError, Verified] =
       val verifier = new MACVerifier(secret.value)
-      for {
-        _ <- if (parsed.jwt.verify(verifier)) Right(()) else Left(InvalidSignature(parsed.token))
+      for
+        _ <- if parsed.jwt.verify(verifier) then Right(()) else Left(InvalidSignature(parsed.token))
         _ <- checkExpiration(parsed, now).toLeft(())
-      } yield Verified(parsed)
-    }
-  }
+      yield Verified(parsed)
 
   private def read[T](token: TokenValue, f: => T, onMissing: => String): Either[JWTError, T] =
-    try {
-      Option(f).toRight(MissingData(token, ErrorMessage(onMissing)))
-    } catch {
+    try Option(f).toRight(MissingData(token, ErrorMessage(onMissing)))
+    catch
       case pe: ParseException =>
         log.error(s"Parse error for token '$token'.", pe)
         Left(ParseError(token, pe))
-    }
-}
 
-class JWT(secret: SecretKey, dataKey: String = "data") {
+class JWT(secret: SecretKey, dataKey: String = "data"):
   def sign[T: Encoder](payload: T, ttl: FiniteDuration, now: Instant = Instant.now()): IdToken =
     signWithExpiration[T](payload, now.plusSeconds(ttl.toSeconds))
 
-  def signWithExpiration[T: Encoder](payload: T, expiresAt: Instant): IdToken = {
+  def signWithExpiration[T: Encoder](payload: T, expiresAt: Instant): IdToken =
     val signer = new MACSigner(secret.value)
     val claims = new JWTClaimsSet.Builder()
       .expirationTime(Date.from(expiresAt))
@@ -102,7 +94,6 @@ class JWT(secret: SecretKey, dataKey: String = "data") {
     val signed = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims)
     signed.sign(signer)
     IdToken(signed.serialize())
-  }
 
   def verify[T: Decoder](token: TokenValue, now: Instant = Instant.now()): Either[JWTError, T] =
     verifyToken(token, now).flatMap { v =>
@@ -113,4 +104,3 @@ class JWT(secret: SecretKey, dataKey: String = "data") {
     JWT.Parsed(token).flatMap { p =>
       Verified.verify(p, secret, now)
     }
-}

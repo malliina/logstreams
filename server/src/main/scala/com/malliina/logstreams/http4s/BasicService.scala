@@ -9,13 +9,11 @@ import org.http4s.{EntityEncoder, Request, Response, Status}
 import org.http4s.headers.`Cache-Control`
 import io.circe.syntax.EncoderOps
 
-object BasicService extends BasicService[IO] {
+object BasicService extends BasicService[IO]:
   val noCache = `Cache-Control`(`no-cache`(), `no-store`, `must-revalidate`)
-}
 
-class BasicService[F[_]: Applicative] extends Implicits[F] {
+class BasicService[F[_]: Applicative] extends Implicits[F]:
   def ok[A](a: A)(implicit w: EntityEncoder[F, A]) = Ok(a, noCache)
 
   def notFound(req: Request[F]): F[Response[F]] =
     NotFound(Errors.single(s"Not found: '${req.uri}'.").asJson, noCache)
-}

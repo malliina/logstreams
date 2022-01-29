@@ -4,9 +4,9 @@ import java.time.Instant
 
 import ch.qos.logback.classic.Level
 import com.malliina.logback.LogEvent
-import com.malliina.logstreams.models._
+import com.malliina.logstreams.models.*
 
-object TestData {
+object TestData:
   // Dev purposes
 
   def dummyEvent(msg: String) = LogEvent(
@@ -36,4 +36,3 @@ object TestData {
     Instant.now().toEpochMilli,
     LogEntryRow.format(Instant.now())
   )
-}

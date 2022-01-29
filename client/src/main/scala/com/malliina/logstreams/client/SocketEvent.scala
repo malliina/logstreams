@@ -5,7 +5,7 @@ import okio.ByteString
 
 sealed trait SocketEvent
 
-object SocketEvent {
+object SocketEvent:
   case object Idle extends SocketEvent
   case class Open(socket: WebSocket, response: Response) extends SocketEvent
   case class Closing(socket: WebSocket, code: Int, reason: String) extends SocketEvent
@@ -14,4 +14,3 @@ object SocketEvent {
     extends SocketEvent
   case class TextMessage(socket: WebSocket, message: String) extends SocketEvent
   case class BytesMessage(socket: WebSocket, bytes: ByteString) extends SocketEvent
-}

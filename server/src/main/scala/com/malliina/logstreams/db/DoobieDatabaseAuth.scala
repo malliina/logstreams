@@ -12,26 +12,24 @@ import com.malliina.values.{Password, Username}
 import doobie.free.connection.ConnectionIO
 import doobie.implicits.*
 
-object DoobieDatabaseAuth {
+object DoobieDatabaseAuth:
   private val log = AppLogger(getClass)
 
   def apply(db: DoobieDatabase): DoobieDatabaseAuth = new DoobieDatabaseAuth(db)
-}
 
-class DoobieDatabaseAuth(db: DoobieDatabase) extends UserService[IO] {
+class DoobieDatabaseAuth(db: DoobieDatabase) extends UserService[IO]:
   def add(creds: BasicCredentials): IO[Either[AlreadyExists, Unit]] = db.run {
     val existsIO = sql"select exists(select USER from USERS where USER = ${creds.username})"
       .query[Boolean]
       .unique
     existsIO.flatMap[Either[AlreadyExists, Unit]] { exists =>
-      if (exists) {
-        Left[AlreadyExists, Unit](AlreadyExists(creds.username)).pure[ConnectionIO]
-      } else {
+      if exists then Left[AlreadyExists, Unit](AlreadyExists(creds.username)).pure[ConnectionIO]
+      else {
         val hashed = hash(creds)
-        sql"""insert into USERS(USER, PASS_HASH) values (${creds.username}, $hashed)""".update.run
-          .map { _ =>
+        sql"""insert into USERS(USER, PASS_HASH) values (${creds.username}, $hashed)""".update.run.map {
+          _ =>
             Right(())
-          }
+        }
       }
     }
 
@@ -41,23 +39,19 @@ class DoobieDatabaseAuth(db: DoobieDatabase) extends UserService[IO] {
     val user = creds.username
     val hashed = hash(creds)
     sql"""update USERS set PASS_HASH = $hashed where USER = $user""".update.run.map { rowCount =>
-      if (rowCount > 0) {
+      if rowCount > 0 then
         log.info(s"Updated the password of '$user'.")
         Right(())
-      } else {
-        Left(DoesNotExist(user))
-      }
+      else Left(DoesNotExist(user))
     }
   }
 
   def remove(user: Username): IO[Either[DoesNotExist, Unit]] = db.run {
     sql"delete from USERS where USER = ${user}".update.run.map { rowCount =>
-      if (rowCount > 0) {
+      if rowCount > 0 then
         log.info(s"Removed '$user'.")
         Right(())
-      } else {
-        Left(DoesNotExist(user))
-      }
+      else Left(DoesNotExist(user))
     }
   }
 
@@ -73,4 +67,3 @@ class DoobieDatabaseAuth(db: DoobieDatabase) extends UserService[IO] {
   }
 
   private def hash(creds: BasicCredentials): Password = Utils.hash(creds)
-}

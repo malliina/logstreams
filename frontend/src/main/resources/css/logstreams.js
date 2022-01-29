@@ -1,2 +1,2 @@
 import './logstreams.less';
-import '../img/jag-16x16.png';
+import '../images/jag-16x16.png';

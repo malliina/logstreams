@@ -6,7 +6,7 @@ import com.malliina.values.Username
 import controllers.{LogAuth, UserRequest}
 import org.http4s.Request
 
-class TestAuth extends LogAuth[IO] {
+class TestAuth extends LogAuth[IO]:
   val testUser = Username("testuser")
 
 //  override def authAction(f: UserRequest => EssentialAction): EssentialAction =
@@ -26,4 +26,3 @@ class TestAuth extends LogAuth[IO] {
 
   override def authenticateSocket(req: Request[IO]): IO[Either[IdentityError, UserRequest]] =
     IO.pure(Right(UserRequest(testUser, req.headers, Urls.address(req))))
-}

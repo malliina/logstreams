@@ -10,17 +10,15 @@ import org.http4s.{Headers, Request}
 
 import scala.concurrent.duration.{Duration, DurationInt}
 
-trait LogAuth[F[_]] {
+trait LogAuth[F[_]]:
   def authenticateSocket(req: Request[IO]): F[Either[IdentityError, UserRequest]]
-}
 
 case class UserRequest(user: Username, headers: Headers, address: String)
 
-object OAuth {
+object OAuth:
   private val log = AppLogger(getClass)
-}
 
-class OAuth(creds: AuthConf) {
+class OAuth(creds: AuthConf):
   val LoginCookieDuration: Duration = 3650.days
   val log = OAuth.log
   val http = OkClient.default
@@ -52,4 +50,3 @@ class OAuth(creds: AuthConf) {
 //    log.info(s"Validating OAuth callback $describe...")
 //    validator.validateCallback(req)
 //  }
-}

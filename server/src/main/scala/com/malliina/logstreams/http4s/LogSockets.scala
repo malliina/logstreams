@@ -21,9 +21,8 @@ import org.http4s.server.websocket.WebSocketBuilder2
 import java.time.Instant
 import scala.concurrent.duration.DurationInt
 
-object LogSockets {
+object LogSockets:
   private val log = AppLogger(getClass)
-}
 
 class LogSockets(
   logs: Topic[IO, LogEntryInputs],
@@ -31,7 +30,7 @@ class LogSockets(
   connectedSources: Ref[IO, LogSources],
   logUpdates: Topic[IO, AppLogEvents],
   db: LogsDatabase[IO]
-) {
+):
   private val savedEvents: Stream[IO, AppLogEvents] = logs.subscribe(100).evalMap { ins =>
     db.insert(ins.events).map { written =>
       AppLogEvents(written.rows.map(_.toEvent))
@@ -47,19 +46,17 @@ class LogSockets(
   }
   val pings = Stream.awakeEvery[IO](5.seconds).map(_ => SimpleEvent.ping)
 
-  def listener(query: StreamsQuery, socketBuilder: WebSocketBuilder2[IO]): IO[Response[IO]] = {
+  def listener(query: StreamsQuery, socketBuilder: WebSocketBuilder2[IO]): IO[Response[IO]] =
     val subscription =
       logUpdates.subscribe(100).map { es =>
         es.filter(_.event.level.int >= query.level.int)
       }
     val filteredEvents =
-      if (query.apps.isEmpty) {
-        subscription
-      } else {
+      if query.apps.isEmpty then subscription
+      else
         subscription.map { es =>
           es.filter(e => query.apps.exists(app => app.name == e.source.name.name))
         }
-      }
     val logEvents = Stream
       .eval(db.events(query))
       .flatMap { history =>
@@ -72,7 +69,6 @@ class LogSockets(
       .mergeHaltBoth(logEvents)
       .through(jsonTransform[FrontEvent])
     socketBuilder.build(toClient, logIncoming)
-  }
 
   def admin(user: UserRequest, socketBuilder: WebSocketBuilder2[IO]): IO[Response[IO]] =
     socketBuilder
@@ -84,12 +80,12 @@ class LogSockets(
         logIncoming
       )
 
-  def source(user: UserRequest, socketBuilder: WebSocketBuilder2[IO]): IO[Response[IO]] = {
+  def source(user: UserRequest, socketBuilder: WebSocketBuilder2[IO]): IO[Response[IO]] =
     val publishEvents: Pipe[IO, WebSocketFrame, Unit] = _.evalMap {
       case Text(message, _) =>
         val event = decode[LogEvents](message).fold(
           err => IO.raiseError(new JsonException(err, message)),
-          es => {
+          es =>
             val inputs = LogEntryInputs(es.events.map { event =>
               LogEntryInput(
                 user.user,
@@ -103,7 +99,6 @@ class LogSockets(
               )
             })
             IO.pure(inputs)
-          }
         )
         event.flatMap { e =>
           logs.publish1(e).map { res =>
@@ -124,7 +119,6 @@ class LogSockets(
           publishEvents
         )
     }
-  }
 
   def connected(src: LogSource): IO[Unit] =
     connectedSources.updateAndGet(olds => LogSources(olds.sources :+ src)).flatMap { connecteds =>
@@ -140,4 +134,3 @@ class LogSockets(
   private def jsonTransform[T: Encoder](src: Stream[IO, T]): Stream[IO, Text] = src.map { t =>
     Text(t.asJson.noSpaces)
   }
-}

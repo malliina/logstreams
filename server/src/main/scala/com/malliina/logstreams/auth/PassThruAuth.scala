@@ -3,7 +3,7 @@ package com.malliina.logstreams.auth
 import cats.effect.IO
 import com.malliina.values.Username
 
-class PassThruAuth extends UserService[IO] {
+class PassThruAuth extends UserService[IO]:
   override def add(creds: BasicCredentials) = fut(Right(()))
   override def update(creds: BasicCredentials) = fut(Right(()))
   override def remove(user: Username) = fut(Right(()))
@@ -11,4 +11,3 @@ class PassThruAuth extends UserService[IO] {
   override def all() = fut(Nil)
 
   def fut[T](code: => T): IO[T] = IO.pure(code)
-}

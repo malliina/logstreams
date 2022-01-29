@@ -9,9 +9,9 @@ import scala.sys.process.Process
 import scala.util.Try
 
 val malliinaGroup = "com.malliina"
-val utilHtmlVersion = "6.0.5"
-val primitivesVersion = "3.0.2"
-val logbackVersion = "1.2.6"
+val utilHtmlVersion = "6.1.5"
+val primitivesVersion = "3.1.0"
+val logbackVersion = "1.2.10"
 val munitVersion = "0.7.29"
 
 val utilPlayDep = malliinaGroup %% "web-auth" % utilHtmlVersion
@@ -19,7 +19,6 @@ val utilPlayDep = malliinaGroup %% "web-auth" % utilHtmlVersion
 val serverVersion = "0.7.0"
 
 val circeModules = Seq("generic", "parser")
-val scala213 = "2.13.6"
 val scala3 = "3.1.1"
 
 inThisBuild(
@@ -44,7 +43,7 @@ val fs2 = project
     moduleName := "logback-fs2",
     releaseProcess := tagReleaseProcess.value,
     scalaVersion := scala3,
-    crossScalaVersions := scala3 :: scala213 :: Nil,
+    crossScalaVersions := scala3 :: Nil,
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
     releaseCrossBuild := true,
@@ -59,7 +58,7 @@ val client = project
   .settings(
     moduleName := "logstreams-client",
     scalaVersion := scala3,
-    crossScalaVersions := scala3 :: scala213 :: Nil,
+    crossScalaVersions := scala3 :: Nil,
     releaseCrossBuild := true,
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
@@ -76,7 +75,7 @@ val cross = portableProject(JSPlatform, JVMPlatform)
   .settings(
     libraryDependencies ++= circeModules.map(m => "io.circe" %%% s"circe-$m" % "0.14.1") ++ Seq(
       "com.malliina" %%% "primitives" % primitivesVersion,
-      ("com.lihaoyi" %%% "scalatags" % "0.9.4").cross(CrossVersion.for3Use2_13)
+      "com.lihaoyi" %%% "scalatags" % "0.11.1"
     )
   )
 val crossJvm = cross.jvm
@@ -90,7 +89,9 @@ val frontend = project
   .settings(
     assetsPackage := "com.malliina.logstreams",
     version := "1.0.0",
-    webpack / version := "4.44.2",
+    webpack / version := "5.65.0",
+    webpackCliVersion := "4.9.1",
+    startWebpackDevServer / version := "4.5.0",
     webpackEmitSourceMaps := false,
     scalaJSUseMainModuleInitializer := true,
     Compile / npmDependencies ++= Seq(
@@ -99,20 +100,18 @@ val frontend = project
       "bootstrap" -> "5.1.3"
     ),
     Compile / npmDevDependencies ++= Seq(
-      "autoprefixer" -> "10.2.5",
-      "cssnano" -> "4.1.11",
-      "css-loader" -> "5.2.1",
-      "file-loader" -> "6.2.0",
-      "less" -> "4.1.1",
-      "less-loader" -> "7.3.0",
-      "mini-css-extract-plugin" -> "1.6.2",
-      "postcss" -> "8.2.9",
-      "postcss-import" -> "14.0.1",
-      "postcss-loader" -> "4.2.0",
-      "postcss-preset-env" -> "6.7.0",
-      "style-loader" -> "2.0.0",
-      "url-loader" -> "4.1.1",
-      "webpack-merge" -> "5.7.3"
+      "autoprefixer" -> "10.4.1",
+      "cssnano" -> "5.0.14",
+      "css-loader" -> "6.5.1",
+      "less" -> "4.1.2",
+      "less-loader" -> "10.2.0",
+      "mini-css-extract-plugin" -> "2.4.5",
+      "postcss" -> "8.4.5",
+      "postcss-import" -> "14.0.2",
+      "postcss-loader" -> "6.2.1",
+      "postcss-preset-env" -> "7.2.0",
+      "style-loader" -> "3.3.1",
+      "webpack-merge" -> "5.8.0"
     ),
     Compile / additionalNpmConfig := Map(
       "engines" -> JSON.obj("node" -> JSON.str("10.x")),
@@ -147,9 +146,9 @@ val server = project
     buildInfoPackage := "com.malliina.app",
     buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, "hash" -> gitHash),
     libraryDependencies ++= SbtUtils.loggingDeps ++ http4sModules.map { m =>
-      "org.http4s" %% s"http4s-$m" % "0.23.6"
+      "org.http4s" %% s"http4s-$m" % "0.23.8"
     } ++ Seq("doobie-core", "doobie-hikari").map { d =>
-      "org.tpolecat" %% d % "1.0.0-RC1"
+      "org.tpolecat" %% d % "1.0.0-RC2"
     } ++ Seq(
       "com.typesafe" % "config" % "1.4.1",
       "org.flywaydb" % "flyway-core" % "7.15.0",

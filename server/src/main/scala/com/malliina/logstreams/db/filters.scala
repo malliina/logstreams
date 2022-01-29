@@ -13,11 +13,10 @@ case class StreamsQuery(
   offset: Int,
   order: SortOrder,
   query: Option[String]
-) {
+):
   def queryStar = query.map(q => s"$q*")
-}
 
-object StreamsQuery {
+object StreamsQuery:
   val AppKey = "app"
   val Limit = "limit"
   val Offset = "offset"
@@ -25,7 +24,7 @@ object StreamsQuery {
 
   val default = StreamsQuery(Nil, LogLevel.Info, 1000, 0, SortOrder.default, None)
 
-  def fromQuery(q: Query): Either[Errors, StreamsQuery] = for {
+  def fromQuery(q: Query): Either[Errors, StreamsQuery] = for
     apps <- Right(q.multiParams.getOrElse(AppKey, Nil).map(s => Username(s)))
     level <-
       LogLevel
@@ -36,14 +35,12 @@ object StreamsQuery {
     offset <- QueryParsers.parseOrDefault[Int](q, Offset, 0)
     sort <- SortOrder.fromQuery(q)
     query <- QueryParsers.parseOpt[String](q, Query).map(_.map(Option.apply)).getOrElse(Right(None))
-  } yield StreamsQuery(apps, level, limit, offset, sort, query.filter(_.length >= 3))
-}
+  yield StreamsQuery(apps, level, limit, offset, sort, query.filter(_.length >= 3))
 
-sealed abstract class SortOrder(val name: String) {
+sealed abstract class SortOrder(val name: String):
   override def toString: String = name
-}
 
-object SortOrder extends StringEnumCompanion[SortOrder] {
+object SortOrder extends StringEnumCompanion[SortOrder]:
   val Order = "order"
   val asc: SortOrder = Ascending
   val desc: SortOrder = Descending
@@ -59,4 +56,3 @@ object SortOrder extends StringEnumCompanion[SortOrder] {
   override def write(t: SortOrder): String = t.name
 
   def fromQuery(q: Query) = QueryParsers.parseOrDefault(q, Order, default)
-}

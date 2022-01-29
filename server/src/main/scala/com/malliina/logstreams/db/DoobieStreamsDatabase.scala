@@ -1,21 +1,20 @@
 package com.malliina.logstreams.db
 
 import cats.effect.IO
-import cats.implicits._
-import com.malliina.logstreams.models._
+import cats.implicits.*
+import com.malliina.logstreams.models.*
 import com.malliina.util.AppLogger
-import doobie._
-import doobie.implicits._
+import doobie.*
+import doobie.implicits.*
 import DoobieStreamsDatabase.log
 import ch.qos.logback.classic.Level
 
-object DoobieStreamsDatabase {
+object DoobieStreamsDatabase:
   private val log = AppLogger(getClass)
 
   def apply(db: DoobieDatabase): DoobieStreamsDatabase = new DoobieStreamsDatabase(db)
-}
 
-class DoobieStreamsDatabase(db: DoobieDatabase) extends LogsDatabase[IO] {
+class DoobieStreamsDatabase(db: DoobieDatabase) extends LogsDatabase[IO]:
   implicit val dbLog: LogHandler = db.logHandler
 
   def insert(events: List[LogEntryInput]): IO[EntriesWritten] = db.run {
@@ -25,19 +24,16 @@ class DoobieStreamsDatabase(db: DoobieDatabase) extends LogsDatabase[IO] {
         .withUniqueGeneratedKeys[LogEntryId]("ID")
     }
     insertions.flatMap { idList =>
-      idList.toNel
-        .map { ids =>
-          val inClause = Fragments.in(fr"ID", ids)
-          sql"""select ID, APP, ADDRESS, TIMESTAMP, MESSAGE, LOGGER, THREAD, LEVEL, STACKTRACE, ADDED
+      idList.toNel.map { ids =>
+        val inClause = Fragments.in(fr"ID", ids)
+        sql"""select ID, APP, ADDRESS, TIMESTAMP, MESSAGE, LOGGER, THREAD, LEVEL, STACKTRACE, ADDED
                 from LOGS 
                 where $inClause""".query[LogEntryRow].to[List]
-        }
-        .getOrElse {
-          List.empty[LogEntryRow].pure[ConnectionIO]
-        }
-        .map { list =>
-          EntriesWritten(events, list)
-        }
+      }.getOrElse {
+        List.empty[LogEntryRow].pure[ConnectionIO]
+      }.map { list =>
+        EntriesWritten(events, list)
+      }
     }
   }
 
@@ -55,7 +51,7 @@ class DoobieStreamsDatabase(db: DoobieDatabase) extends LogsDatabase[IO] {
         fr"MATCH(APP, ADDRESS, MESSAGE, LOGGER, THREAD, STACKTRACE) AGAINST($q)"
       )
     )
-    val order = if (query.order == SortOrder.asc) fr0"asc" else fr0"desc"
+    val order = if query.order == SortOrder.asc then fr0"asc" else fr0"desc"
     sql"""select ID, APP, ADDRESS, TIMESTAMP, MESSAGE, LOGGER, THREAD, LEVEL, STACKTRACE, ADDED
           from LOGS $whereClause 
           order by ADDED $order, ID $order
@@ -65,12 +61,10 @@ class DoobieStreamsDatabase(db: DoobieDatabase) extends LogsDatabase[IO] {
   }
 
   // Legacy, TODO rename old levels with e.g. DB migration
-  private def toLogback(l: LogLevel): Level = l match {
+  private def toLogback(l: LogLevel): Level = l match
     case LogLevel.Trace => Level.TRACE
     case LogLevel.Debug => Level.DEBUG
     case LogLevel.Info  => Level.INFO
     case LogLevel.Warn  => Level.WARN
     case LogLevel.Error => Level.ERROR
     case LogLevel.Other => Level.OFF
-  }
-}

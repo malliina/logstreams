@@ -27,7 +27,7 @@ case class ServerComponents(
   server: Server
 )
 
-object Server extends IOApp {
+object Server extends IOApp:
   val log = AppLogger(getClass)
   val port = 9000
 
@@ -35,7 +35,7 @@ object Server extends IOApp {
     conf: LogstreamsConf,
     authBuilder: AuthBuilder,
     port: Int = port
-  ): Resource[IO, ServerComponents] = for {
+  ): Resource[IO, ServerComponents] = for
     service <- appService(conf, authBuilder)
     _ <- Resource.eval(
       IO(log.info(s"Binding on port $port using app version ${AppMeta.ThisApp.git}..."))
@@ -45,9 +45,9 @@ object Server extends IOApp {
         .bindHttp(port = port, "0.0.0.0")
         .withHttpWebSocketApp(socketBuilder => makeHandler(service, socketBuilder))
         .resource
-  } yield ServerComponents(service, server)
+  yield ServerComponents(service, server)
 
-  def appService(conf: LogstreamsConf, authBuilder: AuthBuilder): Resource[IO, Service] = for {
+  def appService(conf: LogstreamsConf, authBuilder: AuthBuilder): Resource[IO, Service] = for
     db <- DoobieDatabase.withMigrations(conf.db)
     logsTopic <- Resource.eval(Topic[IO, LogEntryInputs])
     adminsTopic <- Resource.eval(Topic[IO, LogSources])
@@ -56,7 +56,7 @@ object Server extends IOApp {
     logsDatabase = DoobieStreamsDatabase(db)
     sockets = new LogSockets(logsTopic, adminsTopic, connecteds, logUpdates, logsDatabase)
     _ <- fs2.Stream.emit(()).concurrently(sockets.publisher).compile.resource.lastOrError
-  } yield {
+  yield
     val users = DoobieDatabaseAuth(db)
     val auths: Auther = authBuilder(users, Http4sAuth(JWT(conf.secret)))
     val google = GoogleAuthFlow(conf.google, HttpClientIO())
@@ -68,7 +68,6 @@ object Server extends IOApp {
       sockets,
       google
     )
-  }
 
   def makeHandler(service: Service, socketBuilder: WebSocketBuilder2[IO]) = GZip {
     HSTS {
@@ -86,4 +85,3 @@ object Server extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] =
     server(LogstreamsConf.parse(), Auths).use(_ => IO.never).as(ExitCode.Success)
-}

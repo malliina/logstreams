@@ -17,5 +17,7 @@ class SourcesSocket extends BaseSocket("/ws/admins?f=json"):
   def toRow(source: LogSource): Text.TypedTag[String] =
     tr(
       td(source.name.name),
-      td(source.remoteAddress)
+      td(source.remoteAddress),
+      td(source.id),
+      td(source.joined)
     )

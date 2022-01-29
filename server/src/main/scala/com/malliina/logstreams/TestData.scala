@@ -31,7 +31,7 @@ object TestData:
 
   def testEvent(e: models.LogEvent) = AppLogEvent(
     LogEntryId(0),
-    LogSource(AppName("test"), "localhost"),
+    SimpleLogSource(AppName("test"), "localhost"),
     e,
     Instant.now().toEpochMilli,
     LogEntryRow.format(Instant.now())

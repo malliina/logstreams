@@ -136,7 +136,7 @@ class Htmls(
   def sources = baseIndex("sources")(
     headerRow("Servers"),
     fullRow(
-      defaultTable(SourceTableId, Seq("App", "Address"))
+      defaultTable(SourceTableId, Seq("App", "Address", "ID", "Joined"))
     )
   )
 

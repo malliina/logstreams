@@ -3,7 +3,7 @@ package com.malliina.logstreams.http4s
 import cats.effect.kernel.Ref
 import cats.effect.{IO, Resource}
 import ch.qos.logback.classic.Level
-import com.malliina.logstreams.db.{LogsDatabase, StreamsQuery}
+import com.malliina.logstreams.db.{LogsDatabase, StreamsQuery, Utils}
 import com.malliina.logstreams.http4s.LogSockets.log
 import com.malliina.logstreams.models.*
 import com.malliina.util.AppLogger
@@ -101,16 +101,12 @@ class LogSockets(
             IO.pure(inputs)
         )
         event.flatMap { e =>
-          logs.publish1(e).map { res =>
-            res.fold(
-              closed => log.warn(s"Published $e to closed topic."),
-              _ => log.debug(s"Published $e to topic.")
-            )
-          }
+          publishLogged(e, logs)
         }
       case f => IO(log.debug(s"Unknown WebSocket frame: $f"))
     }
-    val logSource = LogSource(AppName(user.user.name), user.address)
+    val id = com.malliina.web.Utils.randomString().take(7)
+    val logSource = LogSource(AppName(user.user.name), user.address, id, System.currentTimeMillis())
     connected(logSource).flatMap { _ =>
       socketBuilder
         .withOnClose(disconnected(logSource))
@@ -122,15 +118,23 @@ class LogSockets(
 
   def connected(src: LogSource): IO[Unit] =
     connectedSources.updateAndGet(olds => LogSources(olds.sources :+ src)).flatMap { connecteds =>
-      admins.publish1(connecteds).map(_ => ())
+      publishLogged(connecteds, admins)
     }
 
   def disconnected(src: LogSource): IO[Unit] =
-    connectedSources.updateAndGet(olds => LogSources(olds.sources.filterNot(_ == src))).flatMap {
-      connecteds =>
-        admins.publish1(connecteds).map(_ => ())
-    }
+    connectedSources
+      .updateAndGet(olds => LogSources(olds.sources.filterNot(_.id == src.id)))
+      .flatMap { connecteds =>
+        publishLogged(connecteds, admins)
+      }
 
   private def jsonTransform[T: Encoder](src: Stream[IO, T]): Stream[IO, Text] = src.map { t =>
     Text(t.asJson.noSpaces)
+  }
+
+  private def publishLogged[T](t: T, to: Topic[IO, T]): IO[Unit] = to.publish1(t).map { res =>
+    res.fold(
+      closed => log.warn(s"Published $t to closed topic."),
+      _ => log.debug(s"Published $t to topic.")
+    )
   }

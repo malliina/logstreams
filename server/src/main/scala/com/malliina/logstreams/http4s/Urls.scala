@@ -11,7 +11,11 @@ object Urls {
     val proto = if (isSecure(req)) "https" else "http"
     val uri = req.uri
     val hostAndPort =
-      req.headers.get(ci"Host").map(_.head.value).getOrElse("localhost")
+      req.headers
+        .get(ci"X-Forwarded-Host")
+        .map(_.head.value)
+        .orElse(req.headers.get(ci"Host").map(_.head.value))
+        .getOrElse("localhost")
     FullUrl(proto, uri.host.map(_.value).getOrElse(hostAndPort), "")
   }
 

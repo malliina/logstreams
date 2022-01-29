@@ -6,10 +6,6 @@ import org.scalajs.dom.html.Anchor
 import org.scalajs.dom.raw.{Event, HTMLButtonElement, HTMLInputElement, MouseEvent}
 import scalatags.JsDom.all.*
 
-object SocketManager {
-  def apply() = new SocketManager
-}
-
 class SocketManager extends ScriptHelpers {
   val ActiveClass = "active"
   val settings: Settings = StorageSettings
@@ -45,7 +41,7 @@ class SocketManager extends ScriptHelpers {
   renderApps(settings.apps)
 
   def socketFor(apps: Seq[AppName], level: LogLevel, query: Option[String]) =
-    ListenerSocket(urlFor(apps, level, query), settings, verboseSupport = true)
+    ListenerSocket(pathFor(apps, level, query), settings, verboseSupport = true)
 
   def renderApps(apps: Seq[AppName]): Unit = {
     val buttons = apps.map { app =>
@@ -88,7 +84,7 @@ class SocketManager extends ScriptHelpers {
     reconnect(settings.apps, settings.level, query)
   }
 
-  private def urlFor(apps: Seq[AppName], level: LogLevel, query: Option[String]): String = {
+  private def pathFor(apps: Seq[AppName], level: LogLevel, query: Option[String]): String = {
     val appsQuery = if (apps.isEmpty) "" else "&" + apps.map(app => s"app=$app").mkString("&")
     val levelQuery = s"&${LogLevel.Key}=${level.name}"
     val searchQuery = query.fold("")(q => s"&q=$q")

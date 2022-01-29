@@ -20,7 +20,7 @@ val serverVersion = "0.7.0"
 
 val circeModules = Seq("generic", "parser")
 val scala213 = "2.13.6"
-val scala3 = "3.1.0"
+val scala3 = "3.1.1"
 
 inThisBuild(
   Seq(

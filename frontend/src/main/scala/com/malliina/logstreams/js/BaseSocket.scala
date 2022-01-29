@@ -71,7 +71,9 @@ class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.printer) exten
   def wsBaseUrl: FullUrl = {
     val location = dom.window.location
     val wsProto = if (location.protocol == "http:") "ws" else "wss"
-    FullUrl(wsProto, location.host, "")
+    val host =
+      if (location.hostname.endsWith("malliina.com")) "logs-api.malliina.com" else location.host
+    FullUrl(wsProto, host, "")
   }
 
   def setFeedback(feedback: String): Unit = statusElem.foreach(_.innerHTML = feedback)

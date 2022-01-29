@@ -6,7 +6,7 @@ import com.malliina.values.{IdToken, Username}
 import io.circe.{Decoder, Encoder}
 import org.http4s.Credentials.Token
 import org.http4s.headers.{Authorization, Cookie}
-import org.http4s.{Headers, HttpDate, Response, ResponseCookie}
+import org.http4s.{Headers, HttpDate, Request, Response, ResponseCookie}
 
 import scala.concurrent.duration.DurationInt
 
@@ -34,8 +34,8 @@ class Http4sAuth(
       case _               => Left(MissingCredentials("Missing token.", headers))
     })
 
-  def withSession[T: Encoder](t: T, isSecure: Boolean, res: Response[IO]): res.Self =
-    withJwt(cookieNames.session, t, isSecure, res)
+  def withSession[T: Encoder](t: T, req: Request[IO], res: Response[IO]): res.Self =
+    withJwt(cookieNames.session, t, req, res)
 
   def clearSession(res: Response[IO]): res.Self =
     res
@@ -45,31 +45,33 @@ class Http4sAuth(
 
   def withAppUser(
     user: UserPayload,
-    isSecure: Boolean,
     provider: AuthProvider,
+    req: Request[IO],
     res: Response[IO]
-  ) = withUser(user, isSecure, res)
+  ): Response[IO] = withUser(user, req, res)
     .removeCookie(cookieNames.returnUri)
     .addCookie(responseCookie(cookieNames.lastId, user.username.name))
     .addCookie(responseCookie(cookieNames.provider, provider.name))
 
-  def withUser[T: Encoder](t: T, isSecure: Boolean, res: Response[IO]): res.Self =
-    withJwt(cookieNames.user, t, isSecure, res)
+  def withUser[T: Encoder](t: T, req: Request[IO], res: Response[IO]): res.Self =
+    withJwt(cookieNames.user, t, req, res)
 
   def withJwt[T: Encoder](
     cookieName: String,
     t: T,
-    isSecure: Boolean,
+    req: Request[IO],
     res: Response[IO]
   ): res.Self = {
     val signed = jwt.sign[T](t, 12.hours)
+    val top = Urls.topDomainFrom(req)
     res.addCookie(
       ResponseCookie(
         cookieName,
         signed.value,
         httpOnly = true,
-        secure = isSecure,
-        path = cookiePath
+        secure = Urls.isSecure(req),
+        path = cookiePath,
+        domain = Option.when(top.nonEmpty)(top)
       )
     )
   }

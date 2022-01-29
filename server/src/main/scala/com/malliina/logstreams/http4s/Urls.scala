@@ -20,6 +20,11 @@ object Urls {
     FullUrl(proto, hostAndPort, "")
   }
 
+  def topDomainFrom(req: Request[_]): String = topDomain(hostOnly(req).host)
+
+  def topDomain(in: String): String =
+    in.split('.').takeRight(2).mkString(".").takeWhile(c => c != ':' && c != '/')
+
   def isSecure[F[_]](req: Request[F]): Boolean =
     req.isSecure.getOrElse(false) || req.headers
       .get(ci"X-Forwarded-Proto")

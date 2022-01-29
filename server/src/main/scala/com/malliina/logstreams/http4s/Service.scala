@@ -170,11 +170,11 @@ class Service(
   }.flatMap {
     case (redirectUrl, maybeEmail, extra) =>
       validator.startHinted(redirectUrl, maybeEmail, extra).flatMap { s =>
-        startLoginFlow(s, Urls.isSecure(req))
+        startLoginFlow(s, req)
       }
   }
 
-  private def startLoginFlow(s: Start, isSecure: Boolean): IO[Response[IO]] = IO {
+  private def startLoginFlow(s: Start, req: Request[IO]): IO[Response[IO]] = IO {
     val state = randomString()
     val encodedParams = (s.params ++ Map(OAuthKeys.State -> state)).map {
       case (k, v) =>
@@ -191,7 +191,7 @@ class Service(
       SeeOther(Location(Uri.unsafeFromString(url.url))).map { res =>
         val session = sessionParams.toMap.asJson
         auths.web
-          .withSession(session, isSecure, res)
+          .withSession(session, req, res)
           .putHeaders(noCache)
       }
   }
@@ -227,8 +227,8 @@ class Service(
       .find(_.name == cookieNames.returnUri)
       .flatMap(c => Uri.fromString(c.content).toOption)
       .getOrElse(LogRoutes.index)
-    SeeOther(Location(returnUri)).map { r =>
-      auths.web.withAppUser(UserPayload.email(email), Urls.isSecure(req), provider, r)
+    SeeOther(Location(returnUri)).map { res =>
+      auths.web.withAppUser(UserPayload.email(email), provider, req, res)
     }
   }
 

@@ -1,5 +1,6 @@
 package com.malliina.logstreams.js
 
+import com.malliina.http.FullUrl
 import org.scalajs.dom
 
 import scala.scalajs.js
@@ -14,7 +15,8 @@ object Frontend {
   private val fontAwesomeCss = FontAwesomeCss
 
   def main(args: Array[String]): Unit = {
-    val path = dom.window.location.pathname
+    val location = dom.window.location
+    val path = location.pathname
     val jsImpl: PartialFunction[String, Any] = {
       case "/"        => SocketManager()
       case "/sources" => SourcesSocket()

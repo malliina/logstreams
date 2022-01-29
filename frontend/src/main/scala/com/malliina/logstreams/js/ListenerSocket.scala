@@ -10,11 +10,6 @@ import scalatags.JsDom.all.*
 
 case class RowContent(content: Frag, cellId: String, linkId: String)
 
-object ListenerSocket {
-  def apply(wsPath: String, settings: Settings, verboseSupport: Boolean) =
-    new ListenerSocket(wsPath, settings, verboseSupport)
-}
-
 class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean)
   extends BaseSocket(wsPath) {
   val CellContent = "cell-content"

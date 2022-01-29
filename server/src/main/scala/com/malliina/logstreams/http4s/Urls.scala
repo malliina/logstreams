@@ -14,9 +14,10 @@ object Urls {
       req.headers
         .get(ci"X-Forwarded-Host")
         .map(_.head.value)
+        .orElse(uri.host.map(_.value))
         .orElse(req.headers.get(ci"Host").map(_.head.value))
         .getOrElse("localhost")
-    FullUrl(proto, uri.host.map(_.value).getOrElse(hostAndPort), "")
+    FullUrl(proto, hostAndPort, "")
   }
 
   def isSecure[F[_]](req: Request[F]): Boolean =

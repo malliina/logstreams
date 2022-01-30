@@ -22,7 +22,8 @@ import org.http4s.{Callback as _, *}
 import org.http4s.headers.{Location, `WWW-Authenticate`}
 import io.circe.syntax.EncoderOps
 import org.http4s.server.websocket.WebSocketBuilder2
-import java.time.Instant
+
+import java.time.{Instant, OffsetDateTime, OffsetTime}
 
 object Service:
   private val log = AppLogger(getClass)
@@ -132,7 +133,7 @@ class Service(
       sourceAuth(req.headers) { src =>
         log.info(s"Connection authenticated for source '$src'.")
         sockets.source(
-          UserRequest(src, req.headers, Urls.address(req), Instant.now()),
+          UserRequest(src, req.headers, Urls.address(req), OffsetDateTime.now()),
           socketBuilder
         )
       }
@@ -232,7 +233,7 @@ class Service(
 
   def webAuth(req: Request[IO])(code: UserRequest => IO[Response[IO]]) =
     withAuth(auths.viewers, req.headers) { user =>
-      code(UserRequest(user, req.headers, Urls.address(req), Instant.now()))
+      code(UserRequest(user, req.headers, Urls.address(req), OffsetDateTime.now()))
     }
 
   def sourceAuth(headers: Headers)(code: Username => IO[Response[IO]]) =

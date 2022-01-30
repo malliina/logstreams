@@ -16,8 +16,7 @@ const WebApp = merge(ScalaJS, {
         use: [
           MiniCssExtractPlugin.loader,
           { loader: 'css-loader', options: { importLoaders: 1, url: true } }
-        ],
-        include: [ path.resolve(__dirname, 'node_modules') ]
+        ]
       },
       {
         test: /\.less$/,

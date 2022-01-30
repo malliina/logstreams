@@ -146,7 +146,7 @@ val server = project
     buildInfoPackage := "com.malliina.app",
     buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, "hash" -> gitHash),
     libraryDependencies ++= SbtUtils.loggingDeps ++ http4sModules.map { m =>
-      "org.http4s" %% s"http4s-$m" % "0.23.8"
+      "org.http4s" %% s"http4s-$m" % "0.23.9"
     } ++ Seq("doobie-core", "doobie-hikari").map { d =>
       "org.tpolecat" %% d % "1.0.0-RC2"
     } ++ Seq(

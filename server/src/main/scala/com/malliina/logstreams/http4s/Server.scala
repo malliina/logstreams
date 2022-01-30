@@ -44,6 +44,8 @@ object Server extends IOApp:
       BlazeServerBuilder[IO]
         .bindHttp(port = port, "0.0.0.0")
         .withHttpWebSocketApp(socketBuilder => makeHandler(service, socketBuilder))
+        .withServiceErrorHandler(ErrorHandler[IO, IO])
+        .withBanner(Nil)
         .resource
   yield ServerComponents(service, server)
 
@@ -53,13 +55,14 @@ object Server extends IOApp:
     adminsTopic <- Resource.eval(Topic[IO, LogSources])
     connecteds <- Resource.eval(Ref[IO].of(LogSources(Nil)))
     logUpdates <- Resource.eval(Topic[IO, AppLogEvents])
+    http <- cats.effect.kernel.Resource.make(IO(HttpClientIO()))(c => IO(c.close()))
     logsDatabase = DoobieStreamsDatabase(db)
     sockets = new LogSockets(logsTopic, adminsTopic, connecteds, logUpdates, logsDatabase)
     _ <- fs2.Stream.emit(()).concurrently(sockets.publisher).compile.resource.lastOrError
   yield
     val users = DoobieDatabaseAuth(db)
     val auths: Auther = authBuilder(users, Http4sAuth(JWT(conf.secret)))
-    val google = GoogleAuthFlow(conf.google, HttpClientIO())
+    val google = GoogleAuthFlow(conf.google, http)
     Service(
       db,
       users,

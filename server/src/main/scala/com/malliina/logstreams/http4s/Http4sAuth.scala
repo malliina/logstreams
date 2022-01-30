@@ -10,9 +10,6 @@ import org.http4s.{Headers, HttpDate, Request, Response, ResponseCookie}
 
 import scala.concurrent.duration.DurationInt
 
-object Http4sAuth:
-  def apply(jwt: JWT): Http4sAuth = new Http4sAuth(jwt)
-
 class Http4sAuth(
   val jwt: JWT,
   val cookieNames: CookieConf = CookieConf.prefixed("logstreams")

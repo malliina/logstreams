@@ -22,8 +22,6 @@ import scala.util.Try
 object JWT:
   private val log = AppLogger(getClass)
 
-  def apply(secret: SecretKey): JWT = new JWT(secret)
-
   case class Parsed(
     token: TokenValue,
     jwt: SignedJWT,

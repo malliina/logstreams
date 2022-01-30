@@ -19,10 +19,12 @@ import org.http4s.websocket.WebSocketFrame.Text
 import org.http4s.server.websocket.WebSocketBuilder2
 
 import java.time.Instant
+import java.time.format.DateTimeFormatter
 import scala.concurrent.duration.DurationInt
 
 object LogSockets:
   private val log = AppLogger(getClass)
+  private val dateTimeFormatter = DateTimeFormatter.ISO_DATE_TIME
 
 class LogSockets(
   logs: Topic[IO, LogEntryInputs],
@@ -106,15 +108,15 @@ class LogSockets(
       case f => IO(log.debug(s"Unknown WebSocket frame: $f"))
     }
     val id = com.malliina.web.Utils.randomString().take(7)
-    val logSource = LogSource(AppName(user.user.name), user.address, id, System.currentTimeMillis())
-    connected(logSource).flatMap { _ =>
-      socketBuilder
-        .withOnClose(disconnected(logSource))
-        .build(
-          pings.through(jsonTransform[SimpleEvent]),
-          publishEvents
-        )
-    }
+    val now = user.now
+    val date = LogSockets.dateTimeFormatter.format(now)
+    val logSource = LogSource(AppName(user.user.name), user.address, id, now.toEpochMilli, date)
+    socketBuilder
+      .withOnClose(disconnected(logSource))
+      .build(
+        Stream.eval(connected(logSource)) >> pings.through(jsonTransform[SimpleEvent]),
+        publishEvents
+      )
 
   def connected(src: LogSource): IO[Unit] =
     connectedSources.updateAndGet(olds => LogSources(olds.sources :+ src)).flatMap { connecteds =>

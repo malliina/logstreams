@@ -6,6 +6,8 @@ import com.malliina.values.Username
 import controllers.{LogAuth, UserRequest}
 import org.http4s.Request
 
+import java.time.Instant
+
 class TestAuth extends LogAuth[IO]:
   val testUser = Username("testuser")
 
@@ -25,4 +27,4 @@ class TestAuth extends LogAuth[IO]:
 //    }
 
   override def authenticateSocket(req: Request[IO]): IO[Either[IdentityError, UserRequest]] =
-    IO.pure(Right(UserRequest(testUser, req.headers, Urls.address(req))))
+    IO.pure(Right(UserRequest(testUser, req.headers, Urls.address(req), Instant.now())))

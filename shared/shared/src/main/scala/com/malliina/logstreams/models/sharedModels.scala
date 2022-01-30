@@ -46,7 +46,13 @@ case class SimpleLogSource(name: AppName, remoteAddress: String)
 object SimpleLogSource:
   implicit val json: Codec[SimpleLogSource] = deriveCodec[SimpleLogSource]
 
-case class LogSource(name: AppName, remoteAddress: String, id: String, joined: Long)
+case class LogSource(
+  name: AppName,
+  remoteAddress: String,
+  id: String,
+  joined: Long,
+  joinedFormatted: String
+)
 
 object LogSource:
   implicit val json: Codec[LogSource] = deriveCodec[LogSource]

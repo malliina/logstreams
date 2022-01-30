@@ -19,5 +19,5 @@ class SourcesSocket extends BaseSocket("/ws/admins?f=json"):
       td(source.name.name),
       td(source.remoteAddress),
       td(source.id),
-      td(source.joined)
+      td(source.joinedFormatted)
     )

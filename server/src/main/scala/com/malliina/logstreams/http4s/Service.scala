@@ -22,6 +22,7 @@ import org.http4s.{Callback as _, *}
 import org.http4s.headers.{Location, `WWW-Authenticate`}
 import io.circe.syntax.EncoderOps
 import org.http4s.server.websocket.WebSocketBuilder2
+import java.time.Instant
 
 object Service:
   private val log = AppLogger(getClass)
@@ -100,11 +101,10 @@ class Service(
                   s"failed to delete '$targetUser' because that user does not exist"
                 )
               )
-              //            UserFeedback.error(s"User '$user' does not exist.")
+            //            UserFeedback.error(s"User '$user' does not exist.")
             ,
-            _ =>
-              log.info(buildMessage(principal, s"deleted '$targetUser'."))
-              //            UserFeedback.success(s"Deleted '$user'.")
+            _ => log.info(buildMessage(principal, s"deleted '$targetUser'."))
+            //            UserFeedback.success(s"Deleted '$user'.")
           )
           SeeOther(Location(reverse.allUsers))
         }
@@ -131,7 +131,10 @@ class Service(
     case req @ GET -> Root / "ws" / "sources" =>
       sourceAuth(req.headers) { src =>
         log.info(s"Connection authenticated for source '$src'.")
-        sockets.source(UserRequest(src, req.headers, Urls.address(req)), socketBuilder)
+        sockets.source(
+          UserRequest(src, req.headers, Urls.address(req), Instant.now()),
+          socketBuilder
+        )
       }
     case req @ GET -> Root / "oauth" =>
       startHinted(Google, google, req)
@@ -229,7 +232,7 @@ class Service(
 
   def webAuth(req: Request[IO])(code: UserRequest => IO[Response[IO]]) =
     withAuth(auths.viewers, req.headers) { user =>
-      code(UserRequest(user, req.headers, Urls.address(req)))
+      code(UserRequest(user, req.headers, Urls.address(req), Instant.now()))
     }
 
   def sourceAuth(headers: Headers)(code: Username => IO[Response[IO]]) =

@@ -1,12 +1,15 @@
 package com.malliina.logstreams.client
 
-import cats.effect.unsafe.IORuntime
+import cats.effect.IO
+import cats.effect.std.Dispatcher
+import ch.qos.logback.classic.spi.ILoggingEvent
 import com.malliina.http.FullUrl
-import com.malliina.logback.fs2.DefaultFS2IOAppender
-
+import com.malliina.logback.fs2.{DefaultFS2IOAppender, FS2AppenderComps}
+import fs2.concurrent.{SignallingRef, Topic}
+import com.malliina.logback.fs2.LoggingComps
 import java.io.Closeable
 
-class SocketAppender[T <: Closeable](rt: IORuntime) extends DefaultFS2IOAppender(rt):
+class SocketAppender[T <: Closeable](comps: LoggingComps) extends DefaultFS2IOAppender(comps):
   var endpoint: Option[FullUrl] = None
   var username: Option[String] = None
   var password: Option[String] = None

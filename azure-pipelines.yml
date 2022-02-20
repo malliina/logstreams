@@ -24,7 +24,7 @@ steps:
       jdkArchitectureOption: 'x64'
       jdkSourceOption: 'PreInstalled'
 
-  - script: sbt test
+  - script: sbt "set scalaJSStage in Global := FullOptStage" test
     displayName: 'Compile'
 
   - task: Docker@2

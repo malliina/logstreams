@@ -9,7 +9,7 @@ import fs2.concurrent.{SignallingRef, Topic}
 import com.malliina.logback.fs2.LoggingComps
 import java.io.Closeable
 
-class SocketAppender[T <: Closeable](comps: LoggingComps) extends DefaultFS2IOAppender(comps):
+class SocketAppender[T](comps: LoggingComps) extends DefaultFS2IOAppender(comps):
   var endpoint: Option[FullUrl] = None
   var username: Option[String] = None
   var password: Option[String] = None
@@ -58,5 +58,5 @@ class SocketAppender[T <: Closeable](comps: LoggingComps) extends DefaultFS2IOAp
   def missing(fieldName: String) = s"No '$fieldName' is set for appender [$name]."
 
   override def stop(): Unit =
-    client.foreach(_.close())
+//    client.foreach(_.close())
     super.stop()

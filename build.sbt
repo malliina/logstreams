@@ -9,8 +9,8 @@ import scala.sys.process.Process
 import scala.util.Try
 
 val malliinaGroup = "com.malliina"
-val utilHtmlVersion = "6.1.5"
-val primitivesVersion = "3.1.0"
+val utilHtmlVersion = "6.2.0"
+val primitivesVersion = "3.1.2"
 val logbackVersion = "1.2.10"
 val munitVersion = "0.7.29"
 
@@ -146,7 +146,7 @@ val server = project
     buildInfoPackage := "com.malliina.app",
     buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, "hash" -> gitHash),
     libraryDependencies ++= SbtUtils.loggingDeps ++ http4sModules.map { m =>
-      "org.http4s" %% s"http4s-$m" % "0.23.9"
+      "org.http4s" %% s"http4s-$m" % "0.23.10"
     } ++ Seq("doobie-core", "doobie-hikari").map { d =>
       "org.tpolecat" %% d % "1.0.0-RC2"
     } ++ Seq(
@@ -156,7 +156,7 @@ val server = project
       "com.malliina" %% "util-html" % utilHtmlVersion,
       utilPlayDep,
       utilPlayDep % Test classifier "tests",
-      "com.dimafeng" %% "testcontainers-scala-mysql" % "0.39.8" % Test
+      "com.dimafeng" %% "testcontainers-scala-mysql" % "0.40.2" % Test
     ),
     Universal / javaOptions ++= Seq(
       "-J-Xmx1024m",

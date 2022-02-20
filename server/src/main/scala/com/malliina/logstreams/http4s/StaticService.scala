@@ -1,8 +1,9 @@
 package com.malliina.logstreams.http4s
 
 import cats.data.NonEmptyList
-import cats.effect.Sync
+import cats.effect.{Async, Sync}
 import cats.implicits.*
+import com.malliina.app.BuildInfo
 import com.malliina.logstreams.HashedAssets
 import com.malliina.logstreams.http4s.StaticService.log
 import com.malliina.util.AppLogger
@@ -16,28 +17,23 @@ import scala.concurrent.duration.DurationInt
 object StaticService:
   private val log = AppLogger(getClass)
 
-  def apply[F[_]]()(implicit s: Sync[F]): StaticService[F] = new StaticService[F]()(s)
-
-class StaticService[F[_]]()(implicit s: Sync[F]) extends BasicService[F]:
-  val fontExtensions = List(".woff", ".woff2", ".eot", ".ttf")
-  val supportedStaticExtensions =
+class StaticService[F[_]: Async] extends BasicService[F]:
+  private val fontExtensions = List(".woff", ".woff2", ".eot", ".ttf")
+  private val supportedStaticExtensions =
     List(".html", ".js", ".map", ".css", ".png", ".ico") ++ fontExtensions
 
-  val prefix = HashedAssets.prefix
-  //  val routes = resourceService[F](ResourceService.Config("/db", blocker))
-  //  val routes = fileService(FileService.Config("./public", blocker))
-  val routes = HttpRoutes.of[F] {
+  private val publicDir = fs2.io.file.Path(BuildInfo.assetsDir)
+  val routes: HttpRoutes[F] = HttpRoutes.of[F] {
     case req @ GET -> rest if supportedStaticExtensions.exists(rest.toString.endsWith) =>
-      val file = UnixPath(rest.segments.map(_.decoded()).mkString("/"))
+      val file = UnixPath(rest.segments.mkString("/"))
       val isCacheable = file.value.count(_ == '.') == 2 || file.value.startsWith("static/")
       val cacheHeaders =
         if isCacheable then NonEmptyList.of(`max-age`(365.days), `public`)
         else NonEmptyList.of(`no-cache`())
-      val res = s"/$prefix/$file"
-      log.debug(s"Searching for '$file' at resource '$res'...")
+      log.info(s"Searching for '$file' in '$publicDir'...")
       StaticFile
-        .fromResource(res, Option(req))
-        .map(_.putHeaders(`Cache-Control`(cacheHeaders), "Access-Control-Allow-Origin" -> "*"))
+        .fromPath(publicDir.resolve(file.value), Option(req))
+        .map(_.putHeaders(`Cache-Control`(cacheHeaders)))
         .fold(onNotFound(req))(_.pure[F])
         .flatten
   }

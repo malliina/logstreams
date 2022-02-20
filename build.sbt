@@ -89,11 +89,6 @@ val frontend = project
   .settings(
     assetsPackage := "com.malliina.logstreams",
     version := "1.0.0",
-    webpack / version := "5.65.0",
-    webpackCliVersion := "4.9.1",
-    startWebpackDevServer / version := "4.5.0",
-    webpackEmitSourceMaps := false,
-    scalaJSUseMainModuleInitializer := true,
     Compile / npmDependencies ++= Seq(
       "@fortawesome/fontawesome-free" -> "5.15.4",
       "@popperjs/core" -> "2.10.2",
@@ -117,11 +112,7 @@ val frontend = project
       "engines" -> JSON.obj("node" -> JSON.str("10.x")),
       "private" -> JSON.bool(true),
       "license" -> JSON.str("BSD")
-    ),
-    fastOptJS / webpackConfigFile := Some(baseDirectory.value / "webpack.dev.config.js"),
-    fullOptJS / webpackConfigFile := Some(baseDirectory.value / "webpack.prod.config.js"),
-    Compile / fastOptJS / webpackBundlingMode := BundlingMode.LibraryOnly(),
-    Compile / fullOptJS / webpackBundlingMode := BundlingMode.Application
+    )
   )
 
 val prodPort = 9000
@@ -134,17 +125,19 @@ val server = project
     JavaServerAppPackaging,
     SystemdPlugin,
     BuildInfoPlugin,
-    ServerPlugin,
+    DockerServerPlugin,
     LiveRevolverPlugin
   )
   .dependsOn(crossJvm, client)
   .settings(
     version := serverVersion,
     buildInfoKeys ++= Seq[BuildInfoKey](
-      "frontName" -> (frontend / name).value
+      "frontName" -> (frontend / name).value,
+      "gitHash" -> gitHash,
+      "assetsDir" -> (frontend / assetsRoot).value,
+      "mode" -> (if ((Global / scalaJSStage).value == FullOptStage) "prod" else "dev")
     ),
     buildInfoPackage := "com.malliina.app",
-    buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, "hash" -> gitHash),
     libraryDependencies ++= SbtUtils.loggingDeps ++ http4sModules.map { m =>
       "org.http4s" %% s"http4s-$m" % "0.23.10"
     } ++ Seq("doobie-core", "doobie-hikari").map { d =>
@@ -165,12 +158,8 @@ val server = project
     ),
     Compile / unmanagedResourceDirectories += baseDirectory.value / "public",
     Linux / httpPort := Option(s"$prodPort"),
-    dockerVersion := Option(DockerVersion(19, 3, 5, None)),
-    dockerBaseImage := "openjdk:11",
     Docker / daemonUser := "logstreams",
-    Docker / version := gitHash,
     dockerRepository := Option("malliinacr.azurecr.io"),
-    dockerExposedPorts ++= Seq(prodPort),
     Compile / packageDoc / publishArtifact := false,
     packageDoc / publishArtifact := false,
     Compile / doc / sources := Seq.empty,

@@ -4,7 +4,7 @@ val utilsVersion = "1.2.13"
 
 Seq(
   "com.malliina" % "sbt-nodejs" % utilsVersion,
-  "com.malliina" % "sbt-bundler" % utilsVersion,
+  "com.malliina" % "sbt-docker-bundler" % utilsVersion,
   "com.malliina" % "sbt-utils-maven" % utilsVersion,
   "com.malliina" % "sbt-packager" % "2.9.0",
   "com.malliina" % "sbt-filetree" % "0.4.1",

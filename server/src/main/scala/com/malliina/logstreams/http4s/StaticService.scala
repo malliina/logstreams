@@ -12,6 +12,7 @@ import org.http4s.CacheDirective.{`max-age`, `no-cache`, `public`}
 import org.http4s.headers.`Cache-Control`
 import org.http4s.{HttpRoutes, Request, StaticFile}
 
+import java.nio.file.Files
 import scala.concurrent.duration.DurationInt
 
 object StaticService:
@@ -30,9 +31,12 @@ class StaticService[F[_]: Async] extends BasicService[F]:
       val cacheHeaders =
         if isCacheable then NonEmptyList.of(`max-age`(365.days), `public`)
         else NonEmptyList.of(`no-cache`())
-      log.info(s"Searching for '$file' in '$publicDir'...")
+      val assetPath: fs2.io.file.Path = publicDir.resolve(file.value)
+      val exists = Files.exists(assetPath.toNioPath)
+      val isReadable = Files.isReadable(assetPath.toNioPath)
+      log.info(s"Searching for '$assetPath'. Exists: $exists. Is readable: $isReadable.")
       StaticFile
-        .fromPath(publicDir.resolve(file.value), Option(req))
+        .fromPath(assetPath, Option(req))
         .map(_.putHeaders(`Cache-Control`(cacheHeaders)))
         .fold(onNotFound(req))(_.pure[F])
         .flatten

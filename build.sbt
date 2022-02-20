@@ -134,7 +134,16 @@ val server = project
     buildInfoKeys ++= Seq[BuildInfoKey](
       "frontName" -> (frontend / name).value,
       "gitHash" -> gitHash,
-      "assetsDir" -> (frontend / assetsRoot).value,
+      "assetsDir" -> {
+        val isDocker = (Global / scalaJSStage).value == FullOptStage
+        if (isDocker) {
+          val dockerDir = (Docker / defaultLinuxInstallLocation).value
+          val assetsFolder = (frontend / assetsPrefix).value
+          s"$dockerDir/$assetsFolder"
+        } else {
+          (frontend / assetsRoot).value
+        }
+      },
       "mode" -> (if ((Global / scalaJSStage).value == FullOptStage) "prod" else "dev")
     ),
     buildInfoPackage := "com.malliina.app",

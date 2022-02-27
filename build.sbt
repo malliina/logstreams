@@ -1,5 +1,4 @@
 import com.malliina.sbtutils.SbtUtils
-import com.typesafe.sbt.packager.docker.DockerVersion
 import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType => PortableType, crossProject => portableProject}
@@ -28,7 +27,15 @@ inThisBuild(
     libraryDependencies ++= Seq(
       "org.scalameta" %% "munit" % munitVersion % Test
     ),
-    testFrameworks += new TestFramework("munit.Framework")
+    testFrameworks += new TestFramework("munit.Framework"),
+    assemblyMergeStrategy := {
+      case PathList("META-INF", "io.netty.versions.properties") => MergeStrategy.rename
+      case PathList("META-INF", "versions", xs @ _*) => MergeStrategy.rename
+      case PathList("com", "malliina", xs @ _*)         => MergeStrategy.first
+      case x =>
+        val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
+        oldStrategy(x)
+    }
   )
 )
 
@@ -125,7 +132,7 @@ val server = project
     JavaServerAppPackaging,
     SystemdPlugin,
     BuildInfoPlugin,
-    DockerServerPlugin,
+    ServerPlugin,
     LiveRevolverPlugin
   )
   .dependsOn(crossJvm, client)
@@ -144,6 +151,7 @@ val server = project
           (frontend / assetsRoot).value
         }
       },
+      "publicFolder" -> (frontend / assetsPrefix).value,
       "mode" -> (if ((Global / scalaJSStage).value == FullOptStage) "prod" else "dev")
     ),
     buildInfoPackage := "com.malliina.app",
@@ -162,18 +170,16 @@ val server = project
     ),
     Universal / javaOptions ++= Seq(
       "-J-Xmx1024m",
-      s"-Dhttp.port=$prodPort",
       "-Dlogback.configurationFile=logback-prod.xml"
     ),
     Compile / unmanagedResourceDirectories += baseDirectory.value / "public",
-    Linux / httpPort := Option(s"$prodPort"),
-    Docker / daemonUser := "logstreams",
-    dockerRepository := Option("malliinacr.azurecr.io"),
     Compile / packageDoc / publishArtifact := false,
     packageDoc / publishArtifact := false,
     Compile / doc / sources := Seq.empty,
-    Docker / packageName := "logstreams",
-    clientProject := frontend
+    clientProject := frontend,
+    Compile / unmanagedResourceDirectories += baseDirectory.value / "public",
+    Compile / unmanagedResourceDirectories += (frontend / Compile / assetsRoot).value.getParent.toFile,
+    assembly / assemblyJarName := "app.jar"
   )
 
 val it = Project("logstreams-test", file("logstreams-test"))

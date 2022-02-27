@@ -9,7 +9,7 @@ import com.malliina.logstreams.auth.{AuthBuilder, Auther, Auths, JWT}
 import com.malliina.logstreams.db.{DoobieDatabase, DoobieDatabaseAuth, DoobieStreamsDatabase}
 import com.malliina.logstreams.html.{AssetsSource, Htmls}
 import com.malliina.logstreams.models.{AppLogEvents, LogEntryInputs, LogSources}
-import com.malliina.logstreams.{AppMode, LogstreamsConf}
+import com.malliina.logstreams.{AppMode, LocalConf, LogstreamsConf}
 import com.malliina.util.AppLogger
 import com.malliina.web.GoogleAuthFlow
 import fs2.concurrent.Topic
@@ -63,7 +63,7 @@ object Server extends IOApp:
     val users = DoobieDatabaseAuth(db)
     val auths: Auther = authBuilder(users, Http4sAuth(JWT(conf.secret)))
     val google = GoogleAuthFlow(conf.google, http)
-    val isProd = conf.mode.isProd
+    val isProd = LocalConf.isProd
     Service(
       db,
       users,

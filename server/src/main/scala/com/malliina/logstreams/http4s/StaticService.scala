@@ -34,9 +34,11 @@ class StaticService[F[_]: Async] extends BasicService[F]:
       val assetPath: fs2.io.file.Path = publicDir.resolve(file.value)
       val exists = Files.exists(assetPath.toNioPath)
       val isReadable = Files.isReadable(assetPath.toNioPath)
-      log.info(s"Searching for '$assetPath'. Exists: $exists. Is readable: $isReadable.")
+      val resourcePath = s"${BuildInfo.publicFolder}/${file.value}"
+      log.info(s"Searching for resource '$resourcePath' or else file '$assetPath'.")
       StaticFile
-        .fromPath(assetPath, Option(req))
+        .fromResource(resourcePath, Option(req))
+        .orElse(StaticFile.fromPath(assetPath, Option(req)))
         .map(_.putHeaders(`Cache-Control`(cacheHeaders)))
         .fold(onNotFound(req))(_.pure[F])
         .flatten

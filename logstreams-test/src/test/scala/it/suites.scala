@@ -27,7 +27,7 @@ trait MUnitDatabaseSuite:
   val db: Fixture[Conf] = new Fixture[Conf]("database"):
     var container: Option[MySQLContainer] = None
     var conf: Option[Conf] = None
-    def apply() = conf.get
+    def apply(): Conf = conf.get
     override def beforeAll(): Unit =
       val localTestDb = testConf()
       val testDb = localTestDb.getOrElse {
@@ -54,7 +54,7 @@ trait MUnitDatabaseSuite:
 
   private def testConf(): Either[Throwable, Conf] =
     Try(
-      LogstreamsConf.parseDatabase(LocalConf.localConf.getConfig("logstreams").getConfig("testdb"))
+      LogstreamsConf.parseDatabase(LocalConf.conf.getConfig("logstreams").getConfig("testdb"))
     ).toEither
 
   override def munitFixtures: Seq[Fixture[?]] = Seq(db)
@@ -63,7 +63,7 @@ trait ServerSuite extends MUnitDatabaseSuite:
   self: munit.Suite =>
   val server: Fixture[ServerComponents] = new Fixture[ServerComponents]("server"):
     private var service: Option[ServerComponents] = None
-    val promise = Promise[IO[Unit]]()
+    val promise: Promise[IO[Unit]] = Promise[IO[Unit]]()
 
     override def apply(): ServerComponents = service.get
 
@@ -81,7 +81,7 @@ trait ServerSuite extends MUnitDatabaseSuite:
     override def afterAll(): Unit =
       IO.fromFuture(IO(promise.future)).flatten.unsafeRunSync()
 
-  def testAuths = new AuthBuilder:
+  def testAuths: AuthBuilder = new AuthBuilder:
     override def apply(users: UserService[IO], web: Http4sAuth): Auther =
       new TestAuther(users, web, Username("u"))
 

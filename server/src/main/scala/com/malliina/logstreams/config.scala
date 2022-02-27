@@ -1,5 +1,6 @@
 package com.malliina.logstreams
 
+import com.malliina.app.BuildInfo
 import com.malliina.http.FullUrl
 import com.malliina.logstreams.auth.SecretKey
 import com.malliina.logstreams.db.Conf
@@ -26,9 +27,14 @@ object LocalConf:
   val homeDir = Paths.get(sys.props("user.home"))
   val appDir = LocalConf.homeDir.resolve(".logstreams")
   val localConfFile = appDir.resolve("logstreams.conf")
-  val localConf = ConfigFactory.parseFile(localConfFile.toFile).withFallback(ConfigFactory.load())
+  val isProd = BuildInfo.mode == "prod"
+  private val localConf =
+    ConfigFactory.parseFile(localConfFile.toFile).withFallback(ConfigFactory.load())
+  val conf =
+    if isProd then ConfigFactory.load("application-prod.conf")
+    else localConf
 
-case class LogstreamsConf(mode: AppMode, secret: SecretKey, db: Conf, google: AuthConf)
+case class LogstreamsConf(secret: SecretKey, db: Conf, google: AuthConf)
 
 case class WrappedConf(logstreams: LogstreamsConf)
 
@@ -59,11 +65,10 @@ object LogstreamsConf:
       c.read[T](key).fold(err => throw new IllegalArgumentException(err.message), identity)
 
   def parse(): LogstreamsConf =
-    val c = ConfigFactory.load(LocalConf.localConf).resolve().getConfig("logstreams")
+    val c = ConfigFactory.load(LocalConf.conf).resolve().getConfig("logstreams")
     val db = c.getConfig("db")
     val google = c.getConfig("google")
     LogstreamsConf(
-      c.unsafe[AppMode]("mode"),
       c.unsafe[SecretKey]("secret"),
       parseDatabase(db),
       AuthConf(google.unsafe[ClientId]("client-id"), google.unsafe[ClientSecret]("client-secret"))

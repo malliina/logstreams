@@ -3,7 +3,7 @@ name: Deploy
 on:
   push:
     branches:
-      - master2
+      - master
 
 env:
   AZURE_RG: rg-fnxr3ec3ms6mu

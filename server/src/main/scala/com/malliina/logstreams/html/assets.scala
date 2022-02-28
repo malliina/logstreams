@@ -11,6 +11,7 @@ object AssetsSource:
   def apply(isProd: Boolean): AssetsSource =
     if isProd then CDNAssets(FullUrl.https("logs-cdn.malliina.com", ""))
     else HashedAssetsSource
+    HashedAssetsSource
 
 object HashedAssetsSource extends AssetsSource:
   override def at(file: String): Uri =

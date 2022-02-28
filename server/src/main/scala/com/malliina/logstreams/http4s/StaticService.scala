@@ -10,7 +10,8 @@ import com.malliina.util.AppLogger
 import com.malliina.values.UnixPath
 import org.http4s.CacheDirective.{`max-age`, `no-cache`, `public`}
 import org.http4s.headers.`Cache-Control`
-import org.http4s.{HttpRoutes, Request, StaticFile}
+import org.http4s.{Header, HttpRoutes, Request, StaticFile}
+import org.typelevel.ci.CIStringSyntax
 
 import java.nio.file.Files
 import scala.concurrent.duration.DurationInt
@@ -24,6 +25,7 @@ class StaticService[F[_]: Async] extends BasicService[F]:
     List(".html", ".js", ".map", ".css", ".png", ".ico") ++ fontExtensions
 
   private val publicDir = fs2.io.file.Path(BuildInfo.assetsDir)
+  private val allowAllOrigins = Header.Raw(ci"Access-Control-Allow-Origin", "*")
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {
     case req @ GET -> rest if supportedStaticExtensions.exists(rest.toString.endsWith) =>
       val file = UnixPath(rest.segments.mkString("/"))
@@ -39,7 +41,7 @@ class StaticService[F[_]: Async] extends BasicService[F]:
       StaticFile
         .fromResource(resourcePath, Option(req))
         .orElse(StaticFile.fromPath(assetPath, Option(req)))
-        .map(_.putHeaders(`Cache-Control`(cacheHeaders)))
+        .map(_.putHeaders(`Cache-Control`(cacheHeaders), allowAllOrigins))
         .fold(onNotFound(req))(_.pure[F])
         .flatten
   }

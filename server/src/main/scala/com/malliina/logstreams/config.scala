@@ -30,7 +30,7 @@ object LocalConf:
   val isProd = BuildInfo.mode == "prod"
   private val localConf =
     ConfigFactory.parseFile(localConfFile.toFile).withFallback(ConfigFactory.load())
-  val conf =
+  val conf: Config =
     if isProd then ConfigFactory.load("application-prod.conf")
     else localConf
 

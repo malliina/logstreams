@@ -122,7 +122,6 @@ val frontend = project
     )
   )
 
-val prodPort = 9000
 val http4sModules = Seq("blaze-server", "blaze-client", "circe", "dsl")
 
 val server = project

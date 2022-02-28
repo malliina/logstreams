@@ -29,12 +29,11 @@ case class ServerComponents(
 
 object Server extends IOApp:
   val log = AppLogger(getClass)
-  val port = 9000
-
+  val serverPort = sys.env.get("SERVER_PORT").flatMap(_.toIntOption).getOrElse(9000)
   def server(
     conf: LogstreamsConf,
     authBuilder: AuthBuilder,
-    port: Int = port
+    port: Int = serverPort
   ): Resource[IO, ServerComponents] = for
     service <- appService(conf, authBuilder)
     _ <- Resource.eval(

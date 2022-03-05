@@ -17,3 +17,6 @@ class BasicService[F[_]: Applicative] extends Implicits[F]:
 
   def notFound(req: Request[F]): F[Response[F]] =
     NotFound(Errors.single(s"Not found: '${req.uri}'.").asJson, noCache)
+
+  def serverError(implicit a: Applicative[F]): F[Response[F]] =
+    InternalServerError(Errors.single(s"Server error.").asJson, noCache)

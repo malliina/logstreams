@@ -12,7 +12,7 @@ import com.malliina.logstreams.{LocalConf, LogstreamsConf}
 import com.malliina.values.Username
 import munit.FunSuite
 import org.testcontainers.utility.DockerImageName
-
+import com.comcast.ip4s.port
 import scala.concurrent.Promise
 import scala.util.Try
 
@@ -69,7 +69,7 @@ trait ServerSuite extends MUnitDatabaseSuite:
 
     override def beforeAll(): Unit =
       val testConf = LogstreamsConf.parse().copy(db = db())
-      val resource = Server.server(testConf, testAuths, port = 12345)
+      val resource = Server.server(testConf, testAuths, port = port"12345")
       val setupEffect = resource.allocated.map { case (t, release) =>
         promise.success(release)
         t

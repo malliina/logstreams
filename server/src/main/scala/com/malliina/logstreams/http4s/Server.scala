@@ -3,6 +3,7 @@ package com.malliina.logstreams.http4s
 import cats.data.Kleisli
 import cats.effect.kernel.Ref
 import cats.effect.{ExitCode, IO, IOApp, Resource}
+import com.comcast.ip4s.{Port, host, port}
 import com.malliina.app.AppMeta
 import com.malliina.http.io.HttpClientIO
 import com.malliina.logstreams.auth.{AuthBuilder, Auther, Auths, JWT}
@@ -13,7 +14,7 @@ import com.malliina.logstreams.{AppMode, LocalConf, LogstreamsConf}
 import com.malliina.util.AppLogger
 import com.malliina.web.GoogleAuthFlow
 import fs2.concurrent.Topic
-import org.http4s.blaze.server.BlazeServerBuilder
+import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.middleware.{GZip, HSTS}
 import org.http4s.server.{Router, Server}
 import org.http4s.{HttpRoutes, Request, Response}
@@ -29,23 +30,26 @@ case class ServerComponents(
 
 object Server extends IOApp:
   val log = AppLogger(getClass)
-  val serverPort = sys.env.get("SERVER_PORT").flatMap(_.toIntOption).getOrElse(9000)
+  private val serverPort: Port =
+    sys.env.get("SERVER_PORT").flatMap(s => Port.fromString(s)).getOrElse(port"9000")
+
   def server(
     conf: LogstreamsConf,
     authBuilder: AuthBuilder,
-    port: Int = serverPort
+    port: Port = serverPort
   ): Resource[IO, ServerComponents] = for
     service <- appService(conf, authBuilder)
     _ <- Resource.eval(
       IO(log.info(s"Binding on port $port using app version ${AppMeta.ThisApp.git}..."))
     )
     server <-
-      BlazeServerBuilder[IO]
-        .bindHttp(port = port, "0.0.0.0")
+      EmberServerBuilder
+        .default[IO]
+        .withHost(host"0.0.0.0")
+        .withPort(serverPort)
         .withHttpWebSocketApp(socketBuilder => makeHandler(service, socketBuilder))
-        .withServiceErrorHandler(ErrorHandler[IO, IO])
-        .withBanner(Nil)
-        .resource
+        .withErrorHandler(ErrorHandler[IO].partial)
+        .build
   yield ServerComponents(service, server)
 
   def appService(conf: LogstreamsConf, authBuilder: AuthBuilder): Resource[IO, Service] = for
@@ -77,7 +81,7 @@ object Server extends IOApp:
       orNotFound {
         Router(
           "/" -> service.routes(socketBuilder),
-          "/assets" -> StaticService[IO]().routes
+          "/assets" -> StaticService[IO].routes
         )
       }
     }

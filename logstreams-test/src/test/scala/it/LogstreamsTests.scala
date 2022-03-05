@@ -12,7 +12,6 @@ import io.circe.Json
 import io.circe.syntax.EncoderOps
 import io.circe.parser.parse
 import it.LogstreamsTests.testUsername
-import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.{Status, Uri}
 import org.slf4j.LoggerFactory
 
@@ -33,14 +32,6 @@ class LogstreamsTests extends TestServerSuite:
   def port = server().server.address.getPort
   def components = server().app
   def users = components.users
-
-  test("can ping server") {
-    val response = BlazeClientBuilder[IO].resource.use { client =>
-      client.get(Uri.unsafeFromString(s"http://localhost:$port/ping"))(res => IO.pure(res))
-    }
-      .unsafeRunSync()
-    assertEquals(response.status, Status.Ok)
-  }
 
   test("can open socket") {
     val c = creds("u1")

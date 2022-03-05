@@ -122,8 +122,6 @@ val frontend = project
     )
   )
 
-val http4sModules = Seq("blaze-server", "blaze-client", "circe", "dsl")
-
 val server = project
   .in(file("server"))
   .enablePlugins(
@@ -154,12 +152,12 @@ val server = project
       "mode" -> (if ((Global / scalaJSStage).value == FullOptStage) "prod" else "dev")
     ),
     buildInfoPackage := "com.malliina.app",
-    libraryDependencies ++= SbtUtils.loggingDeps ++ http4sModules.map { m =>
+    libraryDependencies ++= SbtUtils.loggingDeps ++ Seq("ember-server", "circe", "dsl").map { m =>
       "org.http4s" %% s"http4s-$m" % "0.23.10"
     } ++ Seq("doobie-core", "doobie-hikari").map { d =>
       "org.tpolecat" %% d % "1.0.0-RC2"
     } ++ Seq(
-      "com.typesafe" % "config" % "1.4.1",
+      "com.malliina" %% "config" % primitivesVersion,
       "org.flywaydb" % "flyway-core" % "7.15.0",
       "mysql" % "mysql-connector-java" % "5.1.49",
       "com.malliina" %% "util-html" % utilHtmlVersion,
@@ -171,13 +169,14 @@ val server = project
       "-J-Xmx1024m",
       "-Dlogback.configurationFile=logback-prod.xml"
     ),
-    Compile / unmanagedResourceDirectories += baseDirectory.value / "public",
     Compile / packageDoc / publishArtifact := false,
     packageDoc / publishArtifact := false,
     Compile / doc / sources := Seq.empty,
     clientProject := frontend,
-    Compile / unmanagedResourceDirectories += baseDirectory.value / "public",
-    Compile / unmanagedResourceDirectories += (frontend / Compile / assetsRoot).value.getParent.toFile,
+    Compile / unmanagedResourceDirectories ++= Seq(
+      baseDirectory.value / "public",
+      (frontend / Compile / assetsRoot).value.getParent.toFile
+    ),
     assembly / assemblyJarName := "app.jar"
   )
 
@@ -191,7 +190,7 @@ val it = Project("logstreams-test", file("logstreams-test"))
 
 val runApp = inputKey[Unit]("Runs the app")
 
-val logstreamsRoot = project
+val root = project
   .in(file("."))
   .aggregate(frontend, server, client, it, fs2)
   .settings(

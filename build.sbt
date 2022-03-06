@@ -80,7 +80,9 @@ val cross = portableProject(JSPlatform, JVMPlatform)
   .crossType(PortableType.Full)
   .in(file("shared"))
   .settings(
-    libraryDependencies ++= circeModules.map(m => "io.circe" %%% s"circe-$m" % "0.14.1") ++ Seq(
+    libraryDependencies ++= Seq("generic", "parser").map { m =>
+      "io.circe" %%% s"circe-$m" % "0.14.1"
+    } ++ Seq(
       "com.malliina" %%% "primitives" % primitivesVersion,
       "com.lihaoyi" %%% "scalatags" % "0.11.1"
     )

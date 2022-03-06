@@ -45,8 +45,18 @@ const WebApp = merge(ScalaJS, {
         }
       },
       {
-        test: /\.(png|svg)$/,
-        type: 'asset/resource',
+        test: /\.(png)$/,
+        type: 'asset/resource', // copies to file, does not inline
+        include: [
+          path.resolve(rootDir, 'src/main/resources/images')
+        ],
+        generator: {
+          filename: 'img/[name][ext]'
+        }
+      },
+      {
+        test: /\.(svg)$/,
+        type: 'asset',
         include: [
           path.resolve(rootDir, 'src/main/resources/images')
         ],

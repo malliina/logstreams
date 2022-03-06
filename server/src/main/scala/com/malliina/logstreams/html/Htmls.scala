@@ -195,7 +195,7 @@ class Htmls(
         "logstreams",
         modifier(
           navItem("Logs", "logs", reverse.index, "list"),
-          navItem("Sources", "sources", reverse.sources, "home"),
+          navItem("Sources", "sources", reverse.sources, "tower-broadcast"),
           navItem("Users", "users", reverse.allUsers, "user")
         )
       ),
@@ -244,4 +244,4 @@ class Htmls(
     )
 
   def fa(faName: String) =
-    i(`class` := s"fas fa-$faName", title := faName, aria.hidden := tags.True)
+    i(`class` := s"nav-icon $faName", title := faName, aria.hidden := tags.True)

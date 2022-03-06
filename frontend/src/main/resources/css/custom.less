@@ -76,3 +76,36 @@ h1, h2 {
 .search-control {
   max-width: 600px;
 }
+
+.nav-item {
+  opacity: 0.7;
+
+  &:hover {
+    opacity: 0.9;
+    cursor: pointer;
+  }
+
+  &.active {
+    opacity: 1;
+  }
+}
+
+.nav-icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background-repeat: no-repeat;
+  opacity: 0.7;
+
+  &.list {
+    background-image: url("../images/list.svg");
+  }
+
+  &.tower-broadcast {
+    background-image: url("../images/tower-broadcast.svg");
+  }
+
+  &.user {
+    background-image: url("../images/user.svg");
+  }
+}

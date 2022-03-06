@@ -64,7 +64,7 @@ class FS2Appender(
         socketClosable = closer
         d.unsafeRunAndForget(socket.events.compile.drain)
         val task = logEvents
-          .map(e => socket.send(LogEvents(Seq(e))))
+          .evalMap(e => socket.send(LogEvents(Seq(e))))
           .onComplete {
             fs2.Stream
               .eval(IO(addInfo(s"Appender [$name] completed.")))

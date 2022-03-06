@@ -46,7 +46,7 @@ class LogSockets(
     case Text(message, _) => IO(log.info(message))
     case f                => IO(log.debug(s"Unknown WebSocket frame: $f"))
   }
-  val pings = Stream.awakeEvery[IO](5.seconds).map(_ => SimpleEvent.ping)
+  private val pings = Stream.awakeEvery[IO](5.seconds).map(_ => SimpleEvent.ping)
 
   def listener(query: StreamsQuery, socketBuilder: WebSocketBuilder2[IO]): IO[Response[IO]] =
     val subscription =

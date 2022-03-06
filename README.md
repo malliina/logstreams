@@ -17,4 +17,6 @@ Push to the `master` branch. See [azure-pipelines.yml](azure-pipelines.yml) for 
 
 To release the client:
 
-    sbt release
+    sbt
+    project client
+    release

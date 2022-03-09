@@ -25,23 +25,25 @@ object FS2Appender:
   case class ResourceParts(
     comps: LoggingComps,
     http: HttpClientIO,
-    finalizer: IO[Unit],
-    rt: IORuntime
+    finalizer: IO[Unit]
   )
 
   def customRuntime: IORuntime =
     val (scheduler, finalizer) = IORuntime.createDefaultScheduler()
     IORuntime(ec, ec, scheduler, finalizer, IORuntimeConfig())
 
-  def unsafe: ResourceParts =
-    val rt = customRuntime
+  def dispatched(d: Dispatcher[IO], dispatcherFinalizer: IO[Unit]): ResourceParts =
     val resource = for
-      comps <- FS2AppenderComps.resource
+      comps <- Resource.eval(FS2AppenderComps.io(d))
       http <- HttpClientIO.resource
     yield SocketComps(comps, http)
-    val (comps, finalizer) =
-      resource.allocated[SocketComps].unsafeRunSync()(rt)
-    ResourceParts(comps.comps, comps.http, finalizer, rt)
+    val (comps, finalizer) = d.unsafeRunSync(resource.allocated[SocketComps])
+    ResourceParts(comps.comps, comps.http, finalizer >> dispatcherFinalizer)
+
+  def unsafe: ResourceParts =
+    val rt = customRuntime
+    val (d, finalizer) = Dispatcher[IO].allocated.unsafeRunSync()(rt)
+    dispatched(d, finalizer >> IO(rt.shutdown()))
 
 class FS2Appender(
   res: ResourceParts
@@ -79,5 +81,4 @@ class FS2Appender(
 
   override def stop(): Unit =
     d.unsafeRunSync(client.map(_.close).getOrElse(IO.unit) >> res.finalizer)
-    res.rt.shutdown()
     FS2Appender.executor.shutdown()

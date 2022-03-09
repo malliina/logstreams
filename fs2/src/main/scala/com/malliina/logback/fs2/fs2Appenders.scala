@@ -20,10 +20,11 @@ case class FS2AppenderComps[E](
 )
 
 object FS2AppenderComps:
-  def resource: Resource[IO, LoggingComps] = for
-    topic <- Resource.eval(Topic[IO, Option[ILoggingEvent]])
-    signal <- Resource.eval(SignallingRef[IO, Boolean](false))
-    d <- Dispatcher[IO]
+  def resource: Resource[IO, LoggingComps] =
+    Dispatcher[IO].evalMap(d => io(d))
+  def io(d: Dispatcher[IO]): IO[LoggingComps] = for
+    topic <- Topic[IO, Option[ILoggingEvent]]
+    signal <- SignallingRef[IO, Boolean](false)
   yield FS2AppenderComps(topic, signal, d)
 
 abstract class FS2Appender[E](comps: FS2AppenderComps[E]) extends AppenderBase[E]:

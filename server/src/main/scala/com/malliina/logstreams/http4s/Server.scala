@@ -19,7 +19,7 @@ import org.http4s.server.middleware.{GZip, HSTS}
 import org.http4s.server.{Router, Server}
 import org.http4s.{HttpRoutes, Request, Response}
 import org.http4s.server.websocket.WebSocketBuilder2
-
+import concurrent.duration.DurationInt
 import scala.concurrent.ExecutionContext
 
 case class ServerComponents(
@@ -45,6 +45,7 @@ object Server extends IOApp:
     server <-
       EmberServerBuilder
         .default[IO]
+        .withIdleTimeout(30.days)
         .withHost(host"0.0.0.0")
         .withPort(serverPort)
         .withHttpWebSocketApp(socketBuilder => makeHandler(service, socketBuilder))
@@ -58,9 +59,9 @@ object Server extends IOApp:
     adminsTopic <- Resource.eval(Topic[IO, LogSources])
     connecteds <- Resource.eval(Ref[IO].of(LogSources(Nil)))
     logUpdates <- Resource.eval(Topic[IO, AppLogEvents])
-    http <- cats.effect.kernel.Resource.make(IO(HttpClientIO()))(c => IO(c.close()))
+    http <- HttpClientIO.resource
     logsDatabase = DoobieStreamsDatabase(db)
-    sockets = new LogSockets(logsTopic, adminsTopic, connecteds, logUpdates, logsDatabase)
+    sockets = LogSockets(logsTopic, adminsTopic, connecteds, logUpdates, logsDatabase)
     _ <- fs2.Stream.emit(()).concurrently(sockets.publisher).compile.resource.lastOrError
   yield
     val users = DoobieDatabaseAuth(db)

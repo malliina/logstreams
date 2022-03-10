@@ -5,18 +5,18 @@ import cats.effect.{IO, Resource}
 import ch.qos.logback.classic.Level
 import com.malliina.logstreams.db.{LogsDatabase, StreamsQuery, Utils}
 import com.malliina.logstreams.http4s.LogSockets.log
+import com.malliina.logstreams.http4s.UserRequest
 import com.malliina.logstreams.models.*
 import com.malliina.util.AppLogger
-import controllers.UserRequest
-import fs2.{Pipe, Stream}
 import fs2.concurrent.Topic
+import fs2.{Pipe, Stream}
 import io.circe.Encoder
 import io.circe.parser.*
 import io.circe.syntax.EncoderOps
 import org.http4s.Response
+import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.websocket.WebSocketFrame
 import org.http4s.websocket.WebSocketFrame.Text
-import org.http4s.server.websocket.WebSocketBuilder2
 
 import java.time.Instant
 import java.time.format.DateTimeFormatter

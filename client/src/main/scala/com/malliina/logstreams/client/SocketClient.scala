@@ -8,6 +8,7 @@ import java.util.concurrent.{Executors, TimeUnit}
 import javax.net.ssl.SSLSocketFactory
 
 import com.malliina.http.FullUrl
+import com.malliina.util.AppLogger
 import com.malliina.logstreams.client.SocketClient.{DefaultConnectTimeout, log}
 import com.neovisionaries.ws.client.*
 
@@ -15,9 +16,9 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Future, Promise}
 
 object SocketClient:
-  private val log = Logging(getClass)
+  private val log = AppLogger(getClass)
 
-  val DefaultConnectTimeout = 20.seconds
+  val DefaultConnectTimeout: FiniteDuration = 20.seconds
 
 /** A WebSocket client.
   *

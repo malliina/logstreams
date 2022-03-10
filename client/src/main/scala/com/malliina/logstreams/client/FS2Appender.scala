@@ -5,13 +5,12 @@ import cats.effect.kernel.Resource
 import cats.effect.std.Dispatcher
 import cats.effect.unsafe.{IORuntime, IORuntimeConfig, Scheduler}
 import ch.qos.logback.classic.spi.ILoggingEvent
-import com.malliina.http.{OkClient, OkHttpBackend, HttpClient}
-import com.malliina.http.io.{WebSocketIO, HttpClientIO}
-import com.malliina.logback.fs2.FS2AppenderComps
+import com.malliina.http.io.{HttpClientIO, WebSocketIO}
+import com.malliina.http.{HttpClient, OkClient, OkHttpBackend}
+import com.malliina.logback.fs2.{FS2AppenderComps, LoggingComps}
 import com.malliina.logstreams.client.FS2Appender.{ResourceParts, ec}
 import fs2.concurrent.{SignallingRef, Topic}
 import io.circe.syntax.*
-import com.malliina.logback.fs2.LoggingComps
 
 import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.ExecutionContext
@@ -65,7 +64,7 @@ class FS2Appender(
         client = Option(socket)
         socketClosable = closer
         d.unsafeRunAndForget(socket.events.compile.drain)
-        val task = logEvents
+        val task: IO[Unit] = logEvents
           .evalMap(e => socket.send(LogEvents(Seq(e))))
           .onComplete {
             fs2.Stream

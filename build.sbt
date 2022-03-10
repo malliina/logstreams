@@ -9,8 +9,8 @@ import scala.util.Try
 
 val malliinaGroup = "com.malliina"
 val utilHtmlVersion = "6.2.0"
-val primitivesVersion = "3.1.2"
-val logbackVersion = "1.2.10"
+val primitivesVersion = "3.1.3"
+val logbackVersion = "1.2.11"
 val munitVersion = "0.7.29"
 
 val utilPlayDep = malliinaGroup %% "web-auth" % utilHtmlVersion

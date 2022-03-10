@@ -5,10 +5,9 @@ import com.malliina.html.{Bootstrap, HtmlTags, TagPage}
 import com.malliina.http.FullUrl
 import com.malliina.live.LiveReload
 import com.malliina.logstreams.html.Htmls.*
-import com.malliina.logstreams.http4s.LogRoutes
+import com.malliina.logstreams.http4s.{LogRoutes, UserFeedback}
 import com.malliina.logstreams.models.{AppName, FrontStrings, LogLevel}
 import com.malliina.values.Username
-import controllers.UserFeedback
 import org.http4s.Uri
 import scalatags.Text.all.*
 import scalatags.text.Builder

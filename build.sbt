@@ -179,7 +179,8 @@ val server = project
       baseDirectory.value / "public",
       (frontend / Compile / assetsRoot).value.getParent.toFile
     ),
-    assembly / assemblyJarName := "app.jar"
+    assembly / assemblyJarName := "app.jar",
+    liveReloadPort := 10103
   )
 
 val it = Project("logstreams-test", file("logstreams-test"))

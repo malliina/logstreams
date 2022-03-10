@@ -24,7 +24,6 @@ import scala.concurrent.ExecutionContext
 
 case class ServerComponents(
   app: Service,
-//  handler: Kleisli[IO, Request[IO], Response[IO]],
   server: Server
 )
 

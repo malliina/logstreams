@@ -14,6 +14,7 @@ import io.circe.syntax.*
 
 import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.ExecutionContext
+import concurrent.duration.DurationInt
 
 object FS2Appender:
   val executor: ExecutorService = Executors.newCachedThreadPool()
@@ -65,7 +66,8 @@ class FS2Appender(
         socketClosable = closer
         d.unsafeRunAndForget(socket.events.compile.drain)
         val task: IO[Unit] = logEvents
-          .evalMap(e => socket.send(LogEvents(Seq(e))))
+          .groupWithin(100, 3.seconds)
+          .evalMap(es => socket.send(LogEvents(es.toList)))
           .onComplete {
             fs2.Stream
               .eval(IO(addInfo(s"Appender [$name] completed.")))

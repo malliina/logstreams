@@ -13,6 +13,9 @@ import scala.util.control.NonFatal
 class ErrorHandler[F[_]: Async] extends BasicService[F]:
   private val log = AppLogger(getClass)
 
+  def blaze: Request[F] => PartialFunction[Throwable, F[Response[F]]] =
+    req => partial
+
   def partial: PartialFunction[Throwable, F[Response[F]]] =
     case re: ResponseException =>
       val error = re.error

@@ -8,7 +8,7 @@ import scala.sys.process.Process
 import scala.util.Try
 
 val malliinaGroup = "com.malliina"
-val utilHtmlVersion = "6.2.0"
+val utilHtmlVersion = "6.2.2"
 val primitivesVersion = "3.1.3"
 val logbackVersion = "1.2.11"
 val munitVersion = "0.7.29"
@@ -154,10 +154,11 @@ val server = project
       "mode" -> (if ((Global / scalaJSStage).value == FullOptStage) "prod" else "dev")
     ),
     buildInfoPackage := "com.malliina.app",
-    libraryDependencies ++= SbtUtils.loggingDeps ++ Seq("ember-server", "circe", "dsl").map { m =>
-      "org.http4s" %% s"http4s-$m" % "0.23.10"
-    } ++ Seq("doobie-core", "doobie-hikari").map { d =>
-      "org.tpolecat" %% d % "1.0.0-RC2"
+    libraryDependencies ++= SbtUtils.loggingDeps ++
+      Seq("blaze-server", "ember-server", "circe", "dsl").map { m =>
+      "org.http4s" %% s"http4s-$m" % "0.23.11"
+    } ++ Seq("core", "hikari").map { m =>
+      "org.tpolecat" %% s"doobie-$m" % "1.0.0-RC2"
     } ++ Seq(
       "com.malliina" %% "config" % primitivesVersion,
       "org.flywaydb" % "flyway-core" % "7.15.0",
@@ -165,7 +166,7 @@ val server = project
       "com.malliina" %% "util-html" % utilHtmlVersion,
       utilPlayDep,
       utilPlayDep % Test classifier "tests",
-      "com.dimafeng" %% "testcontainers-scala-mysql" % "0.40.2" % Test
+      "com.dimafeng" %% "testcontainers-scala-mysql" % "0.40.3" % Test
     ),
     Universal / javaOptions ++= Seq(
       "-J-Xmx1024m",

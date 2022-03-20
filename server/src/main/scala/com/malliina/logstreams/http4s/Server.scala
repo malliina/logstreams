@@ -14,13 +14,15 @@ import com.malliina.logstreams.{AppMode, LocalConf, LogstreamsConf}
 import com.malliina.util.AppLogger
 import com.malliina.web.GoogleAuthFlow
 import fs2.concurrent.Topic
+import org.http4s.blaze.server.BlazeServerBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.middleware.{GZip, HSTS}
+import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.server.{Router, Server}
 import org.http4s.{HttpRoutes, Request, Response}
-import org.http4s.server.websocket.WebSocketBuilder2
-import concurrent.duration.DurationInt
+
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.DurationInt
 
 case class ServerComponents(
   app: Service,
@@ -28,7 +30,7 @@ case class ServerComponents(
 )
 
 object Server extends IOApp:
-  val log = AppLogger(getClass)
+  private val log = AppLogger(getClass)
   private val serverPort: Port =
     sys.env.get("SERVER_PORT").flatMap(s => Port.fromString(s)).getOrElse(port"9000")
 
@@ -41,15 +43,21 @@ object Server extends IOApp:
     _ <- Resource.eval(
       IO(log.info(s"Binding on port $port using app version ${AppMeta.ThisApp.git}..."))
     )
-    server <-
-      EmberServerBuilder
-        .default[IO]
-        .withIdleTimeout(30.days)
-        .withHost(host"0.0.0.0")
-        .withPort(serverPort)
-        .withHttpWebSocketApp(socketBuilder => makeHandler(service, socketBuilder))
-        .withErrorHandler(ErrorHandler[IO].partial)
-        .build
+    server <- BlazeServerBuilder[IO]
+      .bindHttp(port = serverPort.value, "0.0.0.0")
+      .withHttpWebSocketApp(socketBuilder => makeHandler(service, socketBuilder))
+      .withServiceErrorHandler(ErrorHandler[IO].blaze)
+      .withBanner(Nil)
+      .withIdleTimeout(30.days)
+      .resource
+//      EmberServerBuilder
+//        .default[IO]
+//        .withIdleTimeout(30.days)
+//        .withHost(host"0.0.0.0")
+//        .withPort(serverPort)
+//        .withHttpWebSocketApp(socketBuilder => makeHandler(service, socketBuilder))
+//        .withErrorHandler(ErrorHandler[IO].partial)
+//        .build
   yield ServerComponents(service, server)
 
   def appService(conf: LogstreamsConf, authBuilder: AuthBuilder): Resource[IO, Service] = for

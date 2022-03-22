@@ -38,18 +38,19 @@ object Server extends IOApp:
     conf: LogstreamsConf,
     authBuilder: AuthBuilder,
     port: Port = serverPort
-  ): Resource[IO, ServerComponents] = for
-    service <- appService(conf, authBuilder)
-    _ <- Resource.eval(
-      IO(log.info(s"Binding on port $port using app version ${AppMeta.ThisApp.git}..."))
-    )
-    server <- BlazeServerBuilder[IO]
-      .bindHttp(port = serverPort.value, "0.0.0.0")
-      .withHttpWebSocketApp(socketBuilder => makeHandler(service, socketBuilder))
-      .withServiceErrorHandler(ErrorHandler[IO].blaze)
-      .withBanner(Nil)
-      .withIdleTimeout(30.days)
-      .resource
+  ): Resource[IO, ServerComponents] =
+    for
+      service <- appService(conf, authBuilder)
+      _ <- Resource.eval(
+        IO(log.info(s"Binding on port $port using app version ${AppMeta.ThisApp.git}..."))
+      )
+      server <- BlazeServerBuilder[IO]
+        .bindHttp(port = serverPort.value, "0.0.0.0")
+        .withHttpWebSocketApp(socketBuilder => makeHandler(service, socketBuilder))
+        .withServiceErrorHandler(ErrorHandler[IO].blaze)
+        .withBanner(Nil)
+        .withIdleTimeout(30.days)
+        .resource
 //      EmberServerBuilder
 //        .default[IO]
 //        .withIdleTimeout(30.days)
@@ -58,7 +59,7 @@ object Server extends IOApp:
 //        .withHttpWebSocketApp(socketBuilder => makeHandler(service, socketBuilder))
 //        .withErrorHandler(ErrorHandler[IO].partial)
 //        .build
-  yield ServerComponents(service, server)
+    yield ServerComponents(service, server)
 
   def appService(conf: LogstreamsConf, authBuilder: AuthBuilder): Resource[IO, Service] = for
     db <- DoobieDatabase.withMigrations(conf.db)

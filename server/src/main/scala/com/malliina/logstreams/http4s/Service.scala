@@ -248,7 +248,7 @@ class Service(
     s"User '${req.user}' from '${req.address}' $message."
 
   def onUnauthorized(error: IdentityError): IO[Response[IO]] =
-    log.warn("Unauthorized.")
+    log.warn(s"Unauthorized. $error")
     unauthorized(Errors.single(s"Unauthorized."))
 
   def unauthorized(errors: Errors) = SeeOther(Location(LogRoutes.googleStart))

@@ -1,7 +1,8 @@
 package com.malliina.logstreams.db
 
 import cats.effect.IO.*
-import cats.effect.{IO, Resource}
+import cats.effect.kernel.Resource
+import cats.effect.IO
 import com.malliina.logstreams.db.DoobieDatabase.log
 import com.malliina.util.AppLogger
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
@@ -17,17 +18,21 @@ import scala.concurrent.duration.DurationInt
 object DoobieDatabase:
   private val log = AppLogger(getClass)
 
-  def apply(conf: Conf): Resource[IO, DoobieDatabase] =
-    transactor(dataSource(conf)).map { tx => new DoobieDatabase(tx) }
+  def default(conf: Conf): Resource[IO, DoobieDatabase] =
+    for
+      ds <- dataSource(conf)
+      tx <- transactor(ds)
+    yield DoobieDatabase(tx)
 
-  def withMigrations(conf: Conf) =
-    Resource.pure[IO, MigrateResult](migrate(conf)).flatMap { _ => apply(conf) }
+  def withMigrations(conf: Conf): Resource[IO, DoobieDatabase] =
+    Resource.eval(migrate(conf)).flatMap { _ => default(conf) }
 
-  def migrate(conf: Conf): MigrateResult =
+  private def migrate(conf: Conf): IO[MigrateResult] = IO {
     val flyway = Flyway.configure.dataSource(conf.url, conf.user, conf.pass).load()
     flyway.migrate()
+  }
 
-  private def dataSource(conf: Conf): HikariDataSource =
+  private def dataSource(conf: Conf): Resource[IO, HikariDataSource] =
     val hikari = new HikariConfig()
     hikari.setDriverClassName(Conf.MySQLDriver)
     hikari.setJdbcUrl(conf.url)
@@ -35,8 +40,10 @@ object DoobieDatabase:
     hikari.setPassword(conf.pass)
     hikari.setMaxLifetime(60.seconds.toMillis)
     hikari.setMaximumPoolSize(5)
-    log.info(s"Connecting to '${conf.url}'...")
-    new HikariDataSource(hikari)
+    Resource.make(IO {
+      log.info(s"Connecting to '${conf.url}'...")
+      HikariDataSource(hikari)
+    })(ds => IO(ds.close()))
 
   def transactor(ds: HikariDataSource): Resource[IO, DataSourceTransactor[IO]] =
     for ec <- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
@@ -45,7 +52,8 @@ object DoobieDatabase:
 class DoobieDatabase(tx: DataSourceTransactor[IO]):
   implicit val logHandler: LogHandler = LogHandler {
     case Success(sql, args, exec, processing) =>
-      log.info(s"OK '$sql' exec ${exec.toMillis} ms processing ${processing.toMillis} ms.")
+      val logger: String => Unit = if processing > 2.seconds then log.info else log.debug
+      logger(s"OK '$sql' exec ${exec.toMillis} ms processing ${processing.toMillis} ms.")
     case ProcessingFailure(sql, args, exec, processing, failure) =>
       log.error(s"Failed '$sql' in ${exec + processing}.", failure)
     case ExecFailure(sql, args, exec, failure) =>

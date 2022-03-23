@@ -12,8 +12,6 @@ import ch.qos.logback.classic.Level
 object DoobieStreamsDatabase:
   private val log = AppLogger(getClass)
 
-  def apply(db: DoobieDatabase): DoobieStreamsDatabase = new DoobieStreamsDatabase(db)
-
 class DoobieStreamsDatabase(db: DoobieDatabase) extends LogsDatabase[IO]:
   implicit val dbLog: LogHandler = db.logHandler
 
@@ -27,8 +25,8 @@ class DoobieStreamsDatabase(db: DoobieDatabase) extends LogsDatabase[IO]:
       idList.toNel.map { ids =>
         val inClause = Fragments.in(fr"ID", ids)
         sql"""select ID, APP, ADDRESS, TIMESTAMP, MESSAGE, LOGGER, THREAD, LEVEL, STACKTRACE, ADDED
-                from LOGS 
-                where $inClause""".query[LogEntryRow].to[List]
+              from LOGS 
+              where $inClause""".query[LogEntryRow].to[List]
       }.getOrElse {
         List.empty[LogEntryRow].pure[ConnectionIO]
       }.map { list =>

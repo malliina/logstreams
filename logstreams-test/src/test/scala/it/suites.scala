@@ -44,12 +44,14 @@ trait MUnitDatabaseSuite:
 
   private def truncateTestData() =
     import doobie.implicits.*
-    DoobieDatabase(db()).use { database =>
-      for
-        l <- database.run(sql"delete from LOGS".update.run)
-        u <- database.run(sql"delete from USERS".update.run)
-      yield l + u
-    }
+    DoobieDatabase
+      .default(db())
+      .use { database =>
+        for
+          l <- database.run(sql"delete from LOGS".update.run)
+          u <- database.run(sql"delete from USERS".update.run)
+        yield l + u
+      }
       .unsafeRunSync()
 
   private def testConf(): Either[Throwable, Conf] =

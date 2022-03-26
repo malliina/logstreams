@@ -66,7 +66,7 @@ class FS2Appender(
         socketClosable = closer
         d.unsafeRunAndForget(socket.events.compile.drain)
         val task: IO[Unit] = logEvents
-          .groupWithin(100, 3.seconds)
+          .groupWithin(100, 1500.millis)
           .evalMap(es => socket.send(LogEvents(es.toList)))
           .onComplete {
             fs2.Stream

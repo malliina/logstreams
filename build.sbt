@@ -151,7 +151,8 @@ val server = project
         }
       },
       "publicFolder" -> (frontend / assetsPrefix).value,
-      "mode" -> (if ((Global / scalaJSStage).value == FullOptStage) "prod" else "dev")
+      "mode" -> (if ((Global / scalaJSStage).value == FullOptStage) "prod" else "dev"),
+      "isProd" -> ((Global / scalaJSStage).value == FullOptStage)
     ),
     buildInfoPackage := "com.malliina.app",
     libraryDependencies ++= SbtUtils.loggingDeps ++

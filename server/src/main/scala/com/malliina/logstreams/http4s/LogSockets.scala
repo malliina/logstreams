@@ -85,9 +85,9 @@ class LogSockets(
   def source(user: UserRequest, socketBuilder: WebSocketBuilder2[IO]): IO[Response[IO]] =
     val publishEvents: Pipe[IO, WebSocketFrame, Unit] = _.evalMap {
       case Text(message, _) =>
-        log.info(s"Received $message")
+        log.debug(s"Received $message")
         val event = decode[LogEvents](message).fold(
-          err => IO.raiseError(new JsonException(err, message)),
+          err => IO.raiseError(JsonException(err, message)),
           es =>
             val inputs = LogEntryInputs(es.events.map { event =>
               LogEntryInput(

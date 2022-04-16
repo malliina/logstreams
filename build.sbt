@@ -12,7 +12,7 @@ val utilHtmlVersion = "6.2.2"
 val primitivesVersion = "3.1.3"
 val logbackVersion = "1.2.11"
 val munitVersion = "0.7.29"
-
+val munitCatsEffectVersion = "1.0.7"
 val utilPlayDep = malliinaGroup %% "web-auth" % utilHtmlVersion
 
 val serverVersion = "0.7.0"
@@ -45,7 +45,8 @@ val fs2 = project
   .settings(
     libraryDependencies ++= Seq(
       "com.malliina" %%% "primitives" % primitivesVersion,
-      "co.fs2" %% "fs2-core" % "3.1.2"
+      "co.fs2" %% "fs2-core" % "3.1.2",
+      "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
     ),
     moduleName := "logback-fs2",
     releaseProcess := tagReleaseProcess.value,
@@ -71,7 +72,8 @@ val client = project
     developerName := "Michael Skogberg",
     libraryDependencies ++= Seq(
       "com.neovisionaries" % "nv-websocket-client" % "2.14",
-      "com.malliina" %% "okclient-io" % primitivesVersion
+      "com.malliina" %% "okclient-io" % primitivesVersion,
+      "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
     ),
     releaseProcess := tagReleaseProcess.value
   )
@@ -167,7 +169,8 @@ val server = project
       "com.malliina" %% "util-html" % utilHtmlVersion,
       utilPlayDep,
       utilPlayDep % Test classifier "tests",
-      "com.dimafeng" %% "testcontainers-scala-mysql" % "0.40.3" % Test
+      "com.dimafeng" %% "testcontainers-scala-mysql" % "0.40.5" % Test,
+      "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
     ),
     Universal / javaOptions ++= Seq(
       "-J-Xmx1024m",

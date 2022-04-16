@@ -12,12 +12,12 @@ import com.malliina.logback.LogEvent
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
-class SocketTests extends munit.FunSuite:
-  def failSocket = SocketClient(FullUrl("http", "kjdhfkdshfds.com", "/blaa"), null, Nil)
+class SocketTests extends munit.CatsEffectSuite:
+//  def failSocket = SocketClient(FullUrl("http", "kjdhfkdshfds.com", "/blaa"), null, Nil)
 
   test("connect".ignore) {
     val headers: List[KeyValue] = List(HttpUtil.basicAuth("test", "changeme"))
-    val url2 = FullUrl.ws("localhost:9000", "/ws/sources")
+//    val url = FullUrl.ws("localhost:9000", "/ws/sources")
     val url = FullUrl.wss("logs.malliina.com", "/ws/sources")
     val s = for
       http <- HttpClientIO.resource
@@ -35,24 +35,24 @@ class SocketTests extends munit.FunSuite:
     }
   }
 
-  test("network failure fails with WebSocketException".ignore) {
-    val socket = failSocket
-    intercept[WebSocketException] {
-      await(socket.initialConnection)
-    }
-    socket.close()
-  }
-
-  test("sending to a closed socket fails".ignore) {
-    val socket = failSocket
-    intercept[WebSocketException] {
-      await(socket.initialConnection)
-    }
-    // This does not throw, perhaps due to async
-    socket send "hey hey"
-    Thread sleep 1000
-    socket.close()
-  }
+//  test("network failure fails with WebSocketException".ignore) {
+//    val socket = failSocket
+//    intercept[WebSocketException] {
+//      await(socket.initialConnection)
+//    }
+//    socket.close()
+//  }
+//
+//  test("sending to a closed socket fails".ignore) {
+//    val socket = failSocket
+//    intercept[WebSocketException] {
+//      await(socket.initialConnection)
+//    }
+//    // This does not throw, perhaps due to async
+//    socket.send("hey hey")
+//    Thread sleep 1000
+//    socket.close()
+//  }
 
   def dummyEvent(msg: String) = LogEvent(
     System.currentTimeMillis(),
@@ -63,5 +63,3 @@ class SocketTests extends munit.FunSuite:
     Level.INFO,
     None
   )
-
-  def await[T](f: Future[T]) = Await.result(f, 10.seconds)

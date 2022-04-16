@@ -13,6 +13,8 @@ import com.malliina.values.Username
 import munit.FunSuite
 import org.testcontainers.utility.DockerImageName
 import com.comcast.ip4s.port
+import com.malliina.http.io.HttpClientIO
+
 import scala.concurrent.Promise
 import scala.util.Try
 
@@ -23,7 +25,7 @@ case class TestConf(testdb: Conf)
 case class WrappedTestConf(logstreams: TestConf)
 
 trait MUnitDatabaseSuite:
-  self: munit.Suite =>
+  self: munit.CatsEffectSuite =>
   val db: Fixture[Conf] = new Fixture[Conf]("database"):
     var container: Option[MySQLContainer] = None
     var conf: Option[Conf] = None
@@ -62,7 +64,8 @@ trait MUnitDatabaseSuite:
   override def munitFixtures: Seq[Fixture[?]] = Seq(db)
 
 trait ServerSuite extends MUnitDatabaseSuite:
-  self: munit.Suite =>
+  self: munit.CatsEffectSuite =>
+  val http = ResourceFixture(HttpClientIO.resource)
   val server: Fixture[ServerComponents] = new Fixture[ServerComponents]("server"):
     private var service: Option[ServerComponents] = None
     val promise: Promise[IO[Unit]] = Promise[IO[Unit]]()
@@ -83,13 +86,12 @@ trait ServerSuite extends MUnitDatabaseSuite:
     override def afterAll(): Unit =
       IO.fromFuture(IO(promise.future)).flatten.unsafeRunSync()
 
-  def testAuths: AuthBuilder = new AuthBuilder:
-    override def apply(users: UserService[IO], web: Http4sAuth): Auther =
-      new TestAuther(users, web, Username("u"))
+  def testAuths: AuthBuilder = (users: UserService[IO], web: Http4sAuth) =>
+    TestAuther(users, web, Username("u"))
 
   override def munitFixtures: Seq[Fixture[?]] = Seq(db, server)
 
-abstract class TestServerSuite extends FunSuite with ServerSuite
+abstract class TestServerSuite extends munit.CatsEffectSuite with ServerSuite
 
 class TestAuther(users: UserService[IO], val web: Http4sAuth, testUser: Username) extends Auther:
   override def sources: Http4sAuthenticator[IO, Username] = Auths.sources(users)

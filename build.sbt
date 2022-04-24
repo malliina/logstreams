@@ -92,6 +92,8 @@ val cross = portableProject(JSPlatform, JVMPlatform)
 val crossJvm = cross.jvm
 val crossJs = cross.js
 
+val isProd = settingKey[Boolean]("isProd")
+
 val frontend = project
   .in(file("frontend"))
   .enablePlugins(NodeJsPlugin, ClientPlugin)
@@ -123,15 +125,14 @@ val frontend = project
       "engines" -> JSON.obj("node" -> JSON.str("10.x")),
       "private" -> JSON.bool(true),
       "license" -> JSON.str("BSD")
-    )
+    ),
+    isProd := (Global / scalaJSStage).value == FullOptStage
   )
 
 val server = project
   .in(file("server"))
   .enablePlugins(
     FileTreePlugin,
-    JavaServerAppPackaging,
-    SystemdPlugin,
     BuildInfoPlugin,
     ServerPlugin,
     LiveRevolverPlugin
@@ -142,19 +143,10 @@ val server = project
     buildInfoKeys ++= Seq[BuildInfoKey](
       "frontName" -> (frontend / name).value,
       "gitHash" -> gitHash,
-      "assetsDir" -> {
-        val isDocker = (Global / scalaJSStage).value == FullOptStage
-        if (isDocker) {
-          val dockerDir = (Docker / defaultLinuxInstallLocation).value
-          val assetsFolder = (frontend / assetsPrefix).value
-          s"$dockerDir/$assetsFolder"
-        } else {
-          (frontend / assetsRoot).value
-        }
-      },
+      "assetsDir" -> (frontend / assetsRoot).value,
       "publicFolder" -> (frontend / assetsPrefix).value,
-      "mode" -> (if ((Global / scalaJSStage).value == FullOptStage) "prod" else "dev"),
-      "isProd" -> ((Global / scalaJSStage).value == FullOptStage)
+      "mode" -> (if ((frontend / isProd).value) "prod" else "dev"),
+      "isProd" -> (frontend / isProd).value
     ),
     buildInfoPackage := "com.malliina.app",
     libraryDependencies ++= SbtUtils.loggingDeps ++
@@ -180,10 +172,26 @@ val server = project
     packageDoc / publishArtifact := false,
     Compile / doc / sources := Seq.empty,
     clientProject := frontend,
-    Compile / unmanagedResourceDirectories ++= Seq(
-      baseDirectory.value / "public",
-      (frontend / Compile / assetsRoot).value.getParent.toFile
-    ),
+    start := Def.taskIf {
+      if (start.inputFileChanges.hasChanges) {
+        refreshBrowsers.value
+      } else {
+        Def.task(streams.value.log.info("No backend changes."))
+      }
+    }.dependsOn(start).value,
+    (frontend / Compile / start) := Def.taskIf {
+      if ((frontend / Compile / start).inputFileChanges.hasChanges) {
+        refreshBrowsers.value
+      } else {
+        Def.task(streams.value.log.info("No frontend changes.")).value
+      }
+    }.dependsOn(frontend / start).value,
+    Compile / unmanagedResourceDirectories ++= {
+      val prodAssets =
+        if ((frontend / isProd).value) List((frontend / Compile / assetsRoot).value.getParent.toFile)
+        else Nil
+      (baseDirectory.value / "public") +: prodAssets
+    },
     assembly / assemblyJarName := "app.jar",
     liveReloadPort := 10103
   )

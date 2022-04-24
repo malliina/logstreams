@@ -9,7 +9,7 @@ import com.malliina.logstreams.http4s.StaticService.log
 import com.malliina.util.AppLogger
 import com.malliina.values.UnixPath
 import fs2.io.file.{Path as FS2Path}
-import org.http4s.CacheDirective.{`max-age`, `no-cache`, `public`}
+import org.http4s.CacheDirective.{`max-age`, `no-cache`, `public`, `no-store`, `must-revalidate`}
 import org.http4s.headers.`Cache-Control`
 import org.http4s.{Header, HttpRoutes, Request, StaticFile}
 import org.typelevel.ci.CIStringSyntax
@@ -28,33 +28,26 @@ class StaticService[F[_]: Async] extends BasicService[F]:
 
   private val publicDir = FS2Path(BuildInfo.assetsDir)
   private val allowAllOrigins = Header.Raw(ci"Access-Control-Allow-Origin", "*")
+
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {
     case req @ GET -> rest if supportedStaticExtensions.exists(rest.toString.endsWith) =>
       val file = UnixPath(rest.segments.mkString("/"))
       val isCacheable = file.value.count(_ == '.') == 2 || file.value.startsWith("static/")
       val cacheHeaders =
         if isCacheable then NonEmptyList.of(`max-age`(365.days), `public`)
-        else NonEmptyList.of(`no-cache`())
+        else NonEmptyList.of(`no-cache`(), `no-store`, `must-revalidate`)
       val assetPath: FS2Path = publicDir.resolve(file.value)
-      val exists = Files.exists(assetPath.toNioPath)
-      val isReadable = Files.isReadable(assetPath.toNioPath)
       val resourcePath = s"${BuildInfo.publicFolder}/${file.value}"
-      log.info(s"Searching for resource '$resourcePath' or else file '$assetPath'.")
-      findAsset(resourcePath, assetPath, req)
+      val path = if BuildInfo.isProd then resourcePath else assetPath.toNioPath.toAbsolutePath
+      log.info(s"Searching for '$path'...")
+      val search =
+        if BuildInfo.isProd then StaticFile.fromResource(resourcePath, Option(req))
+        else StaticFile.fromPath(assetPath, Option(req))
+      search
         .map(_.putHeaders(`Cache-Control`(cacheHeaders), allowAllOrigins))
         .fold(onNotFound(req))(_.pure[F])
         .flatten
   }
-
-  private def findAsset(resourcePath: String, filePath: FS2Path, req: Request[F]) =
-    if LocalConf.isProd then
-      StaticFile
-        .fromResource(resourcePath, Option(req))
-        .orElse(StaticFile.fromPath(filePath, Option(req)))
-    else
-      StaticFile
-        .fromPath(filePath, Option(req))
-        .orElse(StaticFile.fromResource(resourcePath, Option(req)))
 
   private def onNotFound(req: Request[F]) =
     log.info(s"Not found '${req.uri}'.")

@@ -45,7 +45,7 @@ val fs2 = project
   .settings(
     libraryDependencies ++= Seq(
       "com.malliina" %%% "primitives" % primitivesVersion,
-      "co.fs2" %% "fs2-core" % "3.1.2",
+      "co.fs2" %% "fs2-core" % "3.2.8",
       "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
     ),
     moduleName := "logback-fs2",

@@ -9,7 +9,7 @@ import scala.util.Try
 
 val malliinaGroup = "com.malliina"
 val utilHtmlVersion = "6.2.2"
-val primitivesVersion = "3.1.3"
+val primitivesVersion = "3.2.0"
 val logbackVersion = "1.2.11"
 val munitVersion = "0.7.29"
 val munitCatsEffectVersion = "1.0.7"
@@ -83,7 +83,7 @@ val cross = portableProject(JSPlatform, JVMPlatform)
   .in(file("shared"))
   .settings(
     libraryDependencies ++= Seq("generic", "parser").map { m =>
-      "io.circe" %%% s"circe-$m" % "0.14.1"
+      "io.circe" %%% s"circe-$m" % "0.14.2"
     } ++ Seq(
       "com.malliina" %%% "primitives" % primitivesVersion,
       "com.lihaoyi" %%% "scalatags" % "0.11.1"
@@ -151,7 +151,7 @@ val server = project
     buildInfoPackage := "com.malliina.app",
     libraryDependencies ++= SbtUtils.loggingDeps ++
       Seq("blaze-server", "ember-server", "circe", "dsl").map { m =>
-      "org.http4s" %% s"http4s-$m" % "0.23.11"
+      "org.http4s" %% s"http4s-$m" % "0.23.12"
     } ++ Seq("core", "hikari").map { m =>
       "org.tpolecat" %% s"doobie-$m" % "1.0.0-RC2"
     } ++ Seq(
@@ -161,7 +161,7 @@ val server = project
       "com.malliina" %% "util-html" % utilHtmlVersion,
       utilPlayDep,
       utilPlayDep % Test classifier "tests",
-      "com.dimafeng" %% "testcontainers-scala-mysql" % "0.40.5" % Test,
+      "com.dimafeng" %% "testcontainers-scala-mysql" % "0.40.10" % Test,
       "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
     ),
     Universal / javaOptions ++= Seq(

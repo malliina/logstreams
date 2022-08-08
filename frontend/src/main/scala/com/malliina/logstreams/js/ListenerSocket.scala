@@ -1,11 +1,10 @@
 package com.malliina.logstreams.js
 
-import java.util.UUID
 import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents, LogLevel}
 import io.circe.Json
 import org.scalajs.dom
 import org.scalajs.dom.document
-import org.scalajs.dom.raw.{Event, HTMLElement, HTMLInputElement, HTMLTableElement}
+import org.scalajs.dom.{Event, HTMLElement, HTMLInputElement, HTMLTableElement}
 import scalatags.JsDom.all.*
 
 case class RowContent(content: Frag, cellId: String, linkId: String)
@@ -17,7 +16,6 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
   val ColumnCount = 6
   val Danger = "danger"
   val Hidden = "hidden"
-  val NoWrap = "no-wrap"
   val Warning = "warning"
   val Info = "info"
 
@@ -92,7 +90,8 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
       case LogLevel.Error => Danger
       case LogLevel.Warn  => Warning
       case _              => Info
-    val entryId = UUID.randomUUID().toString take 5
+    val entryId = randomString(5)
+    log.info(s"Rendering $entryId")
     val msgCellId = s"msg-$entryId"
     val linkId = s"link-$entryId"
     val level = entry.level
@@ -108,6 +107,12 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
       td(`class` := responsiveClass)(levelCell)
     )
     RowContent(frag, msgCellId, linkId)
+
+  val chars = "abcdefghijklmnopqrstuvwxyz"
+  private def randomString(ofLength: Int): String =
+    (0 until ofLength).map { _ =>
+      chars.charAt(math.floor(math.random() * chars.length).toInt)
+    }.mkString
 
   def cell(content: String, hideable: Boolean = false, responsive: Boolean = true) =
     toCell(

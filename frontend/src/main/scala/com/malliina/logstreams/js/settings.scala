@@ -18,11 +18,10 @@ trait Settings:
   def appendDistinct(app: AppName): Seq[AppName] =
     val before = apps
     if before.contains(app) then before
-    else {
+    else
       val after = before :+ app
       saveApps(after)
       after
-    }
 
   def remove(app: AppName): Seq[AppName] =
     val remaining = apps.filter(_ != app)

@@ -10,7 +10,6 @@
         <username>${LOGSTREAMS_USER:-logstreams}</username>
         <password>${LOGSTREAMS_PASS:-changeme}</password>
     </appender>
-    <logger name="org.http4s.blaze.channel.nio1.NIO1HeadStage" level="ERROR"/>
     <logger name="com.malliina.logstreams.http4s.LogSockets" level="WARN"/>
     <root level="INFO">
         <appender-ref ref="STDOUT"/>

@@ -8,7 +8,7 @@ import scala.sys.process.Process
 import scala.util.Try
 
 val malliinaGroup = "com.malliina"
-val utilHtmlVersion = "6.2.2"
+val utilHtmlVersion = "6.2.3"
 val primitivesVersion = "3.2.0"
 val logbackVersion = "1.2.11"
 val munitVersion = "0.7.29"
@@ -150,8 +150,8 @@ val server = project
     ),
     buildInfoPackage := "com.malliina.app",
     libraryDependencies ++= SbtUtils.loggingDeps ++
-      Seq("blaze-server", "ember-server", "circe", "dsl").map { m =>
-      "org.http4s" %% s"http4s-$m" % "0.23.12"
+      Seq("ember-server", "circe", "dsl").map { m =>
+      "org.http4s" %% s"http4s-$m" % "0.23.16"
     } ++ Seq("core", "hikari").map { m =>
       "org.tpolecat" %% s"doobie-$m" % "1.0.0-RC2"
     } ++ Seq(

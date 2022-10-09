@@ -15,8 +15,6 @@ import doobie.implicits.*
 object DoobieDatabaseAuth:
   private val log = AppLogger(getClass)
 
-  def apply(db: DoobieDatabase): DoobieDatabaseAuth = new DoobieDatabaseAuth(db)
-
 class DoobieDatabaseAuth(db: DoobieDatabase) extends UserService[IO]:
   def add(creds: BasicCredentials): IO[Either[AlreadyExists, Unit]] = db.run {
     val existsIO = sql"select exists(select USER from USERS where USER = ${creds.username})"
@@ -24,13 +22,12 @@ class DoobieDatabaseAuth(db: DoobieDatabase) extends UserService[IO]:
       .unique
     existsIO.flatMap[Either[AlreadyExists, Unit]] { exists =>
       if exists then Left[AlreadyExists, Unit](AlreadyExists(creds.username)).pure[ConnectionIO]
-      else {
+      else
         val hashed = hash(creds)
         sql"""insert into USERS(USER, PASS_HASH) values (${creds.username}, $hashed)""".update.run.map {
           _ =>
             Right(())
         }
-      }
     }
 
   }
@@ -47,7 +44,7 @@ class DoobieDatabaseAuth(db: DoobieDatabase) extends UserService[IO]:
   }
 
   def remove(user: Username): IO[Either[DoesNotExist, Unit]] = db.run {
-    sql"delete from USERS where USER = ${user}".update.run.map { rowCount =>
+    sql"delete from USERS where USER = $user".update.run.map { rowCount =>
       if rowCount > 0 then
         log.info(s"Removed '$user'.")
         Right(())
@@ -63,7 +60,7 @@ class DoobieDatabaseAuth(db: DoobieDatabase) extends UserService[IO]:
   }
 
   def all(): IO[Seq[Username]] = db.run {
-    sql"select USER from USERS".query[Username].to[List]
+    sql"select USER from USERS order by USER".query[Username].to[List]
   }
 
   private def hash(creds: BasicCredentials): Password = Utils.hash(creds)

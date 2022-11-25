@@ -28,23 +28,13 @@ import java.time.{Instant, OffsetDateTime, OffsetTime}
 object Service:
   private val log = AppLogger(getClass)
 
-  def apply(
-    db: DoobieDatabase,
-    users: UserService[IO],
-    htmls: Htmls,
-    auths: Auther,
-    sockets: LogSockets,
-    google: GoogleAuthFlow
-  ): Service =
-    new Service(db, users, htmls, auths, sockets, google)
-
 class Service(
   val db: DoobieDatabase,
   val users: UserService[IO],
   htmls: Htmls,
   auths: Auther,
   sockets: LogSockets,
-  google: GoogleAuthFlow
+  google: GoogleAuthFlow[IO]
 ) extends BasicService[IO]:
   val reverse = LogRoutes
 

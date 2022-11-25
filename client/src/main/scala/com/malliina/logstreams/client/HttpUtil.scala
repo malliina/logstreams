@@ -1,12 +1,15 @@
 package com.malliina.logstreams.client
 
+import java.nio.charset.StandardCharsets
 import java.util.Base64
 
 object HttpUtil:
   val Authorization = "Authorization"
+  val Basic = "Basic"
 
   def basicAuth(username: String, password: String): KeyValue =
-    KeyValue(HttpUtil.Authorization, authorizationValue(username, password))
+    KeyValue(Authorization, authorizationValue(username, password))
 
   def authorizationValue(username: String, password: String) =
-    "Basic " + Base64.getEncoder.encodeToString(s"$username:$password".getBytes("UTF-8"))
+    val bytes = s"$username:$password".getBytes(StandardCharsets.UTF_8)
+    s"$Basic" + Base64.getEncoder.encodeToString(bytes)

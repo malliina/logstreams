@@ -81,5 +81,5 @@ class FS2Appender(
     else addInfo("Logstreams client is disabled.")
 
   override def stop(): Unit =
-    d.unsafeRunSync(client.map(_.close).getOrElse(IO.unit) >> res.finalizer)
+    d.unsafeRunSync(client.map(_.close).getOrElse(IO.unit) >> res.finalizer >> socketClosable)
     FS2Appender.executor.shutdown()

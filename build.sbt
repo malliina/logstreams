@@ -8,8 +8,8 @@ import scala.sys.process.Process
 import scala.util.Try
 
 val malliinaGroup = "com.malliina"
-val utilHtmlVersion = "6.2.3"
-val primitivesVersion = "3.2.0"
+val utilHtmlVersion = "6.4.0"
+val primitivesVersion = "3.3.0"
 val logbackVersion = "1.2.11"
 val munitVersion = "0.7.29"
 val munitCatsEffectVersion = "1.0.7"

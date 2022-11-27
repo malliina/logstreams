@@ -129,7 +129,8 @@ class LogstreamsTests extends TestServerSuite:
                               _ <- receiveAdmin.compile.drain.start
                               adminStatusJson <- adminStatus.get
                             yield
-                              val statusUpdate = adminStatusJson.as[LogSources].toOption.get
+                              val statusUpdate =
+                                adminStatusJson.as[LogSources].fold(err => throw err, identity)
                               assert(statusUpdate.sources.nonEmpty)
                           }
                         }

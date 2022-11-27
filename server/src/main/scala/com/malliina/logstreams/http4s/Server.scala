@@ -43,13 +43,6 @@ object Server extends IOApp:
       _ <- Resource.eval(
         IO(log.info(s"Binding on port $port using app version ${AppMeta.ThisApp.git}..."))
       )
-//      server <- BlazeServerBuilder[IO]
-//        .bindHttp(port = serverPort.value, "0.0.0.0")
-//        .withHttpWebSocketApp(socketBuilder => makeHandler(service, socketBuilder))
-//        .withServiceErrorHandler(ErrorHandler[IO].blaze)
-//        .withBanner(Nil)
-//        .withIdleTimeout(30.days)
-//        .resource
       server <- EmberServerBuilder
         .default[IO]
         .withIdleTimeout(30.days)
@@ -57,6 +50,7 @@ object Server extends IOApp:
         .withPort(serverPort)
         .withHttpWebSocketApp(socketBuilder => makeHandler(service, socketBuilder))
         .withErrorHandler(ErrorHandler[IO].partial)
+        .withShutdownTimeout(1.millis)
         .build
     yield ServerComponents(service, server)
 
@@ -66,7 +60,7 @@ object Server extends IOApp:
     adminsTopic <- Resource.eval(Topic[IO, LogSources])
     connecteds <- Resource.eval(Ref[IO].of(LogSources(Nil)))
     logUpdates <- Resource.eval(Topic[IO, AppLogEvents])
-    http <- HttpClientIO.resource
+    http <- HttpClientIO.resource[IO]
     logsDatabase = DoobieStreamsDatabase(db)
     sockets = LogSockets(logsTopic, adminsTopic, connecteds, logUpdates, logsDatabase)
     _ <- fs2.Stream.emit(()).concurrently(sockets.publisher).compile.resource.lastOrError

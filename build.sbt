@@ -3,7 +3,7 @@ import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType => PortableType, crossProject => portableProject}
 import scalajsbundler.util.JSON
-
+import com.comcast.ip4s.IpLiteralSyntax
 import scala.sys.process.Process
 import scala.util.Try
 
@@ -193,7 +193,7 @@ val server = project
       (baseDirectory.value / "public") +: prodAssets
     },
     assembly / assemblyJarName := "app.jar",
-    liveReloadPort := 10103
+    liveReloadPort := port"10103"
   )
 
 val it = Project("logstreams-test", file("logstreams-test"))

@@ -58,5 +58,4 @@ class SocketAppender[T](comps: LoggingComps) extends DefaultFS2IOAppender(comps)
   def missing(fieldName: String) = s"No '$fieldName' is set for appender [$name]."
 
   override def stop(): Unit =
-//    client.foreach(_.close())
     super.stop()

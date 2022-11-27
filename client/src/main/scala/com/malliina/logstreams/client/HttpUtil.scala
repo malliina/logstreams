@@ -12,4 +12,5 @@ object HttpUtil:
 
   def authorizationValue(username: String, password: String) =
     val bytes = s"$username:$password".getBytes(StandardCharsets.UTF_8)
-    s"$Basic" + Base64.getEncoder.encodeToString(bytes)
+    val bytesStringified = Base64.getEncoder.encodeToString(bytes)
+    s"$Basic $bytesStringified"

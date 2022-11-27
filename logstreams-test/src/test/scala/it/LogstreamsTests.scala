@@ -4,7 +4,7 @@ import cats.effect.unsafe.implicits.global
 import cats.effect.{Deferred, IO}
 import com.malliina.http.FullUrl
 import com.malliina.http.io.SocketEvent.Open
-import com.malliina.http.io.{HttpClientIO, WebSocketIO}
+import com.malliina.http.io.{HttpClientF2, HttpClientIO, WebSocketF}
 import com.malliina.logstreams.auth.BasicCredentials
 import com.malliina.logstreams.client.{HttpUtil, KeyValue}
 import com.malliina.logstreams.http4s.LogRoutes
@@ -129,7 +129,8 @@ class LogstreamsTests extends TestServerSuite:
                               _ <- receiveAdmin.compile.drain.start
                               adminStatusJson <- adminStatus.get
                             yield
-                              val statusUpdate = adminStatusJson.as[LogSources].toOption.get
+                              val statusUpdate =
+                                adminStatusJson.as[LogSources].fold(err => throw err, identity)
                               assert(statusUpdate.sources.nonEmpty)
                           }
                         }
@@ -151,21 +152,21 @@ class LogstreamsTests extends TestServerSuite:
       }
   }
 
-  def withAdmin[T](httpClient: HttpClientIO)(code: WebSocketIO => IO[T]) =
+  def withAdmin[T](httpClient: HttpClientF2[IO])(code: WebSocketF[IO] => IO[T]) =
     openAuthedSocket(testUser, LogRoutes.sockets.admins, httpClient)(code)
 
-  def withListener[T](httpClient: HttpClientIO)(code: WebSocketIO => IO[T]) =
+  def withListener[T](httpClient: HttpClientF2[IO])(code: WebSocketF[IO] => IO[T]) =
     openAuthedSocket(testUser, LogRoutes.sockets.logs, httpClient)(code)
 
-  def withSource[T](username: String, httpClient: HttpClientIO)(code: WebSocketIO => IO[T]) =
+  def withSource[T](username: String, httpClient: HttpClientF2[IO])(code: WebSocketF[IO] => IO[T]) =
     openAuthedSocket(username, LogRoutes.sockets.sources, httpClient)(code)
 
   def openAuthedSocket[T](
     username: String,
     uri: Uri,
-    httpClient: HttpClientIO
+    httpClient: HttpClientF2[IO]
   )(
-    code: WebSocketIO => IO[T]
+    code: WebSocketF[IO] => IO[T]
   ): IO[T] =
     val wsUrl = FullUrl("ws", s"localhost:$port", uri.renderString)
     val kvs: List[KeyValue] = List(
@@ -173,14 +174,15 @@ class LogstreamsTests extends TestServerSuite:
     )
     openSocket(wsUrl, kvs, httpClient)(code)
 
-  def openSocket[T](url: FullUrl, headers: List[KeyValue], httpClient: HttpClientIO)(
-    code: WebSocketIO => IO[T]
+  def openSocket[T](url: FullUrl, headers: List[KeyValue], httpClient: HttpClientF2[IO])(
+    code: WebSocketF[IO] => IO[T]
   ): IO[T] =
-    WebSocketIO(url, headers.map(kv => kv.key -> kv.value).toMap, httpClient.client).use { socket =>
-      val openEvents = socket.events.collect { case o @ Open(_, _) =>
-        o
-      }
-      openEvents.take(1).compile.toList >> code(socket)
+    WebSocketF.build[IO](url, headers.map(kv => kv.key -> kv.value).toMap, httpClient.client).use {
+      socket =>
+        val openEvents = socket.events.collect { case o @ Open(_, _) =>
+          o
+        }
+        openEvents.take(1).compile.toList >> code(socket)
     }
 
   def using[T <: AutoCloseable, U](res: T)(code: T => U) =

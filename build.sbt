@@ -3,13 +3,13 @@ import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType => PortableType, crossProject => portableProject}
 import scalajsbundler.util.JSON
-
+import com.comcast.ip4s.IpLiteralSyntax
 import scala.sys.process.Process
 import scala.util.Try
 
 val malliinaGroup = "com.malliina"
-val utilHtmlVersion = "6.3.0"
-val primitivesVersion = "3.2.0"
+val utilHtmlVersion = "6.4.0"
+val primitivesVersion = "3.3.0"
 val logbackVersion = "1.2.11"
 val munitVersion = "0.7.29"
 val munitCatsEffectVersion = "1.0.7"
@@ -193,7 +193,7 @@ val server = project
       (baseDirectory.value / "public") +: prodAssets
     },
     assembly / assemblyJarName := "app.jar",
-    liveReloadPort := 10103
+    liveReloadPort := port"10103"
   )
 
 val it = Project("logstreams-test", file("logstreams-test"))

@@ -3,7 +3,7 @@ package com.malliina.logstreams.client
 import cats.effect.IO
 import cats.effect.std.Dispatcher
 import com.malliina.http.FullUrl
-import com.malliina.http.io.{HttpClientIO, WebSocketIO}
+import com.malliina.http.io.{HttpClientIO, WebSocketF}
 import com.neovisionaries.ws.client.WebSocketException
 import cats.effect.unsafe.implicits.global
 import ch.qos.logback.classic.Level
@@ -20,12 +20,12 @@ class SocketTests extends munit.CatsEffectSuite:
 //    val url = FullUrl.ws("localhost:9000", "/ws/sources")
     val url = FullUrl.wss("logs.malliina.com", "/ws/sources")
     val s = for
-      http <- HttpClientIO.resource
-      socket <- WebSocketIO(url, headers.map(kv => kv.key -> kv.value).toMap, http.client)
+      http <- HttpClientIO.resource[IO]
+      socket <- WebSocketF.build[IO](url, headers.map(kv => kv.key -> kv.value).toMap, http.client)
     yield socket
     val resource = Dispatcher[IO]
     val (d, dc) = resource.allocated[Dispatcher[IO]].unsafeRunSync()
-    val (socket, closer) = d.unsafeRunSync(s.allocated[WebSocketIO])
+    val (socket, closer) = d.unsafeRunSync(s.allocated[WebSocketF[IO]])
     d.unsafeRunAndForget(socket.events.compile.drain)
     Thread.sleep(2000)
     (1 to 10).map { i =>

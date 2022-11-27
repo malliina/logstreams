@@ -5,7 +5,7 @@ import cats.effect.kernel.Resource
 import cats.effect.std.Dispatcher
 import cats.effect.unsafe.{IORuntime, IORuntimeConfig, Scheduler}
 import ch.qos.logback.classic.spi.ILoggingEvent
-import com.malliina.http.io.{HttpClientIO, WebSocketIO}
+import com.malliina.http.io.{HttpClientF, HttpClientF2, HttpClientIO, WebSocketF}
 import com.malliina.http.{HttpClient, OkClient, OkHttpBackend}
 import com.malliina.logback.fs2.{FS2AppenderComps, LoggingComps}
 import com.malliina.logstreams.client.FS2Appender.{ResourceParts, ec}
@@ -20,11 +20,11 @@ object FS2Appender:
   val executor: ExecutorService = Executors.newCachedThreadPool()
   val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
 
-  case class SocketComps(comps: LoggingComps, http: HttpClientIO)
+  case class SocketComps(comps: LoggingComps, http: HttpClientF2[IO])
 
   case class ResourceParts(
     comps: LoggingComps,
-    http: HttpClientIO,
+    http: HttpClientF2[IO],
     finalizer: IO[Unit]
   )
 
@@ -35,7 +35,7 @@ object FS2Appender:
   def dispatched(d: Dispatcher[IO], dispatcherFinalizer: IO[Unit]): ResourceParts =
     val resource = for
       comps <- Resource.eval(FS2AppenderComps.io(d))
-      http <- HttpClientIO.resource
+      http <- HttpClientIO.resource[IO]
     yield SocketComps(comps, http)
     val (comps, finalizer) = d.unsafeRunSync(resource.allocated[SocketComps])
     ResourceParts(comps.comps, comps.http, finalizer >> dispatcherFinalizer)
@@ -47,7 +47,7 @@ object FS2Appender:
 
 class FS2Appender(
   res: ResourceParts
-) extends SocketAppender[WebSocketIO](res.comps):
+) extends SocketAppender[WebSocketF[IO]](res.comps):
   def this() = this(FS2Appender.unsafe)
   private var socketClosable: IO[Unit] = IO.unit
   override def start(): Unit =
@@ -59,9 +59,9 @@ class FS2Appender(
       yield
         val headers: List[KeyValue] = List(HttpUtil.basicAuth(user, pass))
         addInfo(s"Connecting to logstreams URL '$url' for Logback...")
-        val socketIo: Resource[IO, WebSocketIO] =
-          WebSocketIO(url, headers.map(kv => kv.key -> kv.value).toMap, res.http.client)
-        val (socket, closer) = d.unsafeRunSync(socketIo.allocated[WebSocketIO])
+        val socketIo: Resource[IO, WebSocketF[IO]] =
+          WebSocketF.build[IO](url, headers.map(kv => kv.key -> kv.value).toMap, res.http.client)
+        val (socket, closer) = d.unsafeRunSync(socketIo.allocated[WebSocketF[IO]])
         client = Option(socket)
         socketClosable = closer
         d.unsafeRunAndForget(socket.events.compile.drain)

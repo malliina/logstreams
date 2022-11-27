@@ -11,7 +11,7 @@ This app displays logs. Deployed to [logs.malliina.com](https://logs.malliina.co
 
 ## Deployment
 
-Push to the `master` branch. See [azure-pipelines.yml](azure-pipelines.yml) for CI/CD details.
+Push to the `master` branch.
 
 ## Releasing the client
 

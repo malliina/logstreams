@@ -19,7 +19,8 @@ class FS2IOAppenderTests extends FunSuite:
   }
 
   test("hi") {
-    FS2AppenderComps.resource
+    FS2AppenderComps
+      .resource[IO]
       .map(comps => DefaultFS2IOAppender(comps))
       .use { appender =>
         LogbackUtils.installAppender(appender)

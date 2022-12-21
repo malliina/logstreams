@@ -6,6 +6,7 @@ import java.util.Base64
 object HttpUtil:
   val Authorization = "Authorization"
   val Basic = "Basic"
+  val UserAgent = "User-Agent"
 
   def basicAuth(username: String, password: String): KeyValue =
     KeyValue(Authorization, authorizationValue(username, password))

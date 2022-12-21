@@ -1,8 +1,9 @@
 package com.malliina.logstreams.client
 
 import cats.effect.IO
-import cats.effect.kernel.Resource
+import cats.effect.kernel.{Async, Resource, Sync}
 import cats.effect.std.Dispatcher
+import cats.syntax.all.catsSyntaxFlatMapOps
 import cats.effect.unsafe.{IORuntime, IORuntimeConfig, Scheduler}
 import ch.qos.logback.classic.spi.ILoggingEvent
 import com.malliina.http.io.{HttpClientF, HttpClientF2, HttpClientIO, WebSocketF}
@@ -20,36 +21,45 @@ object FS2Appender:
   val executor: ExecutorService = Executors.newCachedThreadPool()
   val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
 
-  case class SocketComps(comps: LoggingComps, http: HttpClientF2[IO])
+  case class SocketComps[F[_]](comps: LoggingComps[F], http: HttpClientF2[F])
 
-  case class ResourceParts(
-    comps: LoggingComps,
-    http: HttpClientF2[IO],
-    finalizer: IO[Unit]
+  case class ResourceParts[F[_]](
+    comps: LoggingComps[F],
+    http: HttpClientF2[F],
+    finalizer: F[Unit]
   )
 
-  def customRuntime: IORuntime =
+  private def customRuntime: IORuntime =
     val (scheduler, finalizer) = IORuntime.createDefaultScheduler()
     IORuntime(ec, ec, scheduler, finalizer, IORuntimeConfig())
 
-  def dispatched(d: Dispatcher[IO], dispatcherFinalizer: IO[Unit]): ResourceParts =
+  private def dispatched(d: Dispatcher[IO], dispatcherFinalizer: IO[Unit]): ResourceParts[IO] =
     val resource = for
       comps <- Resource.eval(FS2AppenderComps.io(d))
       http <- HttpClientIO.resource[IO]
     yield SocketComps(comps, http)
-    val (comps, finalizer) = d.unsafeRunSync(resource.allocated[SocketComps])
+    val (comps, finalizer) = d.unsafeRunSync(resource.allocated[SocketComps[IO]])
     ResourceParts(comps.comps, comps.http, finalizer >> dispatcherFinalizer)
 
-  def unsafe: ResourceParts =
+  def unsafe: ResourceParts[IO] =
     val rt = customRuntime
     val (d, finalizer) = Dispatcher[IO].allocated.unsafeRunSync()(rt)
     dispatched(d, finalizer >> IO(rt.shutdown()))
 
 class FS2Appender(
-  res: ResourceParts
-) extends SocketAppender[WebSocketF[IO]](res.comps):
+  res: ResourceParts[IO]
+) extends FS2AppenderF[IO](res):
   def this() = this(FS2Appender.unsafe)
-  private var socketClosable: IO[Unit] = IO.unit
+
+  override def stop(): Unit =
+    super.stop()
+    FS2Appender.executor.shutdown()
+
+class FS2AppenderF[F[_]: Async](
+  res: ResourceParts[F]
+) extends SocketAppender[F, WebSocketF[F]](res.comps):
+  val F = Sync[F]
+  private var socketClosable: F[Unit] = F.unit
   override def start(): Unit =
     if getEnabled then
       val result = for
@@ -59,18 +69,18 @@ class FS2Appender(
       yield
         val headers: List[KeyValue] = List(HttpUtil.basicAuth(user, pass))
         addInfo(s"Connecting to logstreams URL '$url' for Logback...")
-        val socketIo: Resource[IO, WebSocketF[IO]] =
-          WebSocketF.build[IO](url, headers.map(kv => kv.key -> kv.value).toMap, res.http.client)
-        val (socket, closer) = d.unsafeRunSync(socketIo.allocated[WebSocketF[IO]])
+        val socketIo: Resource[F, WebSocketF[F]] =
+          res.http.socket(url, headers.map(kv => kv.key -> kv.value).toMap)
+        val (socket, closer) = d.unsafeRunSync(socketIo.allocated[WebSocketF[F]])
         client = Option(socket)
         socketClosable = closer
         d.unsafeRunAndForget(socket.events.compile.drain)
-        val task: IO[Unit] = logEvents
+        val task: F[Unit] = logEvents
           .groupWithin(100, 1500.millis)
           .evalMap(es => socket.send(LogEvents(es.toList)))
           .onComplete {
             fs2.Stream
-              .eval(IO(addInfo(s"Appender [$name] completed.")))
+              .eval(F.delay(addInfo(s"Appender [$name] completed.")))
               .flatMap(_ => fs2.Stream.empty)
           }
           .compile
@@ -81,5 +91,4 @@ class FS2Appender(
     else addInfo("Logstreams client is disabled.")
 
   override def stop(): Unit =
-    d.unsafeRunSync(client.map(_.close).getOrElse(IO.unit) >> res.finalizer >> socketClosable)
-    FS2Appender.executor.shutdown()
+    d.unsafeRunSync(client.map(_.close).getOrElse(F.unit) >> res.finalizer >> socketClosable)

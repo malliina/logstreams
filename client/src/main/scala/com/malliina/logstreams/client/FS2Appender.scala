@@ -3,8 +3,8 @@ package com.malliina.logstreams.client
 import cats.effect.IO
 import cats.effect.kernel.{Async, Resource, Sync}
 import cats.effect.std.Dispatcher
-import cats.syntax.all.catsSyntaxFlatMapOps
 import cats.effect.unsafe.{IORuntime, IORuntimeConfig, Scheduler}
+import cats.syntax.all.{catsSyntaxFlatMapOps, toFunctorOps}
 import ch.qos.logback.classic.spi.ILoggingEvent
 import com.malliina.http.io.{HttpClientF, HttpClientF2, HttpClientIO, WebSocketF}
 import com.malliina.http.{HttpClient, OkClient, OkHttpBackend}
@@ -15,7 +15,7 @@ import io.circe.syntax.*
 
 import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.ExecutionContext
-import concurrent.duration.DurationInt
+import scala.concurrent.duration.DurationInt
 
 object FS2Appender:
   val executor: ExecutorService = Executors.newCachedThreadPool()
@@ -45,6 +45,11 @@ object FS2Appender:
     val rt = customRuntime
     val (d, finalizer) = Dispatcher[IO].allocated.unsafeRunSync()(rt)
     dispatched(d, finalizer >> IO(rt.shutdown()))
+
+  def default[F[_]: Async](d: Dispatcher[F], http: HttpClientF2[F]): F[FS2AppenderF[F]] =
+    FS2AppenderComps.io(d).map { parts =>
+      FS2AppenderF(ResourceParts(parts, http, Async[F].unit))
+    }
 
 class FS2Appender(
   res: ResourceParts[IO]

@@ -49,6 +49,7 @@ object SimpleLogSource:
 case class LogSource(
   name: AppName,
   remoteAddress: String,
+  userAgent: Option[String],
   id: String,
   joined: Long,
   joinedFormatted: String

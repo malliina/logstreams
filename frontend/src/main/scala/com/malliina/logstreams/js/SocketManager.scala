@@ -3,11 +3,11 @@ package com.malliina.logstreams.js
 import com.malliina.logstreams.models.{AppName, LogLevel}
 import org.scalajs.dom.KeyboardEvent
 import org.scalajs.dom.html.Anchor
-import org.scalajs.dom.raw.{Event, HTMLButtonElement, HTMLInputElement, MouseEvent}
+import org.scalajs.dom.{Event, HTMLButtonElement, HTMLInputElement, MouseEvent}
 import scalatags.JsDom.all.*
 
 class SocketManager extends ScriptHelpers:
-  val ActiveClass = "active"
+  private val ActiveClass = "active"
   val settings: Settings = StorageSettings
   private val availableApps =
     elem(AppsDropdownMenuId).getElementsByClassName(DropdownItem).map(_.asInstanceOf[Anchor])
@@ -17,7 +17,7 @@ class SocketManager extends ScriptHelpers:
     item.onclick =
       (_: MouseEvent) => updateFilter(settings.appendDistinct(AppName(item.textContent)))
   }
-  val availableLogLevels =
+  private val availableLogLevels =
     elem(LogLevelDropdownMenuId).getElementsByClassName(DropdownItem).map(_.asInstanceOf[Anchor])
   availableLogLevels.foreach { item =>
     item.onclick = (_: MouseEvent) =>
@@ -25,7 +25,7 @@ class SocketManager extends ScriptHelpers:
         updateLogLevel(level)
       }
   }
-  val searchInput = getElem[HTMLInputElement](SearchInput)
+  private val searchInput = getElem[HTMLInputElement](SearchInput)
   settings.query.foreach { q =>
     searchInput.value = q
   }
@@ -34,10 +34,10 @@ class SocketManager extends ScriptHelpers:
   renderActiveLevel(availableLogLevels, settings.level)
   renderApps(settings.apps)
 
-  def socketFor(apps: Seq[AppName], level: LogLevel, query: Option[String]) =
+  private def socketFor(apps: Seq[AppName], level: LogLevel, query: Option[String]) =
     ListenerSocket(pathFor(apps, level, query), settings, verboseSupport = true)
 
-  def renderApps(apps: Seq[AppName]): Unit =
+  private def renderApps(apps: Seq[AppName]): Unit =
     val buttons = apps.map { app =>
       val selected = button(`type` := "button", `class` := "btn btn-info btn-sm")(app.name).render
       selected.onclick = (_: MouseEvent) => updateFilter(settings.remove(app))

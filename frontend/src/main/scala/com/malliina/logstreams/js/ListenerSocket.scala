@@ -11,12 +11,12 @@ case class RowContent(content: Frag, cellId: String, linkId: String)
 
 class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean)
   extends BaseSocket(wsPath):
-  val CellContent = "cell-content"
-  val CellWide = "cell-wide"
-  val ColumnCount = 6
-  val Danger = "danger"
-  val Hidden = "hidden"
-  val Warning = "warning"
+  private val CellContent = "cell-content"
+  private val CellWide = "cell-wide"
+  private val ColumnCount = 6
+  private val Danger = "danger"
+  private val Hidden = "hidden"
+  private val Warning = "warning"
   val Info = "info"
 
   val Off = "off"
@@ -26,11 +26,11 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
   lazy val tableBody = elem(TableBodyId)
   lazy val table = getElem[HTMLTableElement](LogTableId)
 
-  def isVerbose: Boolean = settings.isVerbose
+  private def isVerbose: Boolean = settings.isVerbose
 
-  val responsiveClass = "d-none d-md-table-cell"
+  private val responsiveClass = "d-none d-md-table-cell"
 
-  val responsiveTh = th(`class` := responsiveClass)
+  private val responsiveTh = th(`class` := responsiveClass)
 
   if verboseSupport then
     val verboseClass = names(VerboseKey, if isVerbose then "" else Off)
@@ -44,14 +44,14 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
         responsiveTh("Level")
       ).render
     )
-  val compactInput = getElem[HTMLInputElement](OptionCompact)
-  val verboseInput = getElem[HTMLInputElement](OptionVerbose)
+  private val compactInput = getElem[HTMLInputElement](OptionCompact)
+  private val verboseInput = getElem[HTMLInputElement](OptionVerbose)
   compactInput.onchange = (e: Event) => if compactInput.checked then updateVerbose(false)
   verboseInput.onchange = (e: Event) => if verboseInput.checked then updateVerbose(true)
   compactInput.checked = !isVerbose
   verboseInput.checked = isVerbose
 
-  def updateVerbose(newVerbose: Boolean): Unit =
+  private def updateVerbose(newVerbose: Boolean): Unit =
     settings.saveVerbose(newVerbose)
     document.getElementsByClassName(VerboseKey).foreach { e =>
       val element = e.asInstanceOf[HTMLElement]
@@ -62,10 +62,10 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
   override def handlePayload(payload: Json): Unit =
     handleValidated(payload)(onLogEvents)
 
-  def onLogEvents(appLogEvents: AppLogEvents): Unit =
+  private def onLogEvents(appLogEvents: AppLogEvents): Unit =
     appLogEvents.events.foreach { e => onLogEvent(e) }
 
-  def onLogEvent(event: AppLogEvent): Unit =
+  private def onLogEvent(event: AppLogEvent): Unit =
     val entry = event.event
     val row: RowContent = toRow(event)
     val stackId = s"stack-${row.linkId}"
@@ -108,13 +108,13 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
     )
     RowContent(frag, msgCellId, linkId)
 
-  val chars = "abcdefghijklmnopqrstuvwxyz"
+  private val chars = "abcdefghijklmnopqrstuvwxyz"
   private def randomString(ofLength: Int): String =
     (0 until ofLength).map { _ =>
       chars.charAt(math.floor(math.random() * chars.length).toInt)
     }.mkString
 
-  def cell(content: String, hideable: Boolean = false, responsive: Boolean = true) =
+  private def cell(content: String, hideable: Boolean = false, responsive: Boolean = true) =
     toCell(
       content,
       names(
@@ -124,10 +124,10 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
       )
     )
 
-  def wideCell(content: String, cellId: String) =
+  private def wideCell(content: String, cellId: String) =
     td(`class` := s"$CellContent $CellWide", id := cellId)(content)
 
-  def toCell(content: String, clazz: String) =
+  private def toCell(content: String, clazz: String) =
     td(`class` := clazz)(content)
 
-  def names(ns: String*): String = ns.map(_.trim).filter(_.nonEmpty).mkString(" ")
+  private def names(ns: String*): String = ns.map(_.trim).filter(_.nonEmpty).mkString(" ")

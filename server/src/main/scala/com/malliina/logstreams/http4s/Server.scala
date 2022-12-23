@@ -31,7 +31,7 @@ case class ServerComponents(
 object Server extends IOApp:
   private val log = AppLogger(getClass)
   private val serverPort: Port =
-    sys.env.get("SERVER_PORT").flatMap(s => Port.fromString(s)).getOrElse(port"9000")
+    sys.env.get("SERVER_PORT").flatMap(s => Port.fromString(s)).getOrElse(port"9001")
 
   def server(
     conf: LogstreamsConf,

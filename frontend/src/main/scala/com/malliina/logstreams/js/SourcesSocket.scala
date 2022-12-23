@@ -11,13 +11,14 @@ class SourcesSocket extends BaseSocket("/ws/admins?f=json"):
   override def handlePayload(payload: Json): Unit =
     handleValidated[LogSources](payload)(onParsed)
 
-  def onParsed(data: LogSources): Unit =
+  private def onParsed(data: LogSources): Unit =
     tableBody.innerHTML = data.sources.map(toRow).render
 
   def toRow(source: LogSource): Text.TypedTag[String] =
     tr(
       td(source.name.name),
       td(source.remoteAddress),
+      td(source.userAgent.getOrElse("Unknown")),
       td(source.id),
       td(source.joinedFormatted)
     )

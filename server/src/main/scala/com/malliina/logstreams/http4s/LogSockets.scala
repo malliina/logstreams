@@ -108,11 +108,19 @@ class LogSockets(
         }
       case f => IO(log.debug(s"Unknown WebSocket frame: $f"))
     }
+    log.info(s"Server ${user.user} with agent ${user.userAgent.getOrElse("unknown")} joined.")
     val id = com.malliina.web.Utils.randomString().take(7)
     val now = user.now
     val date = LogSockets.dateTimeFormatter.format(now)
     val logSource =
-      LogSource(AppName(user.user.name), user.address, id, now.toInstant.toEpochMilli, date)
+      LogSource(
+        AppName(user.user.name),
+        user.address,
+        user.userAgent,
+        id,
+        now.toInstant.toEpochMilli,
+        date
+      )
     socketBuilder
       .withOnClose(disconnected(logSource))
       .build(

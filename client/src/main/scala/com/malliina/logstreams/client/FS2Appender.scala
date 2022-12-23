@@ -46,22 +46,26 @@ object FS2Appender:
     val (d, finalizer) = Dispatcher[IO].allocated.unsafeRunSync()(rt)
     dispatched(d, finalizer >> IO(rt.shutdown()))
 
-  def default[F[_]: Async](d: Dispatcher[F], http: HttpClientF2[F]): F[FS2AppenderF[F]] =
+  def default[F[_]: Async](
+    d: Dispatcher[F],
+    http: HttpClientF2[F],
+    extraHeaders: Map[String, String] = Map.empty
+  ): F[FS2AppenderF[F]] =
     FS2AppenderComps.io(d).map { parts =>
-      FS2AppenderF(ResourceParts(parts, http, Async[F].unit))
+      FS2AppenderF(ResourceParts(parts, http, Async[F].unit), extraHeaders)
     }
 
 class FS2Appender(
   res: ResourceParts[IO]
-) extends FS2AppenderF[IO](res):
+) extends FS2AppenderF[IO](res, Map.empty):
   def this() = this(FS2Appender.unsafe)
-
   override def stop(): Unit =
     super.stop()
     FS2Appender.executor.shutdown()
 
 class FS2AppenderF[F[_]: Async](
-  res: ResourceParts[F]
+  res: ResourceParts[F],
+  extraHeaders: Map[String, String]
 ) extends SocketAppender[F, WebSocketF[F]](res.comps):
   val F = Sync[F]
   private var socketClosable: F[Unit] = F.unit
@@ -75,7 +79,7 @@ class FS2AppenderF[F[_]: Async](
         val headers: List[KeyValue] = List(HttpUtil.basicAuth(user, pass))
         addInfo(s"Connecting to logstreams URL '$url' for Logback...")
         val socketIo: Resource[F, WebSocketF[F]] =
-          res.http.socket(url, headers.map(kv => kv.key -> kv.value).toMap)
+          res.http.socket(url, headers.map(kv => kv.key -> kv.value).toMap ++ extraHeaders)
         val (socket, closer) = d.unsafeRunSync(socketIo.allocated[WebSocketF[F]])
         client = Option(socket)
         socketClosable = closer

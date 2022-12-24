@@ -49,7 +49,7 @@ class Htmls(
   val Status = "status"
   private val reverse = LogRoutes
 
-  def asset(name: String): Uri = assets.at(name)
+  private def asset(name: String): Uri = assets.at(name)
 
   def logs(apps: Seq[AppName]) = baseIndex("logs")(
     headerRow("Logs"),
@@ -171,19 +171,19 @@ class Htmls(
       )
     )
 
-  def logEntriesTable(tableId: String) =
+  private def logEntriesTable(tableId: String) =
     table(`class` := tables.defaultClass, id := tableId)
 
-  def defaultTable(tableId: String, headers: Seq[String]) =
+  private def defaultTable(tableId: String, headers: Seq[String]) =
     defaultTableBase(tableId, headers.map(h => th(h)))
 
-  def defaultTableBase(tableId: String, headers: Modifier) =
+  private def defaultTableBase(tableId: String, headers: Modifier) =
     table(`class` := tables.defaultClass, id := tableId)(
       thead(tr(headers)),
       tbody
     )
 
-  def baseIndex(tabName: String)(inner: Modifier*) =
+  private def baseIndex(tabName: String)(inner: Modifier*) =
     def navItem(thisTabName: String, tabId: String, url: Uri, faName: String) =
       val itemClass = if tabId == tabName then "nav-item active" else "nav-item"
       li(`class` := itemClass)(a(href := url, `class` := "nav-link")(fa(faName), s" $thisTabName"))
@@ -223,18 +223,18 @@ class Htmls(
       )
     )
 
-  def feedbackDiv(feedback: UserFeedback) =
+  private def feedbackDiv(feedback: UserFeedback) =
     val message = feedback.message
     if feedback.isError then alertDanger(message)
     else alertSuccess(message)
 
-  def postableForm(onAction: Uri, more: Modifier*) =
+  private def postableForm(onAction: Uri, more: Modifier*) =
     form(role := FormRole, action := onAction, method := Post, more)
 
-  def passwordGroup(elemId: String, labelText: String) =
+  private def passwordGroup(elemId: String, labelText: String) =
     inGroup(elemId, Password, labelText)
 
-  def inGroup(elemId: String, inType: String, labelText: String) =
+  private def inGroup(elemId: String, inType: String, labelText: String) =
     formGroup(
       labelFor(elemId)(labelText),
       divClass("controls")(
@@ -242,5 +242,5 @@ class Htmls(
       )
     )
 
-  def fa(faName: String) =
+  private def fa(faName: String) =
     i(`class` := s"nav-icon $faName", title := faName, aria.hidden := tags.True)

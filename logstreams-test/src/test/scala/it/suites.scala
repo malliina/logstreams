@@ -21,9 +21,6 @@ import scala.util.Try
 class LogsAppConf(override val database: Conf) extends AppConf:
   override def close(): Unit = ()
 
-case class TestConf(testdb: Conf)
-case class WrappedTestConf(logstreams: TestConf)
-
 trait MUnitDatabaseSuite:
   self: munit.CatsEffectSuite =>
   val db: Fixture[Conf] = new Fixture[Conf]("database"):

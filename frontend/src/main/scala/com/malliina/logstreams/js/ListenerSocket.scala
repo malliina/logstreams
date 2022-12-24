@@ -19,7 +19,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
   private val Warning = "warning"
   val Info = "info"
 
-  val Off = "off"
+  private val Off = "off"
 
   val localStorage = dom.window.localStorage
 

@@ -1,10 +1,8 @@
 package com.malliina.logstreams
 
-import org.scalajs.dom.raw.HTMLElement
-import org.scalajs.dom.{DOMList, Node}
+import org.scalajs.dom.{DOMList, HTMLElement, Node}
 
 package object js:
-
   implicit class NodeListSeq[T <: Node](nodes: DOMList[T]) extends IndexedSeq[T]:
     override def foreach[U](f: T => U): Unit =
       for i <- 0 until nodes.length do f(nodes(i))

@@ -31,7 +31,7 @@ object LogEvent:
       stackTrace
     )
 
-  def buildStackTrace(e: ILoggingEvent): Option[Seq[String]] =
+  private def buildStackTrace(e: ILoggingEvent): Option[Seq[String]] =
     val exOpt = Option(e.getThrowableProxy)
     for
       ex <- exOpt

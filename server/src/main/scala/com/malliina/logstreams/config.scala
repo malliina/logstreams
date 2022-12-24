@@ -36,8 +36,6 @@ object LocalConf:
 
 case class LogstreamsConf(secret: SecretKey, db: Conf, google: AuthConf)
 
-case class WrappedConf(logstreams: LogstreamsConf)
-
 trait ConfigReadable[T]:
   def read(key: String, c: Config): Either[ErrorMessage, T]
   def flatMap[U](f: T => ConfigReadable[U]): ConfigReadable[U] =

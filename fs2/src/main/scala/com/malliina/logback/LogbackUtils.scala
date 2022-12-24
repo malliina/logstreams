@@ -1,11 +1,26 @@
 package com.malliina.logback
 
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder
 import ch.qos.logback.classic.spi.ILoggingEvent
-import ch.qos.logback.classic.{Logger, LoggerContext}
-import ch.qos.logback.core.Appender
+import ch.qos.logback.classic.{Level, Logger, LoggerContext}
+import ch.qos.logback.core.{Appender, ConsoleAppender}
 import org.slf4j.LoggerFactory
 
 object LogbackUtils:
+  def init(rootLevel: Level = Level.INFO): LoggerContext =
+    val lc = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
+    lc.reset()
+    val ple = PatternLayoutEncoder()
+    ple.setPattern("""%d{HH:mm:ss.SSS} %-5level %logger{72} %msg%n""")
+    ple.setContext(lc)
+    ple.start()
+    val console = new ConsoleAppender[ILoggingEvent]()
+    console.setEncoder(ple)
+    LogbackUtils.installAppender(console)
+    val root = lc.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME)
+    root.setLevel(rootLevel)
+    lc
+
   def appender[T](
     appenderName: String,
     loggerName: String = org.slf4j.Logger.ROOT_LOGGER_NAME

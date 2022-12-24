@@ -45,7 +45,7 @@ object DoobieDatabase:
       HikariDataSource(hikari)
     })(ds => IO(ds.close()))
 
-  def transactor(ds: HikariDataSource): Resource[IO, DataSourceTransactor[IO]] =
+  private def transactor(ds: HikariDataSource): Resource[IO, DataSourceTransactor[IO]] =
     for ec <- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
     yield Transactor.fromDataSource[IO](ds, ec)
 

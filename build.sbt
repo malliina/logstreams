@@ -161,7 +161,7 @@ val server = project
       "com.malliina" %% "util-html" % utilHtmlVersion,
       utilPlayDep,
       utilPlayDep % Test classifier "tests",
-      "com.dimafeng" %% "testcontainers-scala-mysql" % "0.40.10" % Test,
+      "com.dimafeng" %% "testcontainers-scala-mysql" % "0.40.11" % Test,
       "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
     ),
     Universal / javaOptions ++= Seq(
@@ -172,13 +172,6 @@ val server = project
     packageDoc / publishArtifact := false,
     Compile / doc / sources := Seq.empty,
     clientProject := frontend,
-    start := Def.taskIf {
-      if (start.inputFileChanges.hasChanges) {
-        refreshBrowsers.value
-      } else {
-        Def.task(streams.value.log.info("No backend changes."))
-      }
-    }.dependsOn(start).value,
     (frontend / Compile / start) := Def.taskIf {
       if ((frontend / Compile / start).inputFileChanges.hasChanges) {
         refreshBrowsers.value

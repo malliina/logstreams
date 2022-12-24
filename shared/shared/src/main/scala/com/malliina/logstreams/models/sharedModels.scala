@@ -52,7 +52,8 @@ case class LogSource(
   userAgent: Option[String],
   id: String,
   joined: Long,
-  joinedFormatted: String
+  joinedFormatted: String,
+  timeJoined: String
 )
 
 object LogSource:
@@ -115,8 +116,8 @@ case class LogEvent(
 )
 
 object LogEvent:
-  val basicReader: Decoder[LogEvent] = deriveDecoder[LogEvent]
-  val reader = basicReader.or(LogEventOld.json.map(_.toEvent))
+  private val basicReader: Decoder[LogEvent] = deriveDecoder[LogEvent]
+  private val reader = basicReader.or(LogEventOld.json.map(_.toEvent))
   implicit val json: Codec[LogEvent] = Codec.from(reader, deriveEncoder[LogEvent])
 
 case class AppLogEvent(

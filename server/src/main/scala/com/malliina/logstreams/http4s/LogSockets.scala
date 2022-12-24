@@ -119,7 +119,8 @@ class LogSockets(
         user.userAgent,
         id,
         now.toInstant.toEpochMilli,
-        date
+        date,
+        LogEntryRow.format(now.toInstant)
       )
     socketBuilder
       .withOnClose(disconnected(logSource))
@@ -128,7 +129,7 @@ class LogSockets(
         publishEvents
       )
 
-  def connected(src: LogSource): IO[Unit] =
+  private def connected(src: LogSource): IO[Unit] =
     connectedSources.updateAndGet(olds => LogSources(olds.sources :+ src)).flatMap { connecteds =>
       publishLogged(connecteds, admins)
     }

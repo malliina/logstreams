@@ -23,7 +23,7 @@ object LogstreamsUtils:
         .default(
           d,
           http,
-          Map("User-Agent" -> userAgent)
+          Map(HttpUtil.UserAgent -> userAgent)
         )
         .flatMap { appender =>
           env("LOGSTREAMS_PASS")

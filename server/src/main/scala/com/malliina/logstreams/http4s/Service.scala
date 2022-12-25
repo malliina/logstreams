@@ -244,9 +244,3 @@ class Service[F[_]: Async](
     unauthorized(Errors.single(s"Unauthorized."))
 
   private def unauthorized(errors: Errors) = SeeOther(Location(LogRoutes.googleStart))
-
-  def unauthorizedEnd(errors: Errors) =
-    Unauthorized(
-      `WWW-Authenticate`(NonEmptyList.of(Challenge("myscheme", "myrealm"))),
-      errors.asJson
-    ).map(r => auths.web.clearSession(r))

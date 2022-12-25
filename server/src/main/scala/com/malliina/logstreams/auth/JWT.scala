@@ -34,7 +34,7 @@ object JWT:
     def readString(key: String): Either[JWTError, String] =
       read(token, claims.getStringClaim(key), s"Claim missing: '$key'.")
 
-  object Parsed:
+  private object Parsed:
     def apply(token: TokenValue): Either[JWTError, Parsed] =
       for
         signed <- read(token, SignedJWT.parse(token.value), s"Invalid JWT: '$token'.")
@@ -48,7 +48,7 @@ object JWT:
     def expiresIn(now: Instant): Option[FiniteDuration] = parsed.exp.map { exp =>
       (exp.toEpochMilli - now.toEpochMilli).millis
     }
-    def readString(key: String) = parsed.readString(key)
+    private def readString(key: String) = parsed.readString(key)
     def token = parsed.token
     def read[T: Decoder](key: String): Either[JWTError, T] =
       parsed.claimsJson.hcursor.downField(key).as[T].left.map { errors =>
@@ -61,7 +61,7 @@ object JWT:
 
   object Verified:
     // No expiration => never expired
-    def checkExpiration(parsed: Parsed, now: Instant) = parsed.exp.flatMap { e =>
+    private def checkExpiration(parsed: Parsed, now: Instant) = parsed.exp.flatMap { e =>
       if now.isBefore(e) then None else Option(Expired(parsed.token, e, now))
     }
 
@@ -83,7 +83,7 @@ class JWT(secret: SecretKey, dataKey: String = "data"):
   def sign[T: Encoder](payload: T, ttl: FiniteDuration, now: Instant = Instant.now()): IdToken =
     signWithExpiration[T](payload, now.plusSeconds(ttl.toSeconds))
 
-  def signWithExpiration[T: Encoder](payload: T, expiresAt: Instant): IdToken =
+  private def signWithExpiration[T: Encoder](payload: T, expiresAt: Instant): IdToken =
     val signer = new MACSigner(secret.value)
     val claims = new JWTClaimsSet.Builder()
       .expirationTime(Date.from(expiresAt))
@@ -98,7 +98,7 @@ class JWT(secret: SecretKey, dataKey: String = "data"):
       v.read[T](dataKey)
     }
 
-  def verifyToken(token: TokenValue, now: Instant): Either[JWTError, JWT.Verified] =
+  private def verifyToken(token: TokenValue, now: Instant): Either[JWTError, JWT.Verified] =
     JWT.Parsed(token).flatMap { p =>
       Verified.verify(p, secret, now)
     }

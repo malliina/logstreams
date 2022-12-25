@@ -46,7 +46,7 @@ object AuthProvider:
   val PromptKey = "prompt"
   val SelectAccount = "select_account"
 
-  def forString(s: String): Either[SingleError, AuthProvider] =
+  private def forString(s: String): Either[SingleError, AuthProvider] =
     Seq(Google)
       .find(_.name == s)
       .toRight(SingleError(s"Unknown auth provider: '$s'."))

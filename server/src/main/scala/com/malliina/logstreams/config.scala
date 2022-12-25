@@ -24,9 +24,9 @@ object AppMode:
   }
 
 object LocalConf:
-  val homeDir = Paths.get(sys.props("user.home"))
-  val appDir = LocalConf.homeDir.resolve(".logstreams")
-  val localConfFile = appDir.resolve("logstreams.conf")
+  private val homeDir = Paths.get(sys.props("user.home"))
+  private val appDir = LocalConf.homeDir.resolve(".logstreams")
+  private val localConfFile = appDir.resolve("logstreams.conf")
   val isProd = BuildInfo.mode == "prod"
   private val localConf =
     ConfigFactory.parseFile(localConfFile.toFile).withFallback(ConfigFactory.load())

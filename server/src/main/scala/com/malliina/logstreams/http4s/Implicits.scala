@@ -34,5 +34,3 @@ abstract class Implicits[F[_]]
   with Extractors
   with CirceInstances
   with MyScalatagsInstances
-
-object Implicits extends Implicits[IO]

@@ -14,9 +14,6 @@ object SingleError:
 
   def apply(message: String): SingleError = apply(message, "generic")
 
-  def forJWT(error: JWTError): SingleError =
-    SingleError(error.message.message, error.key)
-
 case class Errors(errors: NonEmptyList[SingleError])
 
 object Errors:

@@ -1,8 +1,9 @@
 package com.malliina.logstreams.db
 
+import cats.Monad
 import cats.effect.IO.*
 import cats.effect.kernel.Resource
-import cats.effect.IO
+import cats.effect.{Async, IO, Sync}
 import com.malliina.logstreams.db.DoobieDatabase.log
 import com.malliina.util.AppLogger
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
@@ -18,21 +19,21 @@ import scala.concurrent.duration.DurationInt
 object DoobieDatabase:
   private val log = AppLogger(getClass)
 
-  def default(conf: Conf): Resource[IO, DoobieDatabase] =
+  def default[F[_]: Async](conf: Conf): Resource[F, DoobieDatabase[F]] =
     for
       ds <- dataSource(conf)
       tx <- transactor(ds)
     yield DoobieDatabase(tx)
 
-  def withMigrations(conf: Conf): Resource[IO, DoobieDatabase] =
+  def withMigrations[F[_]: Async](conf: Conf): Resource[F, DoobieDatabase[F]] =
     Resource.eval(migrate(conf)).flatMap { _ => default(conf) }
 
-  private def migrate(conf: Conf): IO[MigrateResult] = IO {
+  private def migrate[F[_]: Sync](conf: Conf): F[MigrateResult] = Sync[F].delay {
     val flyway = Flyway.configure.dataSource(conf.url, conf.user, conf.pass).load()
     flyway.migrate()
   }
 
-  private def dataSource(conf: Conf): Resource[IO, HikariDataSource] =
+  private def dataSource[F[_]: Sync](conf: Conf): Resource[F, HikariDataSource] =
     val hikari = new HikariConfig()
     hikari.setDriverClassName(Conf.MySQLDriver)
     hikari.setJdbcUrl(conf.url)
@@ -40,16 +41,16 @@ object DoobieDatabase:
     hikari.setPassword(conf.pass)
     hikari.setMaxLifetime(60.seconds.toMillis)
     hikari.setMaximumPoolSize(5)
-    Resource.make(IO {
+    Resource.make(Sync[F].delay {
       log.info(s"Connecting to '${conf.url}'...")
       HikariDataSource(hikari)
-    })(ds => IO(ds.close()))
+    })(ds => Sync[F].delay(ds.close()))
 
-  private def transactor(ds: HikariDataSource): Resource[IO, DataSourceTransactor[IO]] =
-    for ec <- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
-    yield Transactor.fromDataSource[IO](ds, ec)
+  private def transactor[F[_]: Async](ds: HikariDataSource): Resource[F, DataSourceTransactor[F]] =
+    for ec <- ExecutionContexts.fixedThreadPool[F](32) // connect EC
+    yield Transactor.fromDataSource[F](ds, ec)
 
-class DoobieDatabase(tx: DataSourceTransactor[IO]):
+class DoobieDatabase[F[_]: Async](tx: DataSourceTransactor[F]):
   implicit val logHandler: LogHandler = LogHandler {
     case Success(sql, args, exec, processing) =>
       val logger: String => Unit = if processing > 2.seconds then log.info else log.debug
@@ -60,4 +61,4 @@ class DoobieDatabase(tx: DataSourceTransactor[IO]):
       log.error(s"Exec failed '$sql' in $exec.'", failure)
   }
 
-  def run[T](io: ConnectionIO[T]): IO[T] = io.transact(tx)
+  def run[T](io: ConnectionIO[T]): F[T] = io.transact(tx)

@@ -1,7 +1,7 @@
 package it
 
 import cats.effect.unsafe.implicits.global
-import cats.effect.IO
+import cats.effect.{IO, Resource}
 import cats.effect.kernel.Sync
 import cats.syntax.flatMap.*
 import com.dimafeng.testcontainers.MySQLContainer
@@ -22,67 +22,58 @@ import scala.util.Try
 class LogsAppConf(override val database: Conf) extends AppConf:
   override def close(): Unit = ()
 
-trait MUnitDatabaseSuite:
-  self: munit.CatsEffectSuite =>
-  val db: Fixture[Conf] = new Fixture[Conf]("database"):
-    var container: Option[MySQLContainer] = None
-    var conf: Option[Conf] = None
-    def apply(): Conf = conf.get
-    override def beforeAll(): Unit =
-      val localTestDb = testConf()
-      val testDb = localTestDb.getOrElse {
+case class TestDatabase(conf: Conf, container: Option[MySQLContainer])
+
+object DatabaseUtils:
+  val testDatabase: Resource[IO, TestDatabase] = Resource.make {
+    IO.delay {
+      val localTestDb = testConf().map { conf => TestDatabase(conf, None) }
+      localTestDb.getOrElse {
         val image = DockerImageName.parse("mysql:5.7.29")
         val c = MySQLContainer(mysqlImageVersion = image)
         c.start()
-        container = Option(c)
-        Conf(s"${c.jdbcUrl}?useSSL=false", c.username, c.password, c.driverClassName)
+        TestDatabase(
+          Conf(s"${c.jdbcUrl}?useSSL=false", c.username, c.password, c.driverClassName),
+          Option(c)
+        )
       }
-      conf = Option(testDb)
-    override def afterAll(): Unit =
-      truncateTestData()
-      container.foreach(_.stop())
-
-  private def truncateTestData() =
-    import doobie.implicits.*
-    DoobieDatabase
-      .default(db())
-      .use { database =>
-        for
-          l <- database.run(sql"delete from LOGS".update.run)
-          u <- database.run(sql"delete from USERS".update.run)
-        yield l + u
+    }
+  } { cont =>
+    truncateTestData(cont.conf) >>
+      IO.delay {
+        cont.container.foreach(_.stop())
       }
-      .unsafeRunSync()
+  }
 
   private def testConf(): Either[Throwable, Conf] =
     Try(
       LogstreamsConf.parseDatabase(LocalConf.conf.getConfig("logstreams").getConfig("testdb"))
     ).toEither
 
+  private def truncateTestData(conf: Conf): IO[Int] =
+    import doobie.implicits.*
+    DoobieDatabase
+      .default[IO](conf)
+      .use { database =>
+        for
+          l <- database.run(sql"delete from LOGS".update.run)
+          u <- database.run(sql"delete from USERS".update.run)
+        yield l + u
+      }
+
+trait MUnitDatabaseSuite:
+  self: munit.CatsEffectSuite =>
+  val db = ResourceSuiteLocalFixture("database", DatabaseUtils.testDatabase)
   override def munitFixtures: Seq[Fixture[?]] = Seq(db)
 
 trait ServerSuite extends MUnitDatabaseSuite:
   self: munit.CatsEffectSuite =>
   val http = ResourceFixture(HttpClientIO.resource)
-  val server: Fixture[ServerComponents] = new Fixture[ServerComponents]("server"):
-    private var service: Option[ServerComponents] = None
-    val promise: Promise[IO[Unit]] = Promise[IO[Unit]]()
-
-    override def apply(): ServerComponents = service.get
-
-    override def beforeAll(): Unit =
-      val testConf = LogstreamsConf.parse().copy(db = db())
-      val resource = Server.server(testConf, testAuths, port = port"12345")
-      val setupEffect = resource.allocated.map { case (t, release) =>
-        promise.success(release)
-        t
-      }
-        .flatTap(t => IO.pure(()))
-
-      service = Option(setupEffect.unsafeRunSync())
-
-    override def afterAll(): Unit =
-      IO.fromFuture(IO(promise.future)).flatten.unsafeRunSync()
+  val conf = IO.delay(LogstreamsConf.parse().copy(db = db().conf))
+  val testResource = Resource.eval(conf).flatMap { conf =>
+    Server.server(conf, testAuths, port"12345")
+  }
+  val server = ResourceSuiteLocalFixture("server", testResource)
 
   def testAuths: AuthBuilder = new AuthBuilder:
     override def apply[F[_]: Sync](users: UserService[F], web: Http4sAuth[F]) =

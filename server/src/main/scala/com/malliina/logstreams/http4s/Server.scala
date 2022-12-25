@@ -1,9 +1,10 @@
 package com.malliina.logstreams.http4s
 
+import cats.Applicative
 import cats.data.Kleisli
 import cats.effect.kernel.Ref
 import cats.effect.std.Dispatcher
-import cats.effect.{ExitCode, IO, IOApp, Resource}
+import cats.effect.{Async, ExitCode, IO, IOApp, Resource}
 import com.comcast.ip4s.{Port, host, port}
 import com.malliina.app.AppMeta
 import com.malliina.http.io.HttpClientIO
@@ -25,8 +26,8 @@ import org.http4s.{HttpRoutes, Request, Response}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
 
-case class ServerComponents(
-  app: Service,
+case class ServerComponents[F[_]: Async](
+  app: Service[F],
   server: Server
 )
 
@@ -36,43 +37,48 @@ object Server extends IOApp:
   private val serverPort: Port =
     sys.env.get("SERVER_PORT").flatMap(s => Port.fromString(s)).getOrElse(port"9001")
 
-  def server(
+  def server[F[_]: Async](
     conf: LogstreamsConf,
     authBuilder: AuthBuilder,
     port: Port = serverPort
-  ): Resource[IO, ServerComponents] =
+  ): Resource[F, ServerComponents[F]] =
     for
-      service <- appService(conf, authBuilder)
+      service <- appService[F](conf, authBuilder)
       _ <- Resource.eval(
-        IO(log.info(s"Binding on port $port using app version ${AppMeta.ThisApp.git}..."))
+        Async[F].delay(
+          log.info(s"Binding on port $port using app version ${AppMeta.ThisApp.git}...")
+        )
       )
       server <- EmberServerBuilder
-        .default[IO]
+        .default[F]
         .withIdleTimeout(30.days)
         .withHost(host"0.0.0.0")
         .withPort(serverPort)
         .withHttpWebSocketApp(socketBuilder => makeHandler(service, socketBuilder))
-        .withErrorHandler(ErrorHandler[IO].partial)
+        .withErrorHandler(ErrorHandler[F].partial)
         .withShutdownTimeout(1.millis)
         .build
     yield ServerComponents(service, server)
 
-  private def appService(conf: LogstreamsConf, authBuilder: AuthBuilder): Resource[IO, Service] =
+  private def appService[F[_]: Async](
+    conf: LogstreamsConf,
+    authBuilder: AuthBuilder
+  ): Resource[F, Service[F]] =
     for
-      http <- HttpClientIO.resource[IO]
-      dispatcher <- Dispatcher[IO]
+      http <- HttpClientIO.resource[F]
+      dispatcher <- Dispatcher[F]
       _ <- Resource.eval(LogstreamsUtils.install(LogConf.name, LogConf.userAgent, dispatcher, http))
-      db <- DoobieDatabase.withMigrations(conf.db)
-      logsTopic <- Resource.eval(Topic[IO, LogEntryInputs])
-      adminsTopic <- Resource.eval(Topic[IO, LogSources])
-      connecteds <- Resource.eval(Ref[IO].of(LogSources(Nil)))
-      logUpdates <- Resource.eval(Topic[IO, AppLogEvents])
+      db <- DoobieDatabase.withMigrations[F](conf.db)
+      logsTopic <- Resource.eval(Topic[F, LogEntryInputs])
+      adminsTopic <- Resource.eval(Topic[F, LogSources])
+      connecteds <- Resource.eval(Ref[F].of(LogSources(Nil)))
+      logUpdates <- Resource.eval(Topic[F, AppLogEvents])
       logsDatabase = DoobieStreamsDatabase(db)
       sockets = LogSockets(logsTopic, adminsTopic, connecteds, logUpdates, logsDatabase)
       _ <- fs2.Stream.emit(()).concurrently(sockets.publisher).compile.resource.lastOrError
     yield
       val users = DoobieDatabaseAuth(db)
-      val auths: Auther[IO] = authBuilder(users, Http4sAuth(JWT(conf.secret)))
+      val auths: Auther[F] = authBuilder(users, Http4sAuth(JWT(conf.secret)))
       val google = GoogleAuthFlow(conf.google, http)
       val isProd = LocalConf.isProd
       Service(
@@ -84,19 +90,22 @@ object Server extends IOApp:
         google
       )
 
-  private def makeHandler(service: Service, socketBuilder: WebSocketBuilder2[IO]) = GZip {
-    HSTS {
-      orNotFound {
-        Router(
-          "/" -> service.routes(socketBuilder),
-          "/assets" -> StaticService[IO].routes
-        )
+  private def makeHandler[F[_]: Async](service: Service[F], socketBuilder: WebSocketBuilder2[F]) =
+    GZip {
+      HSTS {
+        orNotFound {
+          Router(
+            "/" -> service.routes(socketBuilder),
+            "/assets" -> StaticService[F].routes
+          )
+        }
       }
     }
-  }
 
-  private def orNotFound(rs: HttpRoutes[IO]): Kleisli[IO, Request[IO], Response[IO]] =
-    Kleisli(req => rs.run(req).getOrElseF(BasicService.notFound(req)))
+  private def orNotFound[F[_]: Async](
+    rs: HttpRoutes[F]
+  ): Kleisli[F, Request[F], Response[F]] =
+    Kleisli(req => rs.run(req).getOrElseF(BasicService[F].notFound(req)))
 
   override def run(args: List[String]): IO[ExitCode] =
-    server(LogstreamsConf.parse(), Auths).use(_ => IO.never).as(ExitCode.Success)
+    server[IO](LogstreamsConf.parse(), Auths).use(_ => IO.never).as(ExitCode.Success)

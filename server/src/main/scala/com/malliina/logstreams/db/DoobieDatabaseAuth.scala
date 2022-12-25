@@ -15,8 +15,8 @@ import doobie.implicits.*
 object DoobieDatabaseAuth:
   private val log = AppLogger(getClass)
 
-class DoobieDatabaseAuth(db: DoobieDatabase) extends UserService[IO]:
-  def add(creds: BasicCredentials): IO[Either[AlreadyExists, Unit]] = db.run {
+class DoobieDatabaseAuth[F[_]](db: DoobieDatabase[F]) extends UserService[F]:
+  def add(creds: BasicCredentials): F[Either[AlreadyExists, Unit]] = db.run {
     val existsIO = sql"select exists(select USER from USERS where USER = ${creds.username})"
       .query[Boolean]
       .unique
@@ -32,7 +32,7 @@ class DoobieDatabaseAuth(db: DoobieDatabase) extends UserService[IO]:
 
   }
 
-  def update(creds: BasicCredentials): IO[Either[DoesNotExist, Unit]] = db.run {
+  def update(creds: BasicCredentials): F[Either[DoesNotExist, Unit]] = db.run {
     val user = creds.username
     val hashed = hash(creds)
     sql"""update USERS set PASS_HASH = $hashed where USER = $user""".update.run.map { rowCount =>
@@ -43,7 +43,7 @@ class DoobieDatabaseAuth(db: DoobieDatabase) extends UserService[IO]:
     }
   }
 
-  def remove(user: Username): IO[Either[DoesNotExist, Unit]] = db.run {
+  def remove(user: Username): F[Either[DoesNotExist, Unit]] = db.run {
     sql"delete from USERS where USER = $user".update.run.map { rowCount =>
       if rowCount > 0 then
         log.info(s"Removed '$user'.")
@@ -59,7 +59,7 @@ class DoobieDatabaseAuth(db: DoobieDatabase) extends UserService[IO]:
       .unique
   }
 
-  def all(): IO[Seq[Username]] = db.run {
+  def all(): F[List[Username]] = db.run {
     sql"select USER from USERS order by USER".query[Username].to[List]
   }
 

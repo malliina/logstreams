@@ -8,7 +8,7 @@ trait UserService[F[_]]:
   def update(creds: BasicCredentials): F[Either[DoesNotExist, Unit]]
   def remove(user: Username): F[Either[DoesNotExist, Unit]]
   def isValid(creds: BasicCredentials): F[Boolean]
-  def all(): F[Seq[Username]]
+  def all(): F[List[Username]]
 
 sealed trait UserError
 

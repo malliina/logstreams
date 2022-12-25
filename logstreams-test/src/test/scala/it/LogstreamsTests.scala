@@ -37,7 +37,7 @@ class LogstreamsTests extends TestServerSuite:
   def components = server().app
   def users = components.users
 
-  http.test("can open socket".ignore) { client =>
+  http.test("can open socket") { client =>
     val c = creds("u1")
     users.add(c).flatMap { _ =>
       withSource(c.username.name, client) { socket =>
@@ -46,7 +46,7 @@ class LogstreamsTests extends TestServerSuite:
     }
   }
 
-  http.test("sent message is received by listener".ignore) { client =>
+  http.test("sent message is received by listener") { client =>
     val message = "hello, world"
     val testEvent = LogEvent(
       System.currentTimeMillis(),
@@ -124,24 +124,20 @@ class LogstreamsTests extends TestServerSuite:
                 }
               val check =
                 status.get.flatMap { statusJson =>
-                  log.info(s"Status $statusJson")
                   val msg = statusJson.as[LogSources]
                   assert(msg.isRight)
                   assert(msg.toOption.get.sources.isEmpty)
                   val task = withSource(user, client) { _ =>
                     update.get.flatMap { updateJson =>
-                      log.info(s"Update $updateJson")
                       val upd = updateJson.as[LogSources]
                       assert(upd.isRight)
                       val sources = upd.toOption.get.sources
                       assertEquals(sources.size, 1)
                       assertEquals(sources.head.name.name, user)
-                      log.info("Admin client...")
                       val task22 = withAdminEvents(client) { jsons =>
                         jsons.take(1).compile.toList.map(_.head)
                       }
                       task22.map { adminStatusJson =>
-                        log.info(s"Admin status $adminStatusJson")
                         val res = adminStatusJson.as[LogSources]
                         assert(res.isRight)
                         val statusUpdate = res.fold(err => throw err, identity)
@@ -153,7 +149,6 @@ class LogstreamsTests extends TestServerSuite:
                     _ <- task
                     disconnected <- disconnectedPromise.get
                   yield
-                    log.info(s"Disconnected $disconnected")
                     val disconnectUpdate = disconnected.as[LogSources]
                     assert(disconnectUpdate.isRight)
                     assert(disconnectUpdate.toOption.get.sources.isEmpty)

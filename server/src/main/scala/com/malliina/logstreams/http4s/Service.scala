@@ -1,7 +1,9 @@
 package com.malliina.logstreams.http4s
 
 import cats.data.NonEmptyList
-import cats.effect.IO
+import cats.effect.{IO, Sync}
+import cats.effect.kernel.Async
+import cats.syntax.all.{toFunctorOps, toFlatMapOps}
 import com.malliina.app.AppMeta
 import com.malliina.logstreams.Errors
 import com.malliina.logstreams.auth.*
@@ -28,17 +30,17 @@ import java.time.{Instant, OffsetDateTime, OffsetTime}
 object Service:
   private val log = AppLogger(getClass)
 
-class Service(
-  val db: DoobieDatabase,
-  val users: UserService[IO],
+class Service[F[_]: Async](
+  val db: DoobieDatabase[F],
+  val users: UserService[F],
   htmls: Htmls,
-  auths: Auther[IO],
-  sockets: LogSockets[IO],
-  google: GoogleAuthFlow[IO]
-) extends BasicService[IO]:
+  auths: Auther[F],
+  sockets: LogSockets[F],
+  google: GoogleAuthFlow[F]
+) extends BasicService[F]:
   val reverse = LogRoutes
-
-  def routes(socketBuilder: WebSocketBuilder2[IO]): HttpRoutes[IO] = HttpRoutes.of[IO] {
+  val F = Sync[F]
+  def routes(socketBuilder: WebSocketBuilder2[F]): HttpRoutes[F] = HttpRoutes.of[F] {
     case GET -> Root / "health" => ok(AppMeta.ThisApp.asJson)
     case GET -> Root / "ping"   => ok(AppMeta.ThisApp.asJson)
     case req @ GET -> Root =>
@@ -140,9 +142,9 @@ class Service(
 
   private def startHinted(
     provider: AuthProvider,
-    validator: LoginHint[IO],
-    req: Request[IO]
-  ): IO[Response[IO]] = IO {
+    validator: LoginHint[F],
+    req: Request[F]
+  ): F[Response[F]] = F.delay {
     val redirectUrl = Urls.hostOnly(req) / LogRoutes.googleCallback.renderString
     val lastIdCookie = req.cookies.find(_.name == cookieNames.lastId)
     val promptValue = req.cookies
@@ -164,7 +166,7 @@ class Service(
     }
   }
 
-  private def startLoginFlow(s: Start, req: Request[IO]): IO[Response[IO]] = IO {
+  private def startLoginFlow(s: Start, req: Request[F]): F[Response[F]] = F.delay {
     val state = randomString()
     val encodedParams = (s.params ++ Map(OAuthKeys.State -> state)).map { case (k, v) =>
       k -> Utils.urlEncode(v)
@@ -185,10 +187,10 @@ class Service(
   }
 
   private def handleCallback(
-    req: Request[IO],
+    req: Request[F],
     provider: AuthProvider,
-    validate: Callback => IO[Either[AuthError, Email]]
-  ): IO[Response[IO]] =
+    validate: Callback => F[Either[AuthError, Email]]
+  ): F[Response[F]] =
     val params = req.uri.query.params
     val session = auths.web.session[Map[String, String]](req.headers).toOption.getOrElse(Map.empty)
     val cb = Callback(
@@ -208,8 +210,8 @@ class Service(
   private def userResult(
     email: Email,
     provider: AuthProvider,
-    req: Request[IO]
-  ): IO[Response[IO]] =
+    req: Request[F]
+  ): F[Response[F]] =
     val returnUri: Uri = req.cookies
       .find(_.name == cookieNames.returnUri)
       .flatMap(c => Uri.fromString(c.content).toOption)
@@ -218,30 +220,30 @@ class Service(
       auths.web.withAppUser(UserPayload.email(email), provider, req, res)
     }
 
-  def stringify(map: Map[String, String]): String =
+  private def stringify(map: Map[String, String]): String =
     map.map { case (key, value) => s"$key=$value" }.mkString("&")
 
-  def webAuth(req: Request[IO])(code: UserRequest => IO[Response[IO]]) =
+  private def webAuth(req: Request[F])(code: UserRequest => F[Response[F]]) =
     withAuth(auths.viewers, req.headers) { user =>
       code(UserRequest(user, req.headers, Urls.address(req), OffsetDateTime.now()))
     }
 
-  def sourceAuth(headers: Headers)(code: Username => IO[Response[IO]]) =
+  private def sourceAuth(headers: Headers)(code: Username => F[Response[F]]) =
     withAuth(auths.sources, headers)(code)
 
-  private def withAuth(auth: Http4sAuthenticator[IO, Username], headers: Headers)(
-    code: Username => IO[Response[IO]]
+  private def withAuth(auth: Http4sAuthenticator[F, Username], headers: Headers)(
+    code: Username => F[Response[F]]
   ) =
     auth.authenticate(headers).flatMap { e => e.fold(err => onUnauthorized(err), ok => code(ok)) }
 
-  def buildMessage(req: UserRequest, message: String) =
+  private def buildMessage(req: UserRequest, message: String) =
     s"User '${req.user}' from '${req.address}' $message."
 
-  def onUnauthorized(error: IdentityError): IO[Response[IO]] =
+  private def onUnauthorized(error: IdentityError): F[Response[F]] =
     log.warn(s"Unauthorized. $error")
     unauthorized(Errors.single(s"Unauthorized."))
 
-  def unauthorized(errors: Errors) = SeeOther(Location(LogRoutes.googleStart))
+  private def unauthorized(errors: Errors) = SeeOther(Location(LogRoutes.googleStart))
 
   def unauthorizedEnd(errors: Errors) =
     Unauthorized(

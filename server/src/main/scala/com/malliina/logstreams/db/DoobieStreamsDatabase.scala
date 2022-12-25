@@ -12,10 +12,10 @@ import ch.qos.logback.classic.Level
 object DoobieStreamsDatabase:
   private val log = AppLogger(getClass)
 
-class DoobieStreamsDatabase(db: DoobieDatabase) extends LogsDatabase[IO]:
+class DoobieStreamsDatabase[F[_]](db: DoobieDatabase[F]) extends LogsDatabase[F]:
   implicit val dbLog: LogHandler = db.logHandler
 
-  def insert(events: List[LogEntryInput]): IO[EntriesWritten] = db.run {
+  def insert(events: List[LogEntryInput]): F[EntriesWritten] = db.run {
     val insertions = events.traverse { e =>
       sql"""insert into LOGS(APP, ADDRESS, MESSAGE, LOGGER, THREAD, LEVEL, STACKTRACE, TIMESTAMP) 
             values(${e.appName}, ${e.remoteAddress}, ${e.message}, ${e.loggerName}, ${e.threadName}, ${e.level}, ${e.stackTrace}, ${e.timestamp})""".update
@@ -35,7 +35,7 @@ class DoobieStreamsDatabase(db: DoobieDatabase) extends LogsDatabase[IO]:
     }
   }
 
-  def events(query: StreamsQuery = StreamsQuery.default): IO[AppLogEvents] = db.run {
+  def events(query: StreamsQuery = StreamsQuery.default): F[AppLogEvents] = db.run {
     val levels = LogLevel.all
       .filter(l => l.int >= query.level.int)
       .toList

@@ -3,14 +3,15 @@ package it
 import cats.effect.unsafe.implicits.global
 import cats.effect.{Deferred, IO, Resource}
 import com.malliina.http.FullUrl
-import com.malliina.http.io.SocketEvent.Open
-import com.malliina.http.io.{HttpClientF2, HttpClientIO, WebSocketF}
+import com.malliina.http.io.SocketEvent.{Open, TextMessage}
+import com.malliina.http.io.{HttpClientF2, HttpClientIO, SocketEvent, WebSocketF}
 import com.malliina.logstreams.auth.BasicCredentials
 import com.malliina.logstreams.client.{HttpUtil, KeyValue}
 import com.malliina.logstreams.http4s.LogRoutes
 import com.malliina.logstreams.models.*
 import com.malliina.values.{Password, Username}
 import com.malliina.util.AppLogger
+import fs2.Stream
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import io.circe.parser.parse
@@ -36,7 +37,7 @@ class LogstreamsTests extends TestServerSuite:
   def components = server().app
   def users = components.users
 
-  http.test("can open socket") { client =>
+  http.test("can open socket".ignore) { client =>
     val c = creds("u1")
     users.add(c).flatMap { _ =>
       withSource(c.username.name, client) { socket =>
@@ -45,7 +46,7 @@ class LogstreamsTests extends TestServerSuite:
     }
   }
 
-  http.test("sent message is received by listener") { client =>
+  http.test("sent message is received by listener".ignore) { client =>
     val message = "hello, world"
     val testEvent = LogEvent(
       System.currentTimeMillis(),
@@ -91,21 +92,15 @@ class LogstreamsTests extends TestServerSuite:
   }
 
   http.test("admin receives status") { client =>
-    Deferred[IO, Json].flatMap { status =>
-      withAdmin(client) { socket =>
-        socket.jsonMessages
-          .take(1)
-          .evalMap { msg =>
-            log.info(s"Msg $msg")
-            status.complete(msg)
-          }
-          .compile
-          .drain
-          .flatMap(_ => status.get)
-      }
+    withAdminEvents(client) { events =>
+      events.take(1).compile.toList
+    }.map { jsons =>
+      assertEquals(jsons.length, 1)
+      assert(jsons.head.as[LogSources].isRight)
     }
   }
 
+  // 1. admin joins, no viewers 2. viewer joins 3. another admin joins 4. viewer disconnects
   http.test(
     "admin receives status on connect and updates when a source connects and disconnects"
   ) { client =>
@@ -114,55 +109,43 @@ class LogstreamsTests extends TestServerSuite:
       Deferred[IO, Json].flatMap { update =>
         Deferred[IO, Json].flatMap { disconnectedPromise =>
           components.users.add(creds(user)).flatMap { _ =>
-            withAdmin(client) { adminSocket =>
-              val receive = adminSocket.jsonMessages.evalMap { msg =>
-                log.info(s"Message $msg")
-                for
-                  wasStatusEmpty <- status.complete(msg)
-                  wasUpdateEmpty <-
-                    if wasStatusEmpty then IO.pure(false) else update.complete(msg)
-                  _ <-
-                    if wasStatusEmpty || wasUpdateEmpty then IO.pure(false)
-                    else disconnectedPromise.complete(msg)
-                yield ()
-              }.compile.drain
-              receive.start.flatMap { _ =>
+            withAdminEvents(client) { jsons =>
+              val listen = jsons
+                .take(3)
+                .evalMap { json =>
+                  for
+                    wasStatusEmpty <- status.complete(json)
+                    wasUpdateEmpty <-
+                      if wasStatusEmpty then IO.pure(false) else update.complete(json)
+                    _ <-
+                      if wasStatusEmpty || wasUpdateEmpty then IO.pure(false)
+                      else disconnectedPromise.complete(json)
+                  yield ()
+                }
+              val check =
                 status.get.flatMap { statusJson =>
                   log.info(s"Status $statusJson")
                   val msg = statusJson.as[LogSources]
                   assert(msg.isRight)
                   assert(msg.toOption.get.sources.isEmpty)
-                  val task = HttpClientIO.resource[IO].use { sourceHttp =>
-                    withSource(user, sourceHttp) { _ =>
-                      update.get.flatMap { updateJson =>
-                        log.info(s"Update $updateJson")
-                        val upd = updateJson.as[LogSources]
-                        assert(upd.isRight)
-                        val sources = upd.toOption.get.sources
-                        assertEquals(sources.size, 1)
-                        assertEquals(sources.head.name.name, user)
-                        log.info("Admin client...")
-                        val task2 = HttpClientIO.resource[IO].use { client2 =>
-                          Deferred[IO, Json].flatMap { adminStatus =>
-                            withAdmin(client2) { socket2 =>
-                              socket2.jsonMessages
-                                .take(1)
-                                .evalMap { msg =>
-                                  adminStatus.complete(msg)
-                                }
-                                .compile
-                                .drain
-                                .flatMap(_ => adminStatus.get)
-                            }
-                          }
-                        }
-                        task2.map { adminStatusJson =>
-                          log.info(s"Admin status $adminStatusJson")
-                          val res = adminStatusJson.as[LogSources]
-                          assert(res.isRight)
-                          val statusUpdate = res.fold(err => throw err, identity)
-                          assert(statusUpdate.sources.nonEmpty)
-                        }
+                  val task = withSource(user, client) { _ =>
+                    update.get.flatMap { updateJson =>
+                      log.info(s"Update $updateJson")
+                      val upd = updateJson.as[LogSources]
+                      assert(upd.isRight)
+                      val sources = upd.toOption.get.sources
+                      assertEquals(sources.size, 1)
+                      assertEquals(sources.head.name.name, user)
+                      log.info("Admin client...")
+                      val task22 = withAdminEvents(client) { jsons =>
+                        jsons.take(1).compile.toList.map(_.head)
+                      }
+                      task22.map { adminStatusJson =>
+                        log.info(s"Admin status $adminStatusJson")
+                        val res = adminStatusJson.as[LogSources]
+                        assert(res.isRight)
+                        val statusUpdate = res.fold(err => throw err, identity)
+                        assert(statusUpdate.sources.nonEmpty)
                       }
                     }
                   }
@@ -175,7 +158,7 @@ class LogstreamsTests extends TestServerSuite:
                     assert(disconnectUpdate.isRight)
                     assert(disconnectUpdate.toOption.get.sources.isEmpty)
                 }
-              }
+              listen.concurrently(Stream.eval(check)).compile.drain
             }
           }
         }
@@ -185,6 +168,9 @@ class LogstreamsTests extends TestServerSuite:
 
   def withAdmin[T](httpClient: HttpClientF2[IO])(code: WebSocketF[IO] => IO[T]) =
     openAuthedSocket(testUser, LogRoutes.sockets.admins, httpClient)(code)
+
+  def withAdminEvents[T](httpClient: HttpClientF2[IO])(code: Stream[IO, Json] => IO[T]) =
+    openAuthedSocketEvents(testUser, LogRoutes.sockets.admins, httpClient)(code)
 
   def withListener[T](httpClient: HttpClientF2[IO])(code: WebSocketF[IO] => IO[T]) =
     openAuthedSocket(testUser, LogRoutes.sockets.logs, httpClient)(code)
@@ -205,6 +191,19 @@ class LogstreamsTests extends TestServerSuite:
     )
     openSocket(wsUrl, kvs, httpClient)(code)
 
+  def openAuthedSocketEvents[T](
+    username: String,
+    uri: Uri,
+    httpClient: HttpClientF2[IO]
+  )(
+    code: Stream[IO, Json] => IO[T]
+  ): IO[T] =
+    val wsUrl = FullUrl("ws", s"localhost:$port", uri.renderString)
+    val kvs: List[KeyValue] = List(
+      HttpUtil.Authorization -> HttpUtil.authorizationValue(username, testPass)
+    )
+    openSocket2(wsUrl, kvs, httpClient)(code)
+
   def openSocket[T](url: FullUrl, headers: List[KeyValue], httpClient: HttpClientF2[IO])(
     code: WebSocketF[IO] => IO[T]
   ): IO[T] =
@@ -212,5 +211,13 @@ class LogstreamsTests extends TestServerSuite:
       val openEvents = socket.events.collect { case o @ Open(_, _) =>
         o
       }
-      openEvents.take(1).compile.toList >> code(socket)
+      openEvents.take(1).compile.toList >> IO(log.info(s"Opened $url.")) >> code(socket)
+    }
+
+  def openSocket2[T](url: FullUrl, headers: List[KeyValue], httpClient: HttpClientF2[IO])(
+    code: Stream[IO, Json] => IO[T]
+  ): IO[T] =
+    httpClient.socket(url, headers.map(kv => kv.key -> kv.value).toMap).use { socket =>
+      val stream = socket.jsonMessages.concurrently(Stream.eval(socket.connectSocket))
+      code(stream)
     }

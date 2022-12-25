@@ -33,7 +33,7 @@ class Service(
   val users: UserService[IO],
   htmls: Htmls,
   auths: Auther,
-  sockets: LogSockets,
+  sockets: LogSockets[IO],
   google: GoogleAuthFlow[IO]
 ) extends BasicService[IO]:
   val reverse = LogRoutes

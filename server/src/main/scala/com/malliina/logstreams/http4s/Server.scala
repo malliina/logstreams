@@ -72,7 +72,7 @@ object Server extends IOApp:
       _ <- fs2.Stream.emit(()).concurrently(sockets.publisher).compile.resource.lastOrError
     yield
       val users = DoobieDatabaseAuth(db)
-      val auths: Auther = authBuilder(users, Http4sAuth(JWT(conf.secret)))
+      val auths: Auther[IO] = authBuilder(users, Http4sAuth(JWT(conf.secret)))
       val google = GoogleAuthFlow(conf.google, http)
       val isProd = LocalConf.isProd
       Service(

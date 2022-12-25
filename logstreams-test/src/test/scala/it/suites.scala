@@ -2,6 +2,7 @@ package it
 
 import cats.effect.unsafe.implicits.global
 import cats.effect.IO
+import cats.effect.kernel.Sync
 import cats.syntax.flatMap.*
 import com.dimafeng.testcontainers.MySQLContainer
 import com.malliina.app.AppConf
@@ -83,13 +84,15 @@ trait ServerSuite extends MUnitDatabaseSuite:
     override def afterAll(): Unit =
       IO.fromFuture(IO(promise.future)).flatten.unsafeRunSync()
 
-  def testAuths: AuthBuilder = (users: UserService[IO], web: Http4sAuth) =>
-    TestAuther(users, web, Username("u"))
+  def testAuths: AuthBuilder = new AuthBuilder:
+    override def apply[F[_]: Sync](users: UserService[F], web: Http4sAuth[F]) =
+      TestAuther(users, web, Username("u"))
 
   override def munitFixtures: Seq[Fixture[?]] = Seq(db, server)
 
 abstract class TestServerSuite extends munit.CatsEffectSuite with ServerSuite
 
-class TestAuther(users: UserService[IO], val web: Http4sAuth, testUser: Username) extends Auther:
-  override def sources: Http4sAuthenticator[IO, Username] = Auths.sources(users)
-  override def viewers: Http4sAuthenticator[IO, Username] = hs => IO.pure(Right(testUser))
+class TestAuther[F[_]: Sync](users: UserService[F], val web: Http4sAuth[F], testUser: Username)
+  extends Auther[F]:
+  override def sources: Http4sAuthenticator[F, Username] = Auths.sources(users)
+  override def viewers: Http4sAuthenticator[F, Username] = hs => Sync[F].pure(Right(testUser))

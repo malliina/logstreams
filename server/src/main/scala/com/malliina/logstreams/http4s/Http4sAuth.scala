@@ -10,11 +10,11 @@ import org.http4s.{Headers, HttpDate, Request, Response, ResponseCookie}
 
 import scala.concurrent.duration.DurationInt
 
-class Http4sAuth(
+class Http4sAuth[F[_]](
   val jwt: JWT,
   val cookieNames: CookieConf = CookieConf.prefixed("logstreams")
 ):
-  val cookiePath = Option("/")
+  private val cookiePath = Option("/")
 
   def authenticate(headers: Headers): Either[IdentityError, Username] =
     readUser(cookieNames.user, headers)
@@ -30,10 +30,10 @@ class Http4sAuth(
       case _               => Left(MissingCredentials("Missing token.", headers))
     )
 
-  def withSession[T: Encoder](t: T, req: Request[IO], res: Response[IO]): res.Self =
+  def withSession[T: Encoder](t: T, req: Request[F], res: Response[F]): res.Self =
     withJwt(cookieNames.session, t, req, res)
 
-  def clearSession(res: Response[IO]): res.Self =
+  def clearSession(res: Response[F]): res.Self =
     res
       .removeCookie(cookieNames.provider)
       .removeCookie(ResponseCookie(cookieNames.session, "", path = cookiePath))
@@ -42,22 +42,22 @@ class Http4sAuth(
   def withAppUser(
     user: UserPayload,
     provider: AuthProvider,
-    req: Request[IO],
-    res: Response[IO]
-  ): Response[IO] = withUser(user, req, res)
+    req: Request[F],
+    res: Response[F]
+  ): Response[F] = withUser(user, req, res)
     .removeCookie(cookieNames.returnUri)
     .removeCookie(cookieNames.prompt)
     .addCookie(responseCookie(cookieNames.lastId, user.username.name))
     .addCookie(responseCookie(cookieNames.provider, provider.name))
 
-  def withUser[T: Encoder](t: T, req: Request[IO], res: Response[IO]): res.Self =
+  private def withUser[T: Encoder](t: T, req: Request[F], res: Response[F]): res.Self =
     withJwt(cookieNames.user, t, req, res)
 
-  def withJwt[T: Encoder](
+  private def withJwt[T: Encoder](
     cookieName: String,
     t: T,
-    req: Request[IO],
-    res: Response[IO]
+    req: Request[F],
+    res: Response[F]
   ): res.Self =
     val signed = jwt.sign[T](t, 12.hours)
     val top = Urls.topDomainFrom(req)
@@ -72,7 +72,7 @@ class Http4sAuth(
       )
     )
 
-  def responseCookie(name: String, value: String) = ResponseCookie(
+  private def responseCookie(name: String, value: String) = ResponseCookie(
     name,
     value,
     Option(HttpDate.MaxValue),

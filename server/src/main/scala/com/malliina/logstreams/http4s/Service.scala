@@ -32,7 +32,7 @@ class Service(
   val db: DoobieDatabase,
   val users: UserService[IO],
   htmls: Htmls,
-  auths: Auther,
+  auths: Auther[IO],
   sockets: LogSockets[IO],
   google: GoogleAuthFlow[IO]
 ) extends BasicService[IO]:

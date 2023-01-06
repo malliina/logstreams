@@ -1,4 +1,3 @@
-import com.malliina.sbtutils.SbtUtils
 import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType => PortableType, crossProject => portableProject}
@@ -27,9 +26,9 @@ inThisBuild(
     ),
     testFrameworks += new TestFramework("munit.Framework"),
     assemblyMergeStrategy := {
-      case PathList("META-INF", "io.netty.versions.properties") => MergeStrategy.rename
-      case PathList("META-INF", "versions", xs @ _*) => MergeStrategy.rename
-      case PathList("com", "malliina", xs @ _*)         => MergeStrategy.first
+      case PathList("META-INF", "versions", xs @ _*) => MergeStrategy.first
+      case PathList("com", "malliina", xs @ _*) => MergeStrategy.first
+      case PathList("module-info.class") => MergeStrategy.discard
       case x =>
         val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
         oldStrategy(x)

@@ -22,6 +22,8 @@ object LogConf:
   val userAgent = s"logstreams/${BuildInfo.version} (${BuildInfo.gitHash.take(7)})"
 
   def init(): Unit =
-    val lc = LogbackUtils.init()
-    lc.getLogger("org.http4s.ember.server.EmberServerBuilderCompanionPlatform").setLevel(Level.OFF)
-    lc.getLogger("com.malliina.logstreams.http4s.LogSockets").setLevel(Level.WARN)
+    val customLevels = Map(
+      "org.http4s.ember.server.EmberServerBuilderCompanionPlatform" -> Level.OFF,
+      "com.malliina.logstreams.http4s.LogSockets" -> Level.WARN
+    )
+    LogbackUtils.init(levelsByLogger = customLevels)

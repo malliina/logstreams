@@ -4,7 +4,6 @@ import cats.effect.IO
 import cats.effect.std.Dispatcher
 import com.malliina.http.FullUrl
 import com.malliina.http.io.{HttpClientIO, WebSocketF}
-import com.neovisionaries.ws.client.WebSocketException
 import cats.effect.unsafe.implicits.global
 import ch.qos.logback.classic.Level
 import com.malliina.logback.LogEvent
@@ -13,8 +12,6 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
 class SocketTests extends munit.CatsEffectSuite:
-//  def failSocket = SocketClient(FullUrl("http", "kjdhfkdshfds.com", "/blaa"), null, Nil)
-
   test("connect".ignore) {
     val headers: List[KeyValue] = List(HttpUtil.basicAuth("test", "changeme"))
 //    val url = FullUrl.ws("localhost:9000", "/ws/sources")

@@ -57,9 +57,6 @@ case class LogEntryRow(
   )
 
 object LogEntryRow:
-  LogbackFormatting.defaultFormatter.formatter.setTimeZone(
-    TimeZone.getTimeZone(ZoneId.of("Europe/Helsinki"))
-  )
   def format(i: Instant) = LogbackFormatting.defaultFormatter.format(i.toEpochMilli)
 
   def toLevel(l: Level): LogLevel = l.levelInt match

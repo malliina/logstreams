@@ -7,11 +7,15 @@ import ch.qos.logback.core.{Appender, ConsoleAppender}
 import org.slf4j.LoggerFactory
 
 object LogbackUtils:
-  def init(rootLevel: Level = Level.INFO): LoggerContext =
+  def init(
+    pattern: String = """%d{HH:mm:ss.SSS} %-5level %logger{72} %msg%n""",
+    rootLevel: Level = Level.INFO,
+    levelsByLogger: Map[String, Level] = Map.empty
+  ): LoggerContext =
     val lc = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
     lc.reset()
     val ple = PatternLayoutEncoder()
-    ple.setPattern("""%d{HH:mm:ss.SSS} %-5level %logger{72} %msg%n""")
+    ple.setPattern(pattern)
     ple.setContext(lc)
     ple.start()
     val console = new ConsoleAppender[ILoggingEvent]()
@@ -19,6 +23,9 @@ object LogbackUtils:
     LogbackUtils.installAppender(console)
     val root = lc.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME)
     root.setLevel(rootLevel)
+    levelsByLogger.foreach { (loggerName, level) =>
+      lc.getLogger(loggerName).setLevel(level)
+    }
     lc
 
   def appender[T](

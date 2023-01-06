@@ -8,17 +8,15 @@ import scala.sys.process.Process
 import scala.util.Try
 
 val malliinaGroup = "com.malliina"
-val utilHtmlVersion = "6.4.0"
-val primitivesVersion = "3.3.0"
-val logbackVersion = "1.2.11"
+val utilHtmlVersion = "6.5.0"
+val primitivesVersion = "3.4.0"
 val munitVersion = "0.7.29"
 val munitCatsEffectVersion = "1.0.7"
 val utilPlayDep = malliinaGroup %% "web-auth" % utilHtmlVersion
 
 val serverVersion = "0.7.0"
 
-val circeModules = Seq("generic", "parser")
-val scala3 = "3.1.1"
+val scala3 = "3.2.1"
 
 inThisBuild(
   Seq(
@@ -43,9 +41,11 @@ val fs2 = project
   .in(file("fs2"))
   .enablePlugins(MavenCentralPlugin)
   .settings(
-    libraryDependencies ++= Seq(
+    libraryDependencies ++= Seq("classic", "core").map { m =>
+      "ch.qos.logback" % s"logback-$m" % "1.4.5"
+    } ++ Seq(
       "com.malliina" %%% "primitives" % primitivesVersion,
-      "co.fs2" %% "fs2-core" % "3.2.8",
+      "co.fs2" %% "fs2-core" % "3.3.0",
       "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
     ),
     moduleName := "logback-fs2",
@@ -54,8 +54,7 @@ val fs2 = project
     crossScalaVersions := scala3 :: Nil,
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
-    releaseCrossBuild := true,
-    libraryDependencies ++= SbtUtils.loggingDeps
+    releaseCrossBuild := true
   )
 
 val client = project
@@ -71,7 +70,6 @@ val client = project
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
     libraryDependencies ++= Seq(
-      "com.neovisionaries" % "nv-websocket-client" % "2.14",
       "com.malliina" %% "okclient-io" % primitivesVersion,
       "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
     ),
@@ -83,10 +81,10 @@ val cross = portableProject(JSPlatform, JVMPlatform)
   .in(file("shared"))
   .settings(
     libraryDependencies ++= Seq("generic", "parser").map { m =>
-      "io.circe" %%% s"circe-$m" % "0.14.2"
+      "io.circe" %%% s"circe-$m" % "0.14.3"
     } ++ Seq(
       "com.malliina" %%% "primitives" % primitivesVersion,
-      "com.lihaoyi" %%% "scalatags" % "0.11.1"
+      "com.lihaoyi" %%% "scalatags" % "0.12.0"
     )
   )
 val crossJvm = cross.jvm
@@ -149,19 +147,19 @@ val server = project
       "isProd" -> (frontend / isProd).value
     ),
     buildInfoPackage := "com.malliina.app",
-    libraryDependencies ++= SbtUtils.loggingDeps ++
+    libraryDependencies ++=
       Seq("ember-server", "circe", "dsl").map { m =>
-      "org.http4s" %% s"http4s-$m" % "0.23.16"
+      "org.http4s" %% s"http4s-$m" % "0.23.17"
     } ++ Seq("core", "hikari").map { m =>
       "org.tpolecat" %% s"doobie-$m" % "1.0.0-RC2"
     } ++ Seq(
       "com.malliina" %% "config" % primitivesVersion,
       "org.flywaydb" % "flyway-core" % "7.15.0",
-      "mysql" % "mysql-connector-java" % "5.1.49",
+      "mysql" % "mysql-connector-java" % "8.0.31",
       "com.malliina" %% "util-html" % utilHtmlVersion,
       utilPlayDep,
       utilPlayDep % Test classifier "tests",
-      "com.dimafeng" %% "testcontainers-scala-mysql" % "0.40.11" % Test,
+      "com.dimafeng" %% "testcontainers-scala-mysql" % "0.40.12" % Test,
       "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
     ),
     Universal / javaOptions ++= Seq(

@@ -27,8 +27,8 @@ inThisBuild(
     testFrameworks += new TestFramework("munit.Framework"),
     assemblyMergeStrategy := {
       case PathList("META-INF", "versions", xs @ _*) => MergeStrategy.first
-      case PathList("com", "malliina", xs @ _*) => MergeStrategy.first
-      case PathList("module-info.class") => MergeStrategy.discard
+      case PathList("com", "malliina", xs @ _*)      => MergeStrategy.first
+      case PathList("module-info.class")             => MergeStrategy.discard
       case x =>
         val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
         oldStrategy(x)
@@ -148,19 +148,19 @@ val server = project
     buildInfoPackage := "com.malliina.app",
     libraryDependencies ++=
       Seq("ember-server", "circe", "dsl").map { m =>
-      "org.http4s" %% s"http4s-$m" % "0.23.17"
-    } ++ Seq("core", "hikari").map { m =>
-      "org.tpolecat" %% s"doobie-$m" % "1.0.0-RC2"
-    } ++ Seq(
-      "com.malliina" %% "config" % primitivesVersion,
-      "org.flywaydb" % "flyway-core" % "7.15.0",
-      "mysql" % "mysql-connector-java" % "8.0.31",
-      "com.malliina" %% "util-html" % utilHtmlVersion,
-      utilPlayDep,
-      utilPlayDep % Test classifier "tests",
-      "com.dimafeng" %% "testcontainers-scala-mysql" % "0.40.12" % Test,
-      "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
-    ),
+        "org.http4s" %% s"http4s-$m" % "0.23.17"
+      } ++ Seq("core", "hikari").map { m =>
+        "org.tpolecat" %% s"doobie-$m" % "1.0.0-RC2"
+      } ++ Seq(
+        "com.malliina" %% "config" % primitivesVersion,
+        "org.flywaydb" % "flyway-core" % "7.15.0",
+        "mysql" % "mysql-connector-java" % "8.0.31",
+        "com.malliina" %% "util-html" % utilHtmlVersion,
+        utilPlayDep,
+        utilPlayDep % Test classifier "tests",
+        "com.dimafeng" %% "testcontainers-scala-mysql" % "0.40.12" % Test,
+        "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
+      ),
     Universal / javaOptions ++= Seq(
       "-J-Xmx1024m",
       "-Dlogback.configurationFile=logback-prod.xml"
@@ -178,7 +178,8 @@ val server = project
     }.dependsOn(frontend / start).value,
     Compile / unmanagedResourceDirectories ++= {
       val prodAssets =
-        if ((frontend / isProd).value) List((frontend / Compile / assetsRoot).value.getParent.toFile)
+        if ((frontend / isProd).value)
+          List((frontend / Compile / assetsRoot).value.getParent.toFile)
         else Nil
       (baseDirectory.value / "public") +: prodAssets
     },

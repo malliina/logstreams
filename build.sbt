@@ -15,7 +15,7 @@ val utilPlayDep = malliinaGroup %% "web-auth" % utilHtmlVersion
 
 val serverVersion = "0.7.0"
 
-val scala3 = "3.2.1"
+val scala3 = "3.2.2"
 
 inThisBuild(
   Seq(
@@ -44,7 +44,7 @@ val fs2 = project
       "ch.qos.logback" % s"logback-$m" % "1.4.5"
     } ++ Seq(
       "com.malliina" %%% "primitives" % primitivesVersion,
-      "co.fs2" %% "fs2-core" % "3.3.0",
+      "co.fs2" %% "fs2-core" % "3.5.0",
       "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
     ),
     moduleName := "logback-fs2",
@@ -148,7 +148,7 @@ val server = project
     buildInfoPackage := "com.malliina.app",
     libraryDependencies ++=
       Seq("ember-server", "circe", "dsl").map { m =>
-        "org.http4s" %% s"http4s-$m" % "0.23.17"
+        "org.http4s" %% s"http4s-$m" % "0.23.18"
       } ++ Seq("core", "hikari").map { m =>
         "org.tpolecat" %% s"doobie-$m" % "1.0.0-RC2"
       } ++ Seq(

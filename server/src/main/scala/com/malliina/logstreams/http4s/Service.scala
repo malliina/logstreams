@@ -24,7 +24,7 @@ import io.circe.syntax.EncoderOps
 import org.http4s.headers.{Location, `WWW-Authenticate`}
 import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.{Callback as _, *}
-
+import org.http4s.circe.CirceEntityEncoder.circeEntityEncoder
 import java.time.{Instant, OffsetDateTime, OffsetTime}
 
 object Service:
@@ -41,8 +41,8 @@ class Service[F[_]: Async](
   val reverse = LogRoutes
   val F = Sync[F]
   def routes(socketBuilder: WebSocketBuilder2[F]): HttpRoutes[F] = HttpRoutes.of[F] {
-    case GET -> Root / "health" => ok(AppMeta.ThisApp.asJson)
-    case GET -> Root / "ping"   => ok(AppMeta.ThisApp.asJson)
+    case GET -> Root / "health" => ok(AppMeta.ThisApp)
+    case GET -> Root / "ping"   => ok(AppMeta.ThisApp)
     case req @ GET -> Root =>
       webAuth(req) { user =>
         users.all().flatMap { us => ok(htmls.logs(us.map(u => AppName(u.name))).tags) }
@@ -110,7 +110,7 @@ class Service[F[_]: Async](
           .fold(
             err =>
               log.warn(s"Invalid log stream request by '$user'. $err")
-              BadRequest(err.asJson)
+              BadRequest(err)
             ,
             query =>
               log.info(s"Opening log stream at level ${query.level} for '$user'...")
@@ -224,23 +224,29 @@ class Service[F[_]: Async](
     map.map { case (key, value) => s"$key=$value" }.mkString("&")
 
   private def webAuth(req: Request[F])(code: UserRequest => F[Response[F]]) =
-    withAuth(auths.viewers, req.headers) { user =>
-      code(UserRequest(user, req.headers, Urls.address(req), OffsetDateTime.now()))
+    auths.viewers.authenticate(req.headers).flatMap { e =>
+      e.map { user =>
+        code(UserRequest(user, req.headers, Urls.address(req), OffsetDateTime.now()))
+      }.recover { err =>
+        log.debug(s"Unauthorized. $err")
+        unauthorized(Errors.single(s"Unauthorized."))
+      }
     }
 
   private def sourceAuth(headers: Headers)(code: Username => F[Response[F]]) =
-    withAuth(auths.sources, headers)(code)
-
-  private def withAuth(auth: Http4sAuthenticator[F, Username], headers: Headers)(
-    code: Username => F[Response[F]]
-  ) =
-    auth.authenticate(headers).flatMap { e => e.fold(err => onUnauthorized(err), ok => code(ok)) }
+    auths.sources.authenticate(headers).flatMap { e =>
+      e.map { user =>
+        code(user)
+      }.recover { err =>
+        log.warn(s"Unauthorized. $err")
+        Unauthorized(
+          `WWW-Authenticate`(NonEmptyList.of(Challenge("myscheme", "myrealm"))),
+          Errors.single(s"Unauthorized.")
+        )
+      }
+    }
 
   private def buildMessage(req: UserRequest, message: String) =
     s"User '${req.user}' from '${req.address}' $message."
-
-  private def onUnauthorized(error: IdentityError): F[Response[F]] =
-    log.warn(s"Unauthorized. $error")
-    unauthorized(Errors.single(s"Unauthorized."))
 
   private def unauthorized(errors: Errors) = SeeOther(Location(LogRoutes.googleStart))

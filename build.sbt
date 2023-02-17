@@ -100,21 +100,21 @@ val frontend = project
     assetsPackage := "com.malliina.logstreams",
     version := "1.0.0",
     Compile / npmDependencies ++= Seq(
-      "@fortawesome/fontawesome-free" -> "5.15.4",
-      "@popperjs/core" -> "2.10.2",
-      "bootstrap" -> "5.1.3"
+      "@fortawesome/fontawesome-free" -> "6.3.0",
+      "@popperjs/core" -> "2.11.6",
+      "bootstrap" -> "5.2.3"
     ),
     Compile / npmDevDependencies ++= Seq(
-      "autoprefixer" -> "10.4.1",
-      "cssnano" -> "5.0.14",
-      "css-loader" -> "6.5.1",
-      "less" -> "4.1.2",
-      "less-loader" -> "10.2.0",
-      "mini-css-extract-plugin" -> "2.4.5",
-      "postcss" -> "8.4.5",
-      "postcss-import" -> "14.0.2",
-      "postcss-loader" -> "6.2.1",
-      "postcss-preset-env" -> "7.2.0",
+      "autoprefixer" -> "10.4.13",
+      "cssnano" -> "5.1.15",
+      "css-loader" -> "6.7.3",
+      "less" -> "4.1.3",
+      "less-loader" -> "11.1.0",
+      "mini-css-extract-plugin" -> "2.7.2",
+      "postcss" -> "8.4.21",
+      "postcss-import" -> "15.1.0",
+      "postcss-loader" -> "7.0.2",
+      "postcss-preset-env" -> "8.0.1",
       "style-loader" -> "3.3.1",
       "webpack-merge" -> "5.8.0"
     ),
@@ -154,17 +154,13 @@ val server = project
       } ++ Seq(
         "com.malliina" %% "config" % primitivesVersion,
         "org.flywaydb" % "flyway-core" % "7.15.0",
-        "mysql" % "mysql-connector-java" % "8.0.31",
+        "mysql" % "mysql-connector-java" % "8.0.32",
         "com.malliina" %% "util-html" % utilHtmlVersion,
         utilPlayDep,
         utilPlayDep % Test classifier "tests",
         "com.dimafeng" %% "testcontainers-scala-mysql" % "0.40.12" % Test,
         "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
       ),
-    Universal / javaOptions ++= Seq(
-      "-J-Xmx1024m",
-      "-Dlogback.configurationFile=logback-prod.xml"
-    ),
     Compile / packageDoc / publishArtifact := false,
     packageDoc / publishArtifact := false,
     Compile / doc / sources := Seq.empty,

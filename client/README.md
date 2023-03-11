@@ -17,9 +17,9 @@ Specify the following in your `logback.xml`:
 
 You need to provide the following parameters to the appender:
 
-| Name | Meaning
-|------|--------
-| endpoint | Host of logstreams server
-| username | Username to logstreams server
-| password | Password to logstreams server
-| secure | true to use SSL, false otherwise
+| Name     | Meaning                          |
+|----------|----------------------------------|
+| endpoint | Host of logstreams server        |
+| username | Username to logstreams server    |
+| password | Password to logstreams server    |
+| secure   | true to use SSL, false otherwise |

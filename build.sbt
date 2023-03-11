@@ -80,7 +80,7 @@ val cross = portableProject(JSPlatform, JVMPlatform)
   .in(file("shared"))
   .settings(
     libraryDependencies ++= Seq("generic", "parser").map { m =>
-      "io.circe" %%% s"circe-$m" % "0.14.3"
+      "io.circe" %%% s"circe-$m" % "0.14.5"
     } ++ Seq(
       "com.malliina" %%% "primitives" % primitivesVersion,
       "com.lihaoyi" %%% "scalatags" % "0.12.0"
@@ -93,31 +93,31 @@ val isProd = settingKey[Boolean]("isProd")
 
 val frontend = project
   .in(file("frontend"))
-  .enablePlugins(NodeJsPlugin, ClientPlugin)
+  .enablePlugins(NodeJsPlugin, RollupPlugin)
   .disablePlugins(RevolverPlugin)
   .dependsOn(crossJs)
   .settings(
-    assetsPackage := "com.malliina.logstreams",
+//    assetsPackage := "com.malliina.logstreams",
     version := "1.0.0",
-    Compile / npmDependencies ++= Seq(
-      "@fortawesome/fontawesome-free" -> "6.3.0",
-      "@popperjs/core" -> "2.11.6",
-      "bootstrap" -> "5.2.3"
-    ),
-    Compile / npmDevDependencies ++= Seq(
-      "autoprefixer" -> "10.4.13",
-      "cssnano" -> "5.1.15",
-      "css-loader" -> "6.7.3",
-      "less" -> "4.1.3",
-      "less-loader" -> "11.1.0",
-      "mini-css-extract-plugin" -> "2.7.2",
-      "postcss" -> "8.4.21",
-      "postcss-import" -> "15.1.0",
-      "postcss-loader" -> "7.0.2",
-      "postcss-preset-env" -> "8.0.1",
-      "style-loader" -> "3.3.1",
-      "webpack-merge" -> "5.8.0"
-    ),
+//    Compile / npmDependencies ++= Seq(
+//      "@fortawesome/fontawesome-free" -> "6.3.0",
+//      "@popperjs/core" -> "2.11.6",
+//      "bootstrap" -> "5.2.3"
+//    ),
+//    Compile / npmDevDependencies ++= Seq(
+//      "autoprefixer" -> "10.4.13",
+//      "cssnano" -> "5.1.15",
+//      "css-loader" -> "6.7.3",
+//      "less" -> "4.1.3",
+//      "less-loader" -> "11.1.0",
+//      "mini-css-extract-plugin" -> "2.7.2",
+//      "postcss" -> "8.4.21",
+//      "postcss-import" -> "15.1.0",
+//      "postcss-loader" -> "7.0.2",
+//      "postcss-preset-env" -> "8.0.1",
+//      "style-loader" -> "3.3.1",
+//      "webpack-merge" -> "5.8.0"
+//    ),
     Compile / additionalNpmConfig := Map(
       "engines" -> JSON.obj("node" -> JSON.str("10.x")),
       "private" -> JSON.bool(true),
@@ -137,6 +137,10 @@ val server = project
   .dependsOn(crossJvm, client)
   .settings(
     version := serverVersion,
+    clientProject := frontend,
+    hashPackage := "com.malliina.logstreams",
+    hashRoot := Def.settingDyn { clientProject.value / assetsRoot }.value,
+    buildInfoPackage := "com.malliina.app",
     buildInfoKeys ++= Seq[BuildInfoKey](
       "frontName" -> (frontend / name).value,
       "gitHash" -> gitHash,
@@ -145,7 +149,6 @@ val server = project
       "mode" -> (if ((frontend / isProd).value) "prod" else "dev"),
       "isProd" -> (frontend / isProd).value
     ),
-    buildInfoPackage := "com.malliina.app",
     libraryDependencies ++=
       Seq("ember-server", "circe", "dsl").map { m =>
         "org.http4s" %% s"http4s-$m" % "0.23.18"
@@ -164,14 +167,7 @@ val server = project
     Compile / packageDoc / publishArtifact := false,
     packageDoc / publishArtifact := false,
     Compile / doc / sources := Seq.empty,
-    clientProject := frontend,
-    (frontend / Compile / start) := Def.taskIf {
-      if ((frontend / Compile / start).inputFileChanges.hasChanges) {
-        refreshBrowsers.value
-      } else {
-        Def.task(streams.value.log.info("No frontend changes.")).value
-      }
-    }.dependsOn(frontend / start).value,
+    copyFolders += ((Compile / resourceDirectory).value / "public").toPath,
     Compile / unmanagedResourceDirectories ++= {
       val prodAssets =
         if ((frontend / isProd).value)

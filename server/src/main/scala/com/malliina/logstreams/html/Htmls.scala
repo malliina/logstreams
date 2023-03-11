@@ -4,6 +4,7 @@ import com.malliina.html.HtmlImplicits.fullUrl
 import com.malliina.html.{Bootstrap, HtmlTags, TagPage}
 import com.malliina.http.FullUrl
 import com.malliina.live.LiveReload
+import com.malliina.logstreams.HashedAssets
 import com.malliina.logstreams.html.Htmls.*
 import com.malliina.logstreams.http4s.{LogRoutes, UserFeedback}
 import com.malliina.logstreams.models.{AppName, FrontStrings, LogLevel}
@@ -27,14 +28,9 @@ object Htmls:
     *   HTML templates with either prod or dev javascripts
     */
   def forApp(appName: String, isProd: Boolean, assets: AssetsSource): Htmls =
-    val name = appName.toLowerCase
-    val opt = if isProd then "opt" else "fastopt"
     val externalScripts = if isProd then Nil else FullUrl.build(LiveReload.script).toSeq
-    val assetPrefix = s"$name-$opt"
-    val appScripts =
-      if isProd then Seq(s"$assetPrefix-bundle.js")
-      else Seq(s"$assetPrefix-library.js", s"$assetPrefix-loader.js", s"$assetPrefix.js")
-    new Htmls(appScripts, externalScripts, Seq(s"$assetPrefix.css", "styles.css"), assets)
+    val appScripts = Seq("frontend.js")
+    Htmls(appScripts, externalScripts, Seq("frontend.css", "styles.css"), assets)
 
 class Htmls(
   scripts: Seq[String],
@@ -50,6 +46,8 @@ class Htmls(
   private val reverse = LogRoutes
 
   private def asset(name: String): Uri = assets.at(name)
+  private def inlineOrUri(name: String) =
+    HashedAssets.dataUris.getOrElse(name, asset(name).renderString)
 
   def logs(apps: Seq[AppName]) = baseIndex("logs")(
     headerRow("Logs"),
@@ -207,7 +205,11 @@ class Htmls(
         head(
           titleTag(titleLabel),
           deviceWidthViewport,
-          link(rel := "shortcut icon", `type` := "image/png", href := asset("img/jag-16x16.png")),
+          link(
+            rel := "shortcut icon",
+            `type` := "image/png",
+            href := inlineOrUri("img/jag-16x16.png")
+          ),
           cssFiles.map(file => cssLink(asset(file))),
           extraHeader
         ),

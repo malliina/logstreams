@@ -2,7 +2,7 @@ package com.malliina.logstreams.models
 
 object FrontStrings extends FrontStrings
 
-trait FrontStrings {
+trait FrontStrings:
   val AppsDropdown = "apps-dropdown"
   val AppsFiltered = "apps-filtered"
   val AppsDropdownMenuId = "apps-dropdown-menu"
@@ -27,4 +27,7 @@ trait FrontStrings {
 
   val SearchInput = "search-input"
   val SearchButton = "search-button"
-}
+
+  object classes:
+    val Socket = "sockets"
+    val Sources = "sources"

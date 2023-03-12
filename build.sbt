@@ -1,7 +1,6 @@
 import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType => PortableType, crossProject => portableProject}
-import scalajsbundler.util.JSON
 import com.comcast.ip4s.IpLiteralSyntax
 import scala.sys.process.Process
 import scala.util.Try
@@ -97,32 +96,7 @@ val frontend = project
   .disablePlugins(RevolverPlugin)
   .dependsOn(crossJs)
   .settings(
-//    assetsPackage := "com.malliina.logstreams",
     version := "1.0.0",
-//    Compile / npmDependencies ++= Seq(
-//      "@fortawesome/fontawesome-free" -> "6.3.0",
-//      "@popperjs/core" -> "2.11.6",
-//      "bootstrap" -> "5.2.3"
-//    ),
-//    Compile / npmDevDependencies ++= Seq(
-//      "autoprefixer" -> "10.4.13",
-//      "cssnano" -> "5.1.15",
-//      "css-loader" -> "6.7.3",
-//      "less" -> "4.1.3",
-//      "less-loader" -> "11.1.0",
-//      "mini-css-extract-plugin" -> "2.7.2",
-//      "postcss" -> "8.4.21",
-//      "postcss-import" -> "15.1.0",
-//      "postcss-loader" -> "7.0.2",
-//      "postcss-preset-env" -> "8.0.1",
-//      "style-loader" -> "3.3.1",
-//      "webpack-merge" -> "5.8.0"
-//    ),
-    Compile / additionalNpmConfig := Map(
-      "engines" -> JSON.obj("node" -> JSON.str("10.x")),
-      "private" -> JSON.bool(true),
-      "license" -> JSON.str("BSD")
-    ),
     isProd := (Global / scalaJSStage).value == FullOptStage
   )
 
@@ -167,6 +141,14 @@ val server = project
     Compile / packageDoc / publishArtifact := false,
     packageDoc / publishArtifact := false,
     Compile / doc / sources := Seq.empty,
+    (frontend / Compile / build) := Def.taskIf {
+      if ((frontend / Compile / build).inputFileChanges.hasChanges) {
+        refreshBrowsers.value
+      } else {
+        Def.task(streams.value.log.info("No frontend changes.")).value
+      }
+    }.dependsOn(frontend / Compile / build).value,
+    start := start.dependsOn(frontend / Compile / build).value,
     copyFolders += ((Compile / resourceDirectory).value / "public").toPath,
     Compile / unmanagedResourceDirectories ++= {
       val prodAssets =

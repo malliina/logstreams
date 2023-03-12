@@ -27,7 +27,7 @@ const urlOptions = [
     url: "inline",
     maxSize: 8,
     fallback: "copy",
-    assetsPath: "assets", // this must be defined but can be whatever since it "cancels out" the "../" in the source files
+    assetsPath: "assets",
     useHash: true,
     hashOptions: {
       append: true
@@ -39,7 +39,7 @@ const urlOptions = [
     url: "inline",
     maxSize: 48,
     fallback: "copy",
-    assetsPath: "assets", // this must be defined but can be whatever since it "cancels out" the "../" in the source files
+    assetsPath: "assets",
     useHash: true,
     hashOptions: {
       append: true
@@ -60,12 +60,13 @@ const config: RollupOptions[] = [
     input: scalajs.input,
     plugins: [
       replace({
-        "process.env.NODE_ENV": JSON.stringify(production ? "production" : "development")
+        "process.env.NODE_ENV": JSON.stringify(production ? "production" : "development"),
+        preventAssignment: true
       }),
       css(),
-      resolve(), // tells Rollup how to find date-fns in node_modules
-      commonjs(), // converts date-fns to ES modules
-      production && terser() // minify, but only in production
+      resolve(),
+      commonjs(),
+      production && terser()
     ],
     output: {
       dir: outputDir,
@@ -77,7 +78,6 @@ const config: RollupOptions[] = [
   },
   {
     input: {
-      // fonts: path.resolve(cssDir, "fonts.js"),
       styles: path.resolve(cssDir, "logstreams.js")
     },
     plugins: [

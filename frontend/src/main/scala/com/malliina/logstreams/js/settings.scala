@@ -1,9 +1,9 @@
 package com.malliina.logstreams.js
 
 import com.malliina.logstreams.models.{AppName, LogLevel}
-import org.scalajs.dom
-import io.circe.parser.*
+import io.circe.parser.decode
 import io.circe.syntax.EncoderOps
+import org.scalajs.dom
 
 trait Settings:
   def isVerbose: Boolean

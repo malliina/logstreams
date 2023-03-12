@@ -5,24 +5,20 @@ import org.scalajs.dom
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport
+import com.malliina.logstreams.models.FrontStrings.*
 
 object Frontend:
-  var app: Option[Any] = None
-
   private val p = Popper
   private val b = Bootstrap
   private val bootstrapCss = BootstrapCss
   private val fontAwesomeCss = FontAwesomeCss
 
   def main(args: Array[String]): Unit =
-    val location = dom.window.location
-    val path = location.pathname
-    val jsImpl: PartialFunction[String, Any] = {
-      case "/"        => SocketManager()
-      case "/sources" => SourcesSocket()
-    }
+    if has(classes.Socket) then SocketManager()
+    if has(classes.Sources) then SourcesSocket()
+    println("Hi")
 
-    app = jsImpl.lift(path)
+  private def has(feature: String) = dom.document.body.classList.contains(feature)
 
 @js.native
 @JSImport("@popperjs/core", JSImport.Namespace)

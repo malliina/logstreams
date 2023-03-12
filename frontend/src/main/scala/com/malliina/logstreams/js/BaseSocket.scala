@@ -2,9 +2,10 @@ package com.malliina.logstreams.js
 
 import com.malliina.http.FullUrl
 import com.malliina.logstreams.js.BaseSocket.{EventKey, Ping}
-import io.circe.*
-import io.circe.parser.*
-import io.circe.syntax.*
+import com.malliina.logstreams.js.ScriptHelpers.*
+import io.circe.parser.parse
+import io.circe.syntax.EncoderOps
+import io.circe.{Decoder, DecodingFailure, Encoder, Json, ParsingFailure}
 import org.scalajs.dom
 import org.scalajs.dom.{CloseEvent, Event, MessageEvent}
 
@@ -14,7 +15,7 @@ object BaseSocket:
   val EventKey = "event"
   val Ping = "ping"
 
-class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.printer) extends ScriptHelpers:
+class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.printer):
   private val statusElem = Option(elem("status"))
   val socket: dom.WebSocket = openSocket(wsPath)
 

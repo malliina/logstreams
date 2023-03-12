@@ -1,10 +1,10 @@
 package com.malliina.logstreams.js
 
+import com.malliina.logstreams.js.ScriptHelpers.{LogTableId, TableBodyId, TableHeadId, VerboseKey, elem, elemOptAs, getElem, OptionVerbose, OptionCompact}
 import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents, LogLevel}
 import io.circe.Json
 import org.scalajs.dom
-import org.scalajs.dom.document
-import org.scalajs.dom.{Event, HTMLElement, HTMLInputElement, HTMLTableElement}
+import org.scalajs.dom.{Event, HTMLElement, HTMLInputElement, HTMLTableElement, document}
 import scalatags.JsDom.all.*
 
 case class RowContent(content: Frag, cellId: String, linkId: String)

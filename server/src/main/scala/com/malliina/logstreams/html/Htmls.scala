@@ -49,7 +49,7 @@ class Htmls(
   private def inlineOrUri(name: String) =
     HashedAssets.dataUris.getOrElse(name, asset(name).renderString)
 
-  def logs(apps: Seq[AppName]) = baseIndex("logs")(
+  def logs(apps: Seq[AppName]) = baseIndex("logs", bodyClasses = Seq(classes.Socket))(
     headerRow("Logs"),
     row(
       div(`class` := s"col-sm-2 col-md-3 mt-1 mt-sm-0 d-none d-md-block")(
@@ -130,7 +130,7 @@ class Htmls(
     logEntriesTable(LogTableId)(thead(id := TableHeadId), tbody(id := TableBodyId))
   )
 
-  def sources = baseIndex("sources")(
+  def sources = baseIndex("sources", bodyClasses = Seq(classes.Sources))(
     headerRow("Servers"),
     fullRow(
       defaultTable(SourceTableId, Seq("App", "Address", "User-Agent", "ID", "Joined"))
@@ -181,12 +181,12 @@ class Htmls(
       tbody
     )
 
-  private def baseIndex(tabName: String)(inner: Modifier*) =
+  private def baseIndex(tabName: String, bodyClasses: Seq[String] = Nil)(inner: Modifier*) =
     def navItem(thisTabName: String, tabId: String, url: Uri, faName: String) =
       val itemClass = if tabId == tabName then "nav-item active" else "nav-item"
       li(`class` := itemClass)(a(href := url, `class` := "nav-link")(fa(faName), s" $thisTabName"))
 
-    root("logstreams")(
+    root(PageConf("logstreams", bodyClasses))(
       navbar.simple(
         reverse.index,
         "logstreams",
@@ -199,11 +199,11 @@ class Htmls(
       div(`class` := "wide-content", id := "page-content")(inner)
     )
 
-  def root(titleLabel: String, extraHeader: Modifier*)(inner: Modifier*) =
+  def root(conf: PageConf, extraHeader: Modifier*)(inner: Modifier*) =
     TagPage(
       html(lang := "en")(
         head(
-          titleTag(titleLabel),
+          titleTag(conf.titleText),
           deviceWidthViewport,
           link(
             rel := "shortcut icon",

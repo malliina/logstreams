@@ -1,12 +1,12 @@
 package com.malliina.logstreams.js
 
+import com.malliina.logstreams.js.ScriptHelpers.{AppsDropdownMenuId, AppsFiltered, DropdownItem, LogLevelDropdownButton, LogLevelDropdownMenuId, SearchButton, SearchInput, elem, getElem}
 import com.malliina.logstreams.models.{AppName, LogLevel}
-import org.scalajs.dom.KeyboardEvent
 import org.scalajs.dom.html.Anchor
-import org.scalajs.dom.{Event, HTMLButtonElement, HTMLInputElement, MouseEvent}
+import org.scalajs.dom.{Event, HTMLButtonElement, HTMLInputElement, KeyboardEvent, MouseEvent}
 import scalatags.JsDom.all.*
 
-class SocketManager extends ScriptHelpers:
+class SocketManager:
   private val ActiveClass = "active"
   val settings: Settings = StorageSettings
   private val availableApps =

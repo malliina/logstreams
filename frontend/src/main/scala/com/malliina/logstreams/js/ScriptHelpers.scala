@@ -4,6 +4,8 @@ import com.malliina.logstreams.models.FrontStrings
 import org.scalajs.dom
 import org.scalajs.dom.Element
 
+object ScriptHelpers extends ScriptHelpers
+
 trait ScriptHelpers extends FrontStrings:
   def getElem[T <: Element](id: String) = elem(id).asInstanceOf[T]
   def elem(id: String): Element = dom.document.getElementById(id)

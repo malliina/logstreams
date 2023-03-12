@@ -1,5 +1,6 @@
 package com.malliina.logstreams.js
 
+import com.malliina.logstreams.js.ScriptHelpers.{SourceTableId, elem}
 import com.malliina.logstreams.models.{LogSource, LogSources}
 import io.circe.Json
 import scalatags.Text
@@ -14,7 +15,7 @@ class SourcesSocket extends BaseSocket("/ws/admins?f=json"):
   private def onParsed(data: LogSources): Unit =
     tableBody.innerHTML = data.sources.map(toRow).render
 
-  def toRow(source: LogSource): Text.TypedTag[String] =
+  private def toRow(source: LogSource): Text.TypedTag[String] =
     tr(
       td(source.name.name),
       td(source.remoteAddress),

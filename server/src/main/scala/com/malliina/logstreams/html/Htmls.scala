@@ -213,7 +213,7 @@ class Htmls(
           cssFiles.map(file => cssLink(asset(file))),
           extraHeader
         ),
-        body(
+        body(`class` := conf.bodyClasses.mkString(" "))(
           section(inner),
           scripts.map { js =>
             jsScript(asset(js), defer)

@@ -16,7 +16,6 @@ object Frontend:
   def main(args: Array[String]): Unit =
     if has(classes.Socket) then SocketManager()
     if has(classes.Sources) then SourcesSocket()
-    println("Hi")
 
   private def has(feature: String) = dom.document.body.classList.contains(feature)
 

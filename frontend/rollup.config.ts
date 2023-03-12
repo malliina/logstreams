@@ -1,6 +1,5 @@
 import resolve from "@rollup/plugin-node-resolve"
 import commonjs from "@rollup/plugin-commonjs"
-import replace from "@rollup/plugin-replace"
 import terser from "@rollup/plugin-terser"
 import url from "@rollup/plugin-url"
 import {scalajs, production, outputDir} from "./target/scalajs.rollup.config.js"
@@ -13,33 +12,19 @@ const cssDir = path.resolve(resourcesDir, "css")
 const urlOptions = [
   {
     filter: "**/*.woff2",
-    url: "inline",
-    maxSize: 8,
-    fallback: "copy",
-    assetsPath: "assets", // this must be defined but can be whatever since it "cancels out" the "../" in the source files
-    useHash: true,
-    hashOptions: {
-      append: true
-    }
+    url: "inline"
   },
   {
     filter: "**/*.svg",
-    url: "inline",
-    maxSize: 8,
-    fallback: "copy",
-    assetsPath: "assets",
-    useHash: true,
-    hashOptions: {
-      append: true
-    }
+    url: "inline"
   },
   // maxSize is kilobytes
   {
     filter: "**/*",
     url: "inline",
-    maxSize: 48,
+    maxSize: 49,
     fallback: "copy",
-    assetsPath: "assets",
+    assetsPath: "assets", // this must be defined but can be whatever since it "cancels out" the "../" in the source files
     useHash: true,
     hashOptions: {
       append: true
@@ -59,12 +44,12 @@ const config: RollupOptions[] = [
   {
     input: scalajs.input,
     plugins: [
-      replace({
-        "process.env.NODE_ENV": JSON.stringify(production ? "production" : "development"),
-        preventAssignment: true
-      }),
+      // replace({
+      //   "process.env.NODE_ENV": JSON.stringify(production ? "production" : "development"),
+      //   preventAssignment: true
+      // }),
       css(),
-      resolve(),
+      resolve({browser: true}),
       commonjs(),
       production && terser()
     ],

@@ -49,7 +49,6 @@ val fs2 = project
     moduleName := "logback-fs2",
     releaseProcess := tagReleaseProcess.value,
     scalaVersion := scala3,
-    crossScalaVersions := scala3 :: Nil,
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
     releaseCrossBuild := true
@@ -62,8 +61,6 @@ val client = project
   .dependsOn(fs2)
   .settings(
     moduleName := "logstreams-client",
-    scalaVersion := scala3,
-    crossScalaVersions := scala3 :: Nil,
     releaseCrossBuild := true,
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
@@ -168,8 +165,6 @@ val it = Project("logstreams-test", file("logstreams-test"))
     publish / skip := true,
     publishLocal := {}
   )
-
-val runApp = inputKey[Unit]("Runs the app")
 
 val root = project
   .in(file("."))

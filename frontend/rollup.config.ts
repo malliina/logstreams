@@ -22,7 +22,7 @@ const urlOptions = [
   {
     filter: "**/*",
     url: "inline",
-    maxSize: 49,
+    maxSize: 48,
     fallback: "copy",
     assetsPath: "assets", // this must be defined but can be whatever since it "cancels out" the "../" in the source files
     useHash: true,

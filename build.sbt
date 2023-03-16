@@ -2,8 +2,6 @@ import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType => PortableType, crossProject => portableProject}
 import com.comcast.ip4s.IpLiteralSyntax
-import scala.sys.process.Process
-import scala.util.Try
 
 val malliinaGroup = "com.malliina"
 val utilHtmlVersion = "6.5.0"
@@ -85,16 +83,13 @@ val cross = portableProject(JSPlatform, JVMPlatform)
 val crossJvm = cross.jvm
 val crossJs = cross.js
 
-val isProd = settingKey[Boolean]("isProd")
-
 val frontend = project
   .in(file("frontend"))
   .enablePlugins(NodeJsPlugin, RollupPlugin)
   .disablePlugins(RevolverPlugin)
   .dependsOn(crossJs)
   .settings(
-    version := "1.0.0",
-    isProd := (Global / scalaJSStage).value == FullOptStage
+    version := "1.0.0"
   )
 
 val server = project
@@ -110,15 +105,9 @@ val server = project
     version := serverVersion,
     clientProject := frontend,
     hashPackage := "com.malliina.logstreams",
-    hashRoot := Def.settingDyn { clientProject.value / assetsRoot }.value,
     buildInfoPackage := "com.malliina.app",
     buildInfoKeys ++= Seq[BuildInfoKey](
-      "frontName" -> (frontend / name).value,
-      "gitHash" -> gitHash,
-      "assetsDir" -> (frontend / assetsRoot).value,
-      "publicFolder" -> (frontend / assetsPrefix).value,
-      "mode" -> (if ((frontend / isProd).value) "prod" else "dev"),
-      "isProd" -> (frontend / isProd).value
+      "frontName" -> (frontend / name).value
     ),
     libraryDependencies ++=
       Seq("ember-server", "circe", "dsl").map { m =>
@@ -138,22 +127,6 @@ val server = project
     Compile / packageDoc / publishArtifact := false,
     packageDoc / publishArtifact := false,
     Compile / doc / sources := Seq.empty,
-    (frontend / Compile / build) := Def.taskIf {
-      if ((frontend / Compile / build).inputFileChanges.hasChanges) {
-        refreshBrowsers.value
-      } else {
-        Def.task(streams.value.log.info("No frontend changes.")).value
-      }
-    }.dependsOn(frontend / Compile / build).value,
-    start := start.dependsOn(frontend / Compile / build).value,
-    copyFolders += ((Compile / resourceDirectory).value / "public").toPath,
-    Compile / unmanagedResourceDirectories ++= {
-      val prodAssets =
-        if ((frontend / isProd).value)
-          List((frontend / Compile / assetsRoot).value.getParent.toFile)
-        else Nil
-      (baseDirectory.value / "public") +: prodAssets
-    },
     assembly / assemblyJarName := "app.jar",
     liveReloadPort := port"10103"
   )
@@ -181,9 +154,3 @@ val root = project
   )
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
-
-def gitHash: String =
-  sys.env
-    .get("GITHUB_SHA")
-    .orElse(Try(Process("git rev-parse HEAD").lineStream.head).toOption)
-    .getOrElse("unknown")

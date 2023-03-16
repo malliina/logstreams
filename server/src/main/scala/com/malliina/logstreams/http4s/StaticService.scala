@@ -4,12 +4,12 @@ import cats.data.NonEmptyList
 import cats.effect.{Async, Sync}
 import cats.implicits.*
 import com.malliina.app.BuildInfo
-import com.malliina.logstreams.{HashedAssets, LocalConf}
 import com.malliina.logstreams.http4s.StaticService.log
+import com.malliina.logstreams.{HashedAssets, LocalConf}
 import com.malliina.util.AppLogger
 import com.malliina.values.UnixPath
-import fs2.io.file.{Path as FS2Path}
-import org.http4s.CacheDirective.{`max-age`, `no-cache`, `public`, `no-store`, `must-revalidate`}
+import fs2.io.file.Path as FS2Path
+import org.http4s.CacheDirective.{`max-age`, `must-revalidate`, `no-cache`, `no-store`, `public`}
 import org.http4s.headers.`Cache-Control`
 import org.http4s.{Header, HttpRoutes, Request, StaticFile}
 import org.typelevel.ci.CIStringSyntax
@@ -26,7 +26,7 @@ class StaticService[F[_]: Async] extends BasicService[F]:
   private val webExtensions = Seq(".html", ".js", ".map", ".css")
   private val supportedStaticExtensions = webExtensions ++ imageExtensions ++ fontExtensions
 
-  private val publicDir = FS2Path(BuildInfo.assetsDir)
+  private val publicDir = FS2Path.fromNioPath(BuildInfo.assetsDir.toPath)
   private val allowAllOrigins = Header.Raw(ci"Access-Control-Allow-Origin", "*")
 
   val routes: HttpRoutes[F] = HttpRoutes.of[F] {

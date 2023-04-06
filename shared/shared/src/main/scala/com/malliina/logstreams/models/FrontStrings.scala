@@ -19,6 +19,8 @@ trait FrontStrings:
 
   val LogTableId = "log-table"
 
+  val MobileContentId = "mobile-content"
+
   val SourceTableId = "source-table"
   val TableBodyId = "table-body"
   val TableHeadId = "table-head"
@@ -29,5 +31,6 @@ trait FrontStrings:
   val SearchButton = "search-button"
 
   object classes:
+    val MobileList = "mobile-list d-md-none"
     val Socket = "sockets"
     val Sources = "sources"

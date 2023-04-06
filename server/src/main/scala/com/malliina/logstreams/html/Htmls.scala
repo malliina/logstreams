@@ -127,6 +127,9 @@ class Htmls(
         )
       )
     ),
+    row(`class` := classes.MobileList)(
+      div(id := MobileContentId)
+    ),
     logEntriesTable(LogTableId)(thead(id := TableHeadId), tbody(id := TableBodyId))
   )
 
@@ -170,7 +173,7 @@ class Htmls(
     )
 
   private def logEntriesTable(tableId: String) =
-    table(`class` := tables.defaultClass, id := tableId)
+    table(`class` := s"${tables.defaultClass} d-none d-md-block", id := tableId)
 
   private def defaultTable(tableId: String, headers: Seq[String]) =
     defaultTableBase(tableId, headers.map(h => th(h)))

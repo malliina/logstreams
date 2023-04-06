@@ -19,9 +19,24 @@ h1, h2 {
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 400px;
-    cursor: pointer;
     /* Flexes this column to take up any available width */
     width: 100%;
+}
+
+.cell-more {
+    cursor: pointer;
+    background-size: 16px;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-image: url("../images/angles-down.svg");
+
+    &.open {
+        background-image: url("../images/angles-up.svg");
+    }
+}
+
+.cell-more-content {
+    width: 16px;
 }
 
 .wide-content {
@@ -108,4 +123,26 @@ h1, h2 {
     &.user {
         background-image: url("../images/user.svg");
     }
+}
+
+.mobile-header {
+    display: flex;
+    justify-content: space-between;
+}
+
+.mobile-app {
+    width: 100px;
+}
+
+.mobile-message {
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+.mobile-secondary {
+    color: gray;
+}
+
+.mobile-error {
+    color: #aa2222;
 }

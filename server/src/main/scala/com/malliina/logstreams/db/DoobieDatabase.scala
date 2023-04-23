@@ -19,13 +19,16 @@ import scala.concurrent.duration.DurationInt
 object DoobieDatabase:
   private val log = AppLogger(getClass)
 
+  def init[F[_]: Async](conf: Conf): Resource[F, DoobieDatabase[F]] =
+    if conf.autoMigrate then withMigrations(conf) else default(conf)
+
   def default[F[_]: Async](conf: Conf): Resource[F, DoobieDatabase[F]] =
     for
       ds <- dataSource(conf)
       tx <- transactor(ds)
     yield DoobieDatabase(tx)
 
-  def withMigrations[F[_]: Async](conf: Conf): Resource[F, DoobieDatabase[F]] =
+  private def withMigrations[F[_]: Async](conf: Conf): Resource[F, DoobieDatabase[F]] =
     Resource.eval(migrate(conf)).flatMap { _ => default(conf) }
 
   private def migrate[F[_]: Sync](conf: Conf): F[MigrateResult] = Sync[F].delay {
@@ -53,7 +56,7 @@ object DoobieDatabase:
 class DoobieDatabase[F[_]: Async](tx: DataSourceTransactor[F]):
   implicit val logHandler: LogHandler = LogHandler {
     case Success(sql, args, exec, processing) =>
-      val logger: String => Unit = if processing > 2.seconds then log.info else log.debug
+      val logger: String => Unit = if processing > 2.seconds then log.info else log.info
       logger(s"OK '$sql' exec ${exec.toMillis} ms processing ${processing.toMillis} ms.")
     case ProcessingFailure(sql, args, exec, processing, failure) =>
       log.error(s"Failed '$sql' in ${exec + processing}.", failure)

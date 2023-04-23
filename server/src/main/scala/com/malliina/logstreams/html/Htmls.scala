@@ -111,7 +111,9 @@ class Htmls(
           )
         ),
         div(id := AppsFiltered)
-      )
+      ),
+      timePicker("From", FromTimePickerId),
+      timePicker("To", ToTimePickerId)
     ),
     row(
       div(`class` := "input-group mt-3 mb-3")(
@@ -132,6 +134,30 @@ class Htmls(
     ),
     logEntriesTable(LogTableId)(thead(id := TableHeadId), tbody(id := TableBodyId))
   )
+
+  def timePicker(labelText: String, divId: String) =
+    val inputId = s"$divId-input"
+    divClass("col-sm-6 col-md-4 mt-2 mb-2 mt-sm-0")(
+      label(`for` := inputId, `class` := "form-label")(labelText),
+      div(
+        id := divId,
+        data("td-target-input") := "nearest",
+        `class` := "input-group"
+      )(
+        input(
+          id := inputId,
+          `class` := "form-control",
+          data("td-target") := s"#$divId"
+        ),
+        span(
+          `class` := "input-group-text",
+          data("td-target") := s"#$divId",
+          data("td-toggle") := "datetimepicker"
+        )(
+          i(`class` := "fas fa-calendar")
+        )
+      )
+    )
 
   def sources = baseIndex("sources", bodyClasses = Seq(classes.Sources))(
     headerRow("Servers"),

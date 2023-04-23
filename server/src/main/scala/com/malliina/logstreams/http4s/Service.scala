@@ -3,8 +3,9 @@ package com.malliina.logstreams.http4s
 import cats.data.NonEmptyList
 import cats.effect.{IO, Sync}
 import cats.effect.kernel.Async
-import cats.syntax.all.{toFunctorOps, toFlatMapOps}
+import cats.syntax.all.{toFlatMapOps, toFunctorOps}
 import com.malliina.app.AppMeta
+import com.malliina.logback.TimeFormatter
 import com.malliina.logstreams.Errors
 import com.malliina.logstreams.auth.*
 import com.malliina.logstreams.auth.AuthProvider.{Google, PromptKey, SelectAccount}
@@ -23,9 +24,11 @@ import com.malliina.web.Utils.randomString
 import io.circe.syntax.EncoderOps
 import org.http4s.headers.{Location, `WWW-Authenticate`}
 import org.http4s.server.websocket.WebSocketBuilder2
-import org.http4s.{Callback as _, *}
+import org.http4s.{BasicCredentials as _, Callback as _, *}
 import org.http4s.circe.CirceEntityEncoder.circeEntityEncoder
-import java.time.{Instant, OffsetDateTime, OffsetTime}
+
+import java.time.format.DateTimeFormatter
+import java.time.{Instant, OffsetDateTime, OffsetTime, ZonedDateTime}
 
 object Service:
   private val log = AppLogger(getClass)
@@ -45,7 +48,12 @@ class Service[F[_]: Async](
     case GET -> Root / "ping"   => ok(AppMeta.ThisApp)
     case req @ GET -> Root =>
       webAuth(req) { user =>
-        users.all().flatMap { us => ok(htmls.logs(us.map(u => AppName(u.name))).tags) }
+        val noFrom = !req.uri.query.params.contains("from")
+        if noFrom then
+          val defaultFrom = OffsetDateTime.now(TimeFormatter.helsinki).minusHours(48).withNano(0)
+          val fromQuery = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(defaultFrom)
+          SeeOther(Location(uri"/".withQueryParam("from", fromQuery)))
+        else users.all().flatMap { us => ok(htmls.logs(us.map(u => AppName(u.name))).tags) }
       }
     case req @ GET -> Root / "sources" =>
       webAuth(req) { src =>
@@ -63,7 +71,7 @@ class Service[F[_]: Async](
           val maybeCreds = for
             username <- read(UsernameKey, Username.apply)
             password <- read(PasswordKey, Password.apply)
-          yield com.malliina.logstreams.auth.BasicCredentials(username, password)
+          yield BasicCredentials(username, password)
           maybeCreds.fold(
             err => unauthorized(err),
             newUser =>

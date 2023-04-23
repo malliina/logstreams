@@ -1,12 +1,15 @@
 package com.malliina.logstreams.js
 
-import com.malliina.logstreams.js.ScriptHelpers.{AppsDropdownMenuId, AppsFiltered, DropdownItem, LogLevelDropdownButton, LogLevelDropdownMenuId, SearchButton, SearchInput, elem, getElem}
+import com.malliina.logstreams.js.ScriptHelpers.{AppsDropdownMenuId, AppsFiltered, DropdownItem, FromTimePickerId, LogLevelDropdownButton, LogLevelDropdownMenuId, SearchButton, SearchInput, elem, getElem}
+import com.malliina.logstreams.models.FrontStrings.ToTimePickerId
 import com.malliina.logstreams.models.{AppName, LogLevel}
 import org.scalajs.dom.html.Anchor
-import org.scalajs.dom.{Event, HTMLButtonElement, HTMLInputElement, KeyboardEvent, MouseEvent}
+import org.scalajs.dom.{Event, HTMLButtonElement, HTMLInputElement, KeyboardEvent, MouseEvent, URL, URLSearchParams, window}
 import scalatags.JsDom.all.*
 
-class SocketManager:
+import scala.scalajs.js.{Date, JSON, URIUtils}
+
+class LogsPage:
   private val ActiveClass = "active"
   val settings: Settings = StorageSettings
   private val availableApps =
@@ -33,6 +36,14 @@ class SocketManager:
   searchInput.onkeydown = (ke: KeyboardEvent) => if ke.key == "Enter" then updateSearch()
   renderActiveLevel(availableLogLevels, settings.level)
   renderApps(settings.apps)
+  val maxDate = new Date(Date.now())
+  val fromPicker = picker(FromTimePickerId)
+  val toPicker = picker(ToTimePickerId)
+
+  private def picker(elementId: String) = TempusDominus(
+    elem(elementId),
+    TimeOptions(TimeRestrictions(None, Option(maxDate)), TimeLocalization(DateFormats.default))
+  )
 
   private def socketFor(apps: Seq[AppName], level: LogLevel, query: Option[String]) =
     ListenerSocket(pathFor(apps, level, query), settings, verboseSupport = true)
@@ -76,7 +87,10 @@ class SocketManager:
     val appsQuery = if apps.isEmpty then "" else "&" + apps.map(app => s"app=$app").mkString("&")
     val levelQuery = s"&${LogLevel.Key}=${level.name}"
     val searchQuery = query.fold("")(q => s"&q=$q")
-    s"/ws/logs?f=json$appsQuery$levelQuery$searchQuery"
+    val qs = QueryString.parse
+    val from = qs.get("from").fold("")(f => s"&from=${URIUtils.encodeURIComponent(f)}")
+    val to = qs.get("to").fold("")(t => s"&to=${URIUtils.encodeURIComponent(t)}")
+    s"/ws/logs?f=json$appsQuery$levelQuery$searchQuery$from$to"
 
   private def reconnect(apps: Seq[AppName], level: LogLevel, query: Option[String]): Unit =
     socket.close()

@@ -23,6 +23,9 @@ trait QueryParsers:
       }
     }
 
+  def parseOptE[T: QueryParamDecoder](q: Query, key: String): Either[Errors, Option[T]] =
+    parseOpt(q, key).map(e => e.map(t => Option(t))).getOrElse(Right(None))
+
   def decoder[T](validate: String => Either[ErrorMessage, T]): QueryParamDecoder[T] =
     QueryParamDecoder.stringQueryParamDecoder.emap { s =>
       validate(s).left.map { err => parseFailure(err.message) }

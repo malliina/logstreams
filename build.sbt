@@ -4,11 +4,11 @@ import sbtcrossproject.CrossPlugin.autoImport.{CrossType => PortableType, crossP
 import com.comcast.ip4s.IpLiteralSyntax
 
 val malliinaGroup = "com.malliina"
-val utilHtmlVersion = "6.5.0"
+val webAuthVersion = "6.5.0"
 val primitivesVersion = "3.4.0"
 val munitVersion = "0.7.29"
 val munitCatsEffectVersion = "1.0.7"
-val utilPlayDep = malliinaGroup %% "web-auth" % utilHtmlVersion
+val webAuthDep = malliinaGroup %% "web-auth" % webAuthVersion
 
 val serverVersion = "0.7.0"
 
@@ -38,7 +38,7 @@ val fs2 = project
   .enablePlugins(MavenCentralPlugin)
   .settings(
     libraryDependencies ++= Seq("classic", "core").map { m =>
-      "ch.qos.logback" % s"logback-$m" % "1.4.5"
+      "ch.qos.logback" % s"logback-$m" % "1.4.7"
     } ++ Seq(
       "com.malliina" %%% "primitives" % primitivesVersion,
       "co.fs2" %% "fs2-core" % "3.5.0",
@@ -117,18 +117,20 @@ val server = project
       } ++ Seq(
         "com.malliina" %% "config" % primitivesVersion,
         "org.flywaydb" % "flyway-core" % "7.15.0",
-        "mysql" % "mysql-connector-java" % "8.0.32",
-        "com.malliina" %% "util-html" % utilHtmlVersion,
-        utilPlayDep,
-        utilPlayDep % Test classifier "tests",
-        "com.dimafeng" %% "testcontainers-scala-mysql" % "0.40.12" % Test,
+        "mysql" % "mysql-connector-java" % "8.0.33",
+        "com.malliina" %% "util-html" % webAuthVersion,
+        webAuthDep,
+        webAuthDep % Test classifier "tests",
+        "com.dimafeng" %% "testcontainers-scala-mysql" % "0.40.15" % Test,
         "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
       ),
     Compile / packageDoc / publishArtifact := false,
     packageDoc / publishArtifact := false,
     Compile / doc / sources := Seq.empty,
     assembly / assemblyJarName := "app.jar",
-    liveReloadPort := port"10103"
+    liveReloadPort := port"10103",
+    dependentModule := crossJvm,
+    Compile / resourceDirectories += io.Path.userHome / ".logstreams"
   )
 
 val it = Project("logstreams-test", file("logstreams-test"))

@@ -10,7 +10,7 @@ import com.malliina.app.AppMeta
 import com.malliina.http.io.HttpClientIO
 import com.malliina.logstreams.auth.{AuthBuilder, Auther, Auths, JWT}
 import com.malliina.logstreams.client.LogstreamsUtils
-import com.malliina.logstreams.db.{DoobieDatabase, DoobieDatabaseAuth, DoobieStreamsDatabase}
+import com.malliina.logstreams.db.{DoobieDatabase, DoobieDatabaseAuth, DoobieLogsDatabase}
 import com.malliina.logstreams.html.{AssetsSource, Htmls}
 import com.malliina.logstreams.models.{AppLogEvents, LogEntryInputs, LogSources}
 import com.malliina.logstreams.{AppMode, LocalConf, LogConf, LogstreamsConf}
@@ -68,12 +68,12 @@ object Server extends IOApp:
       http <- HttpClientIO.resource[F]
       dispatcher <- Dispatcher.parallel[F]
       _ <- Resource.eval(LogstreamsUtils.install(LogConf.name, LogConf.userAgent, dispatcher, http))
-      db <- DoobieDatabase.withMigrations[F](conf.db)
+      db <- DoobieDatabase.init[F](conf.db)
       logsTopic <- Resource.eval(Topic[F, LogEntryInputs])
       adminsTopic <- Resource.eval(Topic[F, LogSources])
       connecteds <- Resource.eval(Ref[F].of(LogSources(Nil)))
       logUpdates <- Resource.eval(Topic[F, AppLogEvents])
-      logsDatabase = DoobieStreamsDatabase(db)
+      logsDatabase = DoobieLogsDatabase(db)
       sockets = LogSockets(logsTopic, adminsTopic, connecteds, logUpdates, logsDatabase)
       _ <- fs2.Stream.emit(()).concurrently(sockets.publisher).compile.resource.lastOrError
     yield

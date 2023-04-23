@@ -6,13 +6,13 @@ import com.malliina.logstreams.models.*
 import com.malliina.util.AppLogger
 import doobie.*
 import doobie.implicits.*
-import DoobieStreamsDatabase.log
+import DoobieLogsDatabase.log
 import ch.qos.logback.classic.Level
 
-object DoobieStreamsDatabase:
+object DoobieLogsDatabase:
   private val log = AppLogger(getClass)
 
-class DoobieStreamsDatabase[F[_]](db: DoobieDatabase[F]) extends LogsDatabase[F]:
+class DoobieLogsDatabase[F[_]](db: DoobieDatabase[F]) extends LogsDatabase[F]:
   implicit val dbLog: LogHandler = db.logHandler
 
   def insert(events: List[LogEntryInput]): F[EntriesWritten] = db.run {
@@ -47,7 +47,9 @@ class DoobieStreamsDatabase[F[_]](db: DoobieDatabase[F]) extends LogsDatabase[F]
       levels.map(ls => Fragments.in(fr"LEVEL", ls)),
       query.queryStar.map(q =>
         fr"MATCH(APP, ADDRESS, MESSAGE, LOGGER, THREAD, STACKTRACE) AGAINST($q)"
-      )
+      ),
+      query.timeRange.from.map(f => fr"ADDED >= $f"),
+      query.timeRange.to.map(t => fr"ADDED <= $t")
     )
     val order = if query.order == SortOrder.asc then fr0"asc" else fr0"desc"
     sql"""select ID, APP, ADDRESS, TIMESTAMP, MESSAGE, LOGGER, THREAD, LEVEL, STACKTRACE, ADDED

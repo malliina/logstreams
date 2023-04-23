@@ -29,11 +29,11 @@ object DatabaseUtils:
     IO.delay {
       val localTestDb = testConf().map { conf => TestDatabase(conf, None) }
       localTestDb.getOrElse {
-        val image = DockerImageName.parse("mysql:5.7.29")
+        val image = DockerImageName.parse("mysql:8.0.33")
         val c = MySQLContainer(mysqlImageVersion = image)
         c.start()
         TestDatabase(
-          Conf(s"${c.jdbcUrl}?useSSL=false", c.username, c.password, c.driverClassName),
+          Conf(c.jdbcUrl, c.username, c.password, c.driverClassName, autoMigrate = true),
           Option(c)
         )
       }

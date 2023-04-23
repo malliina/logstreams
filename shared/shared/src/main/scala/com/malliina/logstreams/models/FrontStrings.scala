@@ -25,6 +25,9 @@ trait FrontStrings:
   val TableBodyId = "table-body"
   val TableHeadId = "table-head"
 
+  val FromTimePickerId = "from-time-picker"
+  val ToTimePickerId = "to-time-picker"
+
   val VerboseKey = "verbose"
 
   val SearchInput = "search-input"

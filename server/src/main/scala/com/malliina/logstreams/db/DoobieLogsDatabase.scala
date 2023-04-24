@@ -2,12 +2,12 @@ package com.malliina.logstreams.db
 
 import cats.effect.IO
 import cats.implicits.*
+import ch.qos.logback.classic.Level
+import com.malliina.logstreams.db.DoobieLogsDatabase.log
 import com.malliina.logstreams.models.*
 import com.malliina.util.AppLogger
 import doobie.*
 import doobie.implicits.*
-import DoobieLogsDatabase.log
-import ch.qos.logback.classic.Level
 
 object DoobieLogsDatabase:
   private val log = AppLogger(getClass)
@@ -39,7 +39,7 @@ class DoobieLogsDatabase[F[_]](db: DoobieDatabase[F]) extends LogsDatabase[F]:
     val levels = LogLevel.all
       .filter(l => l.int >= query.level.int)
       .toList
-      .flatMap(l => Seq(l.int, toLogback(l).toInt))
+      .map(_.int)
       .toNel
     log.debug(s"Query with $query using levels $levels")
     val whereClause = Fragments.whereAndOpt(
@@ -59,12 +59,3 @@ class DoobieLogsDatabase[F[_]](db: DoobieDatabase[F]) extends LogsDatabase[F]:
       AppLogEvents(rows.map(_.toEvent))
     }
   }
-
-  // Legacy, TODO rename old levels with e.g. DB migration
-  private def toLogback(l: LogLevel): Level = l match
-    case LogLevel.Trace => Level.TRACE
-    case LogLevel.Debug => Level.DEBUG
-    case LogLevel.Info  => Level.INFO
-    case LogLevel.Warn  => Level.WARN
-    case LogLevel.Error => Level.ERROR
-    case LogLevel.Other => Level.OFF

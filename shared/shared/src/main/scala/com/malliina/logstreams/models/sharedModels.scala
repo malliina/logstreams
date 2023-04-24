@@ -26,6 +26,11 @@ object LogLevel extends EnumCompanion[String, LogLevel]:
       .toRight(defaultError(input))
 
   def of(i: Int): Option[LogLevel] = all.find(_.int == i)
+  def unsafe(i: Int) = of(i).getOrElse(
+    throw IllegalArgumentException(
+      s"Invalid log level: '$i'. Must be one of ${all.map(_.int).mkString(", ")}"
+    )
+  )
 
   override implicit val ordering: Ordering[LogLevel] = Ordering.by[LogLevel, Int](_.int)
 
@@ -41,10 +46,7 @@ case class LogEntryId(id: Long) extends AnyVal:
 object LogEntryId extends Companion[Long, LogEntryId]:
   override def raw(t: LogEntryId): Long = t.id
 
-case class SimpleLogSource(name: AppName, remoteAddress: String)
-
-object SimpleLogSource:
-  implicit val json: Codec[SimpleLogSource] = deriveCodec[SimpleLogSource]
+case class SimpleLogSource(name: AppName, remoteAddress: String) derives Codec.AsObject
 
 case class LogSource(
   name: AppName,
@@ -54,10 +56,7 @@ case class LogSource(
   joined: Long,
   joinedFormatted: String,
   timeJoined: String
-)
-
-object LogSource:
-  implicit val json: Codec[LogSource] = deriveCodec[LogSource]
+) derives Codec.AsObject
 
 sealed trait GenericEvent
 
@@ -77,10 +76,10 @@ sealed trait AdminEvent extends GenericEvent
 object AdminEvent:
   implicit val decoder: Decoder[AdminEvent] =
     LogSources.json.or(SimpleEvent.json.map[AdminEvent](identity))
-  implicit val encoder: Encoder[AdminEvent] = new Encoder[AdminEvent]:
-    final def apply(a: AdminEvent): Json = a match
-      case ls @ LogSources(_)  => ls.asJson
-      case se @ SimpleEvent(_) => se.asJson
+  implicit val encoder: Encoder[AdminEvent] = {
+    case ls @ LogSources(_)  => ls.asJson
+    case se @ SimpleEvent(_) => se.asJson
+  }
 
 case class LogEventOld(
   timeStamp: Long,

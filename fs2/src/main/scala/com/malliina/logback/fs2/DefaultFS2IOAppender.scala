@@ -1,8 +1,8 @@
 package com.malliina.logback.fs2
 
 import cats.effect.kernel.Async
-import cats.effect.{IO, Resource}
 import cats.effect.std.Dispatcher
+import cats.effect.{IO, Resource}
 import ch.qos.logback.classic.spi.ILoggingEvent
 import com.malliina.logback.{LogEvent, TimeFormatting}
 import fs2.Stream

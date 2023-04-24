@@ -2,8 +2,8 @@ package com.malliina.logback.fs2
 
 import cats.Monad
 import cats.effect.kernel.Async
-import cats.effect.{Concurrent, IO, Resource}
 import cats.effect.std.Dispatcher
+import cats.effect.{Concurrent, IO, Resource}
 import cats.syntax.all.{toFlatMapOps, toFunctorOps}
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.AppenderBase
@@ -24,7 +24,7 @@ case class FS2AppenderComps[F[_], E](
 
 object FS2AppenderComps:
   def resource[F[_]: Async]: Resource[F, LoggingComps[F]] =
-    Dispatcher[F].evalMap(d => io(d))
+    Dispatcher.parallel[F].evalMap(d => io(d))
   def io[F[_]: Concurrent](d: Dispatcher[F]): F[LoggingComps[F]] = for
     topic <- Topic[F, Option[ILoggingEvent]]
     signal <- SignallingRef[F, Boolean](false)

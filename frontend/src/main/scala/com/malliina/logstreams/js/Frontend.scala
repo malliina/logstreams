@@ -8,8 +8,8 @@ import org.scalajs.dom.{Element, HTMLElement}
 import scala.scalajs.js
 import scala.scalajs.js.Date
 import scala.scalajs.js.Dynamic.literal
-import scala.scalajs.js.annotation.JSImport
 import scala.scalajs.js.JSConverters.*
+import scala.scalajs.js.annotation.JSImport
 
 object Frontend:
   private val p = Popper

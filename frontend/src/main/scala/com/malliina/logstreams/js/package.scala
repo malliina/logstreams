@@ -16,6 +16,3 @@ package object js:
       if list.contains(cls) then list.remove(cls)
       else list.add(cls)
       false
-
-    def onClickToggleClass(cls: String): Unit =
-      element.onclick = _ => toggleClass(cls)

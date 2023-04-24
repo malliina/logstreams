@@ -7,6 +7,7 @@ import org.scalajs.dom.html.Anchor
 import org.scalajs.dom.{Event, HTMLButtonElement, HTMLInputElement, KeyboardEvent, MouseEvent, URL, URLSearchParams, window}
 import scalatags.JsDom.all.*
 
+import scala.scalajs.js
 import scala.scalajs.js.{Date, JSON, URIUtils}
 
 class LogsPage:
@@ -14,8 +15,17 @@ class LogsPage:
   val settings: Settings = StorageSettings
   private val availableApps =
     elem(AppsDropdownMenuId).getElementsByClassName(DropdownItem).map(_.asInstanceOf[Anchor])
+  private var selectedFrom: Option[Date] = None
+  private var selectedTo: Option[Date] = None
+  def maxDate = new Date(Date.now())
+  private val fromPicker = makePicker(FromTimePickerId)
+  private val toPicker = makePicker(ToTimePickerId)
+  private def makePicker(elementId: String): TempusDominus =
+    TempusDominus(
+      elem(elementId),
+      TimeOptions(TimeRestrictions(None, None), TimeLocalization(DateFormats.default))
+    )
   private var socket: ListenerSocket = socketFor(settings.apps, settings.level, settings.query)
-
   availableApps.foreach { item =>
     item.onclick =
       (_: MouseEvent) => updateFilter(settings.appendDistinct(AppName(item.textContent)))
@@ -36,14 +46,27 @@ class LogsPage:
   searchInput.onkeydown = (ke: KeyboardEvent) => if ke.key == "Enter" then updateSearch()
   renderActiveLevel(availableLogLevels, settings.level)
   renderApps(settings.apps)
-  val maxDate = new Date(Date.now())
-  val fromPicker = picker(FromTimePickerId)
-  val toPicker = picker(ToTimePickerId)
-
-  private def picker(elementId: String) = TempusDominus(
-    elem(elementId),
-    TimeOptions(TimeRestrictions(None, Option(maxDate)), TimeLocalization(DateFormats.default))
-  )
+  val fromSub = subscribeDate(fromPicker, toPicker, isFrom = true)
+  val toSub = subscribeDate(toPicker, fromPicker, isFrom = false)
+  private def subscribeDate(picker: TempusDominus, other: TempusDominus, isFrom: Boolean) =
+    picker.subscribe(
+      "change.td",
+      e =>
+        val ce = e.asInstanceOf[ChangeEvent]
+        val newDate = ce.date.toOption
+        if isFrom then selectedFrom = newDate else selectedTo = newDate
+        newDate.foreach { date =>
+          other.updateOptions(
+            TimeOptions(
+              if isFrom then TimeRestrictions(min = newDate, max = Option(maxDate))
+              else TimeRestrictions(min = None, max = newDate),
+              TimeLocalization(DateFormats.default)
+            ),
+            reset = false
+          )
+        }
+        updateSearch()
+    )
 
   private def socketFor(apps: Seq[AppName], level: LogLevel, query: Option[String]) =
     ListenerSocket(pathFor(apps, level, query), settings, verboseSupport = true)
@@ -84,13 +107,21 @@ class LogsPage:
     reconnect(settings.apps, settings.level, query)
 
   private def pathFor(apps: Seq[AppName], level: LogLevel, query: Option[String]): String =
-    val appsQuery = if apps.isEmpty then "" else "&" + apps.map(app => s"app=$app").mkString("&")
-    val levelQuery = s"&${LogLevel.Key}=${level.name}"
-    val searchQuery = query.fold("")(q => s"&q=$q")
-    val qs = QueryString.parse
-    val from = qs.get("from").fold("")(f => s"&from=${URIUtils.encodeURIComponent(f)}")
-    val to = qs.get("to").fold("")(t => s"&to=${URIUtils.encodeURIComponent(t)}")
-    s"/ws/logs?f=json$appsQuery$levelQuery$searchQuery$from$to"
+    val appsParams = apps.map(app => "app" -> app.name)
+    val levelParam = Seq(LogLevel.Key -> level.name)
+    val searchQuery = query.map(q => "q" -> q).toList
+    val f = selectedFrom.map(d => "from" -> d.toISOString())
+    val t = selectedTo.map(d => "to" -> d.toISOString())
+    val dates =
+      if f.isEmpty && t.isEmpty then
+        val from = new Date(Date.now())
+        from.setDate(from.getDate() - 2)
+        Seq("from" -> from.toISOString())
+      else f.toList ++ t.toList
+    val params = (Seq("f" -> "json") ++ appsParams ++ levelParam ++ searchQuery ++ dates)
+      .map((k, v) => s"$k=${URIUtils.encodeURIComponent(v)}")
+      .mkString("&")
+    s"/ws/logs?$params"
 
   private def reconnect(apps: Seq[AppName], level: LogLevel, query: Option[String]): Unit =
     socket.close()

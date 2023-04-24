@@ -48,12 +48,7 @@ class Service[F[_]: Async](
     case GET -> Root / "ping"   => ok(AppMeta.ThisApp)
     case req @ GET -> Root =>
       webAuth(req) { user =>
-        val noFrom = !req.uri.query.params.contains("from")
-        if noFrom then
-          val defaultFrom = OffsetDateTime.now(TimeFormatter.helsinki).minusHours(48).withNano(0)
-          val fromQuery = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(defaultFrom)
-          SeeOther(Location(uri"/".withQueryParam("from", fromQuery)))
-        else users.all().flatMap { us => ok(htmls.logs(us.map(u => AppName(u.name))).tags) }
+        users.all().flatMap { us => ok(htmls.logs(us.map(u => AppName(u.name))).tags) }
       }
     case req @ GET -> Root / "sources" =>
       webAuth(req) { src =>

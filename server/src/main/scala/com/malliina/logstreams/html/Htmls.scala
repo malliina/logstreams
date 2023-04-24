@@ -149,6 +149,11 @@ class Htmls(
           `class` := "form-control",
           data("td-target") := s"#$divId"
         ),
+//        span(
+//          `class` := "input-group-text"
+//        )(
+//          i(`class` := "fas fa-xmark")
+//        ),
         span(
           `class` := "input-group-text",
           data("td-target") := s"#$divId",

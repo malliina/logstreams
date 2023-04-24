@@ -56,7 +56,7 @@ object DoobieDatabase:
 class DoobieDatabase[F[_]: Async](tx: DataSourceTransactor[F]):
   implicit val logHandler: LogHandler = LogHandler {
     case Success(sql, args, exec, processing) =>
-      val logger: String => Unit = if processing > 2.seconds then log.info else log.info
+      val logger: String => Unit = if processing > 2.seconds then log.info else log.debug
       logger(s"OK '$sql' exec ${exec.toMillis} ms processing ${processing.toMillis} ms.")
     case ProcessingFailure(sql, args, exec, processing, failure) =>
       log.error(s"Failed '$sql' in ${exec + processing}.", failure)

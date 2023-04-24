@@ -146,3 +146,12 @@ h1, h2 {
 .mobile-error {
     color: #aa2222;
 }
+
+.time-calendar {
+    background-image: url("../images/calendar.svg");
+    background-repeat: no-repeat;
+    background-size: 100%;
+    background-position: center;
+    width: 14px;
+    height: 16px;
+}

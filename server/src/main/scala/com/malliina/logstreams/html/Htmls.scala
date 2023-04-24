@@ -135,7 +135,7 @@ class Htmls(
     logEntriesTable(LogTableId)(thead(id := TableHeadId), tbody(id := TableBodyId))
   )
 
-  def timePicker(labelText: String, divId: String) =
+  private def timePicker(labelText: String, divId: String) =
     val inputId = s"$divId-input"
     divClass("col-sm-6 col-md-4 mt-2 mb-2 mt-sm-0")(
       label(`for` := inputId, `class` := "form-label")(labelText),
@@ -159,7 +159,7 @@ class Htmls(
           data("td-target") := s"#$divId",
           data("td-toggle") := "datetimepicker"
         )(
-          i(`class` := "fas fa-calendar")
+          span(`class` := "time-calendar")
         )
       )
     )

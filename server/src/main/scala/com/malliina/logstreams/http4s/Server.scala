@@ -24,7 +24,7 @@ import org.http4s.server.{Router, Server}
 import org.http4s.{HttpRoutes, Request, Response}
 
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{Duration, DurationInt}
 
 case class ServerComponents[F[_]: Async](
   app: Service[F],
@@ -32,6 +32,8 @@ case class ServerComponents[F[_]: Async](
 )
 
 object Server extends IOApp:
+  override def runtimeConfig =
+    super.runtimeConfig.copy(cpuStarvationCheckInitialDelay = Duration.Inf)
   LogConf.init()
   private val log = AppLogger(getClass)
   private val serverPort: Port =

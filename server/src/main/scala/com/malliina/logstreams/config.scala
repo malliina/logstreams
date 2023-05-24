@@ -77,5 +77,6 @@ object LogstreamsConf:
     from.unsafe[String]("user"),
     from.unsafe[String]("pass"),
     from.unsafe[String]("driver"),
+    from.unsafe[Int]("maxPoolSize"),
     from.unsafe[Boolean]("autoMigrate")
   )

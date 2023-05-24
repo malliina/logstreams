@@ -69,7 +69,9 @@ object Server extends IOApp:
     for
       http <- HttpClientIO.resource[F]
       dispatcher <- Dispatcher.parallel[F]
-      _ <- Resource.eval(LogstreamsUtils.install(LogConf.name, LogConf.userAgent, dispatcher, http))
+      _ <- Resource.eval(
+        LogstreamsUtils.installIfEnabled(LogConf.name, LogConf.userAgent, dispatcher, http)
+      )
       db <- DoobieDatabase.init[F](conf.db)
       logsTopic <- Resource.eval(Topic[F, LogEntryInputs])
       adminsTopic <- Resource.eval(Topic[F, LogSources])

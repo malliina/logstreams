@@ -33,7 +33,14 @@ object DatabaseUtils:
         val c = MySQLContainer(mysqlImageVersion = image)
         c.start()
         TestDatabase(
-          Conf(c.jdbcUrl, c.username, c.password, c.driverClassName, autoMigrate = true),
+          Conf(
+            c.jdbcUrl,
+            c.username,
+            c.password,
+            c.driverClassName,
+            maxPoolSize = 2,
+            autoMigrate = true
+          ),
           Option(c)
         )
       }

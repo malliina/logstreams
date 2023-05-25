@@ -45,7 +45,7 @@ object DoobieDatabase:
     hikari.setMaxLifetime(60.seconds.toMillis)
     hikari.setMaximumPoolSize(conf.maxPoolSize)
     Resource.make(Sync[F].delay {
-      log.info(s"Connecting to '${conf.url}'...")
+      log.info(s"Connecting to '${conf.url}' with pool size ${conf.maxPoolSize} as ${conf.user}...")
       HikariDataSource(hikari)
     })(ds => Sync[F].delay(ds.close()))
 

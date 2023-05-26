@@ -1,21 +1,8 @@
 package com.malliina.logstreams
 
-import cats.effect.IO
-import cats.effect.kernel.Async
-import cats.effect.std.Dispatcher
-import cats.syntax.all.toFlatMapOps
-import ch.qos.logback.classic.encoder.PatternLayoutEncoder
-import ch.qos.logback.classic.spi.ILoggingEvent
-import ch.qos.logback.classic.{Level, Logger, LoggerContext}
-import ch.qos.logback.core.ConsoleAppender
+import ch.qos.logback.classic.Level
 import com.malliina.app.BuildInfo
-import com.malliina.http.HttpClient
-import com.malliina.http.io.HttpClientF2
 import com.malliina.logback.LogbackUtils
-import com.malliina.logback.fs2.FS2AppenderComps
-import com.malliina.logstreams.client.FS2Appender
-import com.malliina.util.AppLogger
-import org.slf4j.LoggerFactory
 
 object LogConf:
   val name = "logstreams"

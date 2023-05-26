@@ -13,6 +13,7 @@ case class LogstreamsConf(enabled: Boolean, user: String, pass: String, userAgen
 
 object LogstreamsConf:
   def isEnabled = sys.env.get("LOGSTREAMS_ENABLED").contains("true")
+
   def read(defaultUser: String, userAgent: String): Either[ErrorMessage, LogstreamsConf] =
     for pass <- LogstreamsUtils.env("LOGSTREAMS_PASS")
     yield LogstreamsConf(
@@ -49,7 +50,7 @@ object LogstreamsUtils:
       .default(
         d,
         http,
-        Map(HttpUtil.UserAgent -> conf.user)
+        Map(HttpUtil.UserAgent -> conf.userAgent)
       )
       .flatMap { appender =>
         Async[F].delay {

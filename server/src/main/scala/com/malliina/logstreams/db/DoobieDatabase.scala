@@ -50,13 +50,13 @@ object DoobieDatabase:
     })(ds => Sync[F].delay(ds.close()))
 
   private def transactor[F[_]: Async](ds: HikariDataSource): Resource[F, DataSourceTransactor[F]] =
-    for ec <- ExecutionContexts.fixedThreadPool[F](32) // connect EC
+    for ec <- ExecutionContexts.fixedThreadPool[F](16) // connect EC
     yield Transactor.fromDataSource[F](ds, ec)
 
 class DoobieDatabase[F[_]: Async](tx: DataSourceTransactor[F]):
   implicit val logHandler: LogHandler = LogHandler {
     case Success(sql, args, exec, processing) =>
-      val logger: String => Unit = if processing > 2.seconds then log.info else log.debug
+      val logger: String => Unit = if processing > 1.seconds then log.info else log.debug
       logger(s"OK '$sql' exec ${exec.toMillis} ms processing ${processing.toMillis} ms.")
     case ProcessingFailure(sql, args, exec, processing, failure) =>
       log.error(s"Failed '$sql' in ${exec + processing}.", failure)

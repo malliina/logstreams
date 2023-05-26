@@ -12,7 +12,7 @@ object LogbackUtils:
     rootLevel: Level = Level.INFO,
     levelsByLogger: Map[String, Level] = Map.empty
   ): LoggerContext =
-    val lc = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
+    val lc = loggerContext
     lc.reset()
     val ple = PatternLayoutEncoder()
     ple.setPattern(pattern)
@@ -52,9 +52,9 @@ object LogbackUtils:
     appender: Appender[ILoggingEvent],
     loggerName: String = org.slf4j.Logger.ROOT_LOGGER_NAME
   ): Unit =
-    if appender.getContext == null then
-      appender setContext LoggerFactory.getILoggerFactory
-        .asInstanceOf[LoggerContext]
+    if appender.getContext == null then appender.setContext(loggerContext)
     if !appender.isStarted then appender.start()
     val logger = LoggerFactory.getLogger(loggerName).asInstanceOf[Logger]
-    logger addAppender appender
+    logger.addAppender(appender)
+
+  def loggerContext = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]

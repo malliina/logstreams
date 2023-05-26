@@ -10,6 +10,7 @@ import com.malliina.values.ErrorMessage
 import org.slf4j.LoggerFactory
 
 case class LogstreamsConf(enabled: Boolean, user: String, pass: String, userAgent: String)
+
 object LogstreamsConf:
   def isEnabled = sys.env.get("LOGSTREAMS_ENABLED").contains("true")
   def read(defaultUser: String, userAgent: String): Either[ErrorMessage, LogstreamsConf] =
@@ -37,12 +38,13 @@ object LogstreamsUtils:
         )
         .map(_ => true)
     else Async[F].pure(false)
+
   def install[F[_]: Async](
     conf: LogstreamsConf,
     d: Dispatcher[F],
     http: HttpClientF2[F]
   ): F[Unit] =
-    val lc = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
+    val lc = LogbackUtils.loggerContext
     FS2Appender
       .default(
         d,

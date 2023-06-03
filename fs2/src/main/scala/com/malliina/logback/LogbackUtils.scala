@@ -2,7 +2,7 @@ package com.malliina.logback
 
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder
 import ch.qos.logback.classic.spi.ILoggingEvent
-import ch.qos.logback.classic.{Level, Logger, LoggerContext}
+import ch.qos.logback.classic.{AsyncAppender, Level, Logger, LoggerContext}
 import ch.qos.logback.core.{Appender, ConsoleAppender}
 import org.slf4j.LoggerFactory
 
@@ -19,8 +19,14 @@ object LogbackUtils:
     ple.setContext(lc)
     ple.start()
     val console = new ConsoleAppender[ILoggingEvent]()
+    console.setContext(LogbackUtils.loggerContext)
     console.setEncoder(ple)
-    LogbackUtils.installAppender(console)
+    if !console.isStarted then console.start()
+    val appender = new AsyncAppender
+    appender.setContext(LogbackUtils.loggerContext)
+    appender.setName("ASYNC")
+    appender.addAppender(console)
+    LogbackUtils.installAppender(appender)
     val root = lc.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME)
     root.setLevel(rootLevel)
     levelsByLogger.foreach { (loggerName, level) =>

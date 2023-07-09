@@ -23,9 +23,10 @@ inThisBuild(
     ),
     testFrameworks += new TestFramework("munit.Framework"),
     assemblyMergeStrategy := {
-      case PathList("META-INF", "versions", xs @ _*) => MergeStrategy.first
-      case PathList("com", "malliina", xs @ _*)      => MergeStrategy.first
-      case PathList("module-info.class")             => MergeStrategy.discard
+      case PathList("META-INF", "versions", xs @ _*)  => MergeStrategy.first
+      case PathList("META-INF", "okio.kotlin_module") => MergeStrategy.first
+      case PathList("com", "malliina", xs @ _*)       => MergeStrategy.first
+      case PathList("module-info.class")              => MergeStrategy.discard
       case x =>
         val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
         oldStrategy(x)

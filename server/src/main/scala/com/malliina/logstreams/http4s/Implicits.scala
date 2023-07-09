@@ -2,7 +2,6 @@ package com.malliina.logstreams.http4s
 
 import _root_.scalatags.generic.Frag
 import cats.effect.IO
-import com.malliina.html.ScalatagsInstances
 import com.malliina.values.Username
 import org.http4s.*
 import org.http4s.dsl.Http4sDsl

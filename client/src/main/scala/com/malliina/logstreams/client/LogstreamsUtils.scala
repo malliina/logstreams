@@ -1,5 +1,6 @@
 package com.malliina.logstreams.client
 
+import cats.effect.{Resource, Sync}
 import cats.effect.kernel.Async
 import cats.effect.std.Dispatcher
 import cats.syntax.all.{toFlatMapOps, toFunctorOps}
@@ -24,6 +25,13 @@ object LogstreamsConf:
     )
 
 object LogstreamsUtils:
+  def resource[F[_]: Async](
+    conf: LogstreamsConf,
+    d: Dispatcher[F],
+    http: HttpClientF2[F]
+  ): Resource[F, Unit] =
+    Resource.make(install(conf, d, http))(_ => Sync[F].delay(LogbackUtils.loggerContext.stop()))
+
   def installIfEnabled[F[_]: Async](
     defaultUser: String,
     userAgent: String,

@@ -43,8 +43,12 @@ trait TimeLocalization extends js.Object:
   def locale: String = js.native
 
 object TimeLocalization:
+  val fi = "fi-FI"
+  val se = "sv-SE"
+  val en = "en-US"
+
   def apply(df: DateFormats): TimeLocalization =
-    literal(dateFormats = df, hourCycle = "h23", startOfTheWeek = 1, locale = "fi-FI")
+    literal(dateFormats = df, hourCycle = "h23", startOfTheWeek = 1, locale = en)
       .asInstanceOf[TimeLocalization]
 
 @js.native

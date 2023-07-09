@@ -4,8 +4,8 @@ import sbtcrossproject.CrossPlugin.autoImport.{CrossType => PortableType, crossP
 import com.comcast.ip4s.IpLiteralSyntax
 
 val malliinaGroup = "com.malliina"
-val webAuthVersion = "6.5.0"
-val primitivesVersion = "3.4.0"
+val webAuthVersion = "6.5.2"
+val primitivesVersion = "3.4.4"
 val munitVersion = "0.7.29"
 val munitCatsEffectVersion = "1.0.7"
 val webAuthDep = malliinaGroup %% "web-auth" % webAuthVersion
@@ -38,10 +38,10 @@ val fs2 = project
   .enablePlugins(MavenCentralPlugin)
   .settings(
     libraryDependencies ++= Seq("classic", "core").map { m =>
-      "ch.qos.logback" % s"logback-$m" % "1.4.7"
+      "ch.qos.logback" % s"logback-$m" % "1.4.8"
     } ++ Seq(
       "com.malliina" %%% "primitives" % primitivesVersion,
-      "co.fs2" %% "fs2-core" % "3.5.0",
+      "co.fs2" %% "fs2-core" % "3.7.0",
       "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
     ),
     moduleName := "logback-fs2",
@@ -111,7 +111,7 @@ val server = project
     ),
     libraryDependencies ++=
       Seq("ember-server", "circe", "dsl").map { m =>
-        "org.http4s" %% s"http4s-$m" % "0.23.18"
+        "org.http4s" %% s"http4s-$m" % "0.23.19"
       } ++ Seq("core", "hikari").map { m =>
         "org.tpolecat" %% s"doobie-$m" % "1.0.0-RC2"
       } ++ Seq(
@@ -121,7 +121,7 @@ val server = project
         "com.malliina" %% "util-html" % webAuthVersion,
         webAuthDep,
         webAuthDep % Test classifier "tests",
-        "com.dimafeng" %% "testcontainers-scala-mysql" % "0.40.15" % Test,
+        "com.dimafeng" %% "testcontainers-scala-mysql" % "0.40.17" % Test,
         "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
       ),
     Compile / packageDoc / publishArtifact := false,

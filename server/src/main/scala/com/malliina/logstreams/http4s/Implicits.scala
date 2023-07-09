@@ -1,6 +1,6 @@
 package com.malliina.logstreams.http4s
 
-import _root_.scalatags.generic.Frag
+import scalatags.generic.Frag
 import cats.effect.IO
 import com.malliina.values.Username
 import org.http4s.*

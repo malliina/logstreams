@@ -43,7 +43,7 @@ object FS2Appender:
 
   def unsafe: ResourceParts[IO] =
     val rt = customRuntime
-    val (d, finalizer) = Dispatcher[IO].allocated.unsafeRunSync()(rt)
+    val (d, finalizer) = Dispatcher.parallel[IO].allocated.unsafeRunSync()(rt)
     dispatched(d, finalizer >> IO(rt.shutdown()))
 
   def default[F[_]: Async](
@@ -85,7 +85,7 @@ class FS2AppenderF[F[_]: Async](
         socketClosable = closer
         d.unsafeRunAndForget(socket.events.compile.drain)
         val task: F[Unit] = logEvents
-          .groupWithin(100, 1500.millis)
+          .groupWithin(100, 200.millis)
           .evalMap(es => socket.send(LogEvents(es.toList)))
           .onComplete {
             fs2.Stream

@@ -13,8 +13,6 @@ object DoobieLogsDatabase:
   private val log = AppLogger(getClass)
 
 class DoobieLogsDatabase[F[_]](db: DoobieDatabase[F]) extends LogsDatabase[F]:
-  implicit val dbLog: LogHandler = db.logHandler
-
   def insert(events: List[LogEntryInput]): F[EntriesWritten] = db.run {
     val insertions = events.traverse { e =>
       sql"""insert into LOGS(APP, ADDRESS, MESSAGE, LOGGER, THREAD, LEVEL, STACKTRACE, TIMESTAMP) 

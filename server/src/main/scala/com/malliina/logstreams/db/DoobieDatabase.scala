@@ -10,7 +10,7 @@ import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import doobie.*
 import doobie.implicits.*
 import doobie.util.ExecutionContexts
-import doobie.util.log.{ExecFailure, ProcessingFailure, Success}
+import doobie.util.log.{ExecFailure, LogEvent, ProcessingFailure, Success}
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.output.MigrateResult
 
@@ -50,18 +50,17 @@ object DoobieDatabase:
     })(ds => Sync[F].delay(ds.close()))
 
   private def transactor[F[_]: Async](ds: HikariDataSource): Resource[F, DataSourceTransactor[F]] =
+    val syncLogHandler: LogEvent => Unit =
+      case Success(sql, args, _, exec, processing) =>
+        val logger: String => Unit = if processing > 1.seconds then log.info else log.debug
+        logger(s"OK '$sql' exec ${exec.toMillis} ms processing ${processing.toMillis} ms.")
+      case ProcessingFailure(sql, args, _, exec, processing, failure) =>
+        log.error(s"Failed '$sql' in ${exec + processing}.", failure)
+      case ExecFailure(sql, args, _, exec, failure) =>
+        log.error(s"Exec failed '$sql' in $exec.'", failure)
+    val logHandler: LogHandler[F] = event => Async[F].delay(syncLogHandler(event))
     for ec <- ExecutionContexts.fixedThreadPool[F](16) // connect EC
-    yield Transactor.fromDataSource[F](ds, ec)
+    yield Transactor.fromDataSource[F](ds, ec, Option(logHandler))
 
 class DoobieDatabase[F[_]: Async](tx: DataSourceTransactor[F]):
-  implicit val logHandler: LogHandler = LogHandler {
-    case Success(sql, args, exec, processing) =>
-      val logger: String => Unit = if processing > 1.seconds then log.info else log.debug
-      logger(s"OK '$sql' exec ${exec.toMillis} ms processing ${processing.toMillis} ms.")
-    case ProcessingFailure(sql, args, exec, processing, failure) =>
-      log.error(s"Failed '$sql' in ${exec + processing}.", failure)
-    case ExecFailure(sql, args, exec, failure) =>
-      log.error(s"Exec failed '$sql' in $exec.'", failure)
-  }
-
   def run[T](io: ConnectionIO[T]): F[T] = io.transact(tx)

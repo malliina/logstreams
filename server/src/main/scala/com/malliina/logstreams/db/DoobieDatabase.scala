@@ -4,6 +4,7 @@ import cats.Monad
 import cats.effect.IO.*
 import cats.effect.kernel.Resource
 import cats.effect.{Async, IO, Sync}
+import cats.syntax.flatMap.toFlatMapOps
 import com.malliina.logstreams.db.DoobieDatabase.log
 import com.malliina.util.AppLogger
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
@@ -23,9 +24,7 @@ object DoobieDatabase:
     if conf.autoMigrate then withMigrations(conf) else default(conf)
 
   def default[F[_]: Async](conf: Conf): Resource[F, DoobieDatabase[F]] =
-    for
-      ds <- dataSource(conf)
-      tx <- transactor(ds)
+    for tx <- transactor(config(conf))
     yield DoobieDatabase(tx)
 
   private def withMigrations[F[_]: Async](conf: Conf): Resource[F, DoobieDatabase[F]] =
@@ -36,7 +35,7 @@ object DoobieDatabase:
     flyway.migrate()
   }
 
-  private def dataSource[F[_]: Sync](conf: Conf): Resource[F, HikariDataSource] =
+  private def config(conf: Conf): HikariConfig =
     val hikari = new HikariConfig()
     hikari.setDriverClassName(Conf.MySQLDriver)
     hikari.setJdbcUrl(conf.url)
@@ -44,12 +43,10 @@ object DoobieDatabase:
     hikari.setPassword(conf.pass)
     hikari.setMaxLifetime(60.seconds.toMillis)
     hikari.setMaximumPoolSize(conf.maxPoolSize)
-    Resource.make(Sync[F].delay {
-      log.info(s"Connecting to '${conf.url}' with pool size ${conf.maxPoolSize} as ${conf.user}...")
-      HikariDataSource(hikari)
-    })(ds => Sync[F].delay(ds.close()))
+    hikari
 
-  private def transactor[F[_]: Async](ds: HikariDataSource): Resource[F, DataSourceTransactor[F]] =
+  private def transactor[F[_]: Async](conf: HikariConfig): Resource[F, DataSourceTransactor[F]] =
+    val F = Async[F]
     val syncLogHandler: LogEvent => Unit =
       case Success(sql, args, _, exec, processing) =>
         val logger: String => Unit = if processing > 1.seconds then log.info else log.debug
@@ -58,8 +55,21 @@ object DoobieDatabase:
         log.error(s"Failed '$sql' in ${exec + processing}.", failure)
       case ExecFailure(sql, args, _, exec, failure) =>
         log.error(s"Exec failed '$sql' in $exec.'", failure)
-    val logHandler: LogHandler[F] = event => Async[F].delay(syncLogHandler(event))
-    for ec <- ExecutionContexts.fixedThreadPool[F](16) // connect EC
+    val logHandler: LogHandler[F] = event => F.delay(syncLogHandler(event))
+    val connect = F.delay {
+      log.info(
+        s"Connecting to '${conf.getJdbcUrl}' with pool size ${conf.getMaximumPoolSize} as ${conf.getUsername}..."
+      )
+      new HikariDataSource(conf)
+    }
+    val disconnect = (ds: HikariDataSource) =>
+      F.delay {
+        log.info(s"Disconnecting from ${ds.getJdbcUrl} as ${conf.getUsername}...")
+        ds.close()
+      }
+    for
+      ec <- ExecutionContexts.fixedThreadPool[F](16) // connect EC
+      ds <- Resource.make(connect)(disconnect)
     yield Transactor.fromDataSource[F](ds, ec, Option(logHandler))
 
 class DoobieDatabase[F[_]: Async](tx: DataSourceTransactor[F]):

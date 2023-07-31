@@ -1,9 +1,9 @@
 package com.malliina.logstreams
 
 import com.malliina.app.BuildInfo
+import com.malliina.database.Conf
 import com.malliina.http.FullUrl
 import com.malliina.logstreams.auth.SecretKey
-import com.malliina.logstreams.db.Conf
 import com.malliina.values.{ErrorMessage, Readable}
 import com.malliina.web.{AuthConf, ClientId, ClientSecret}
 import com.typesafe.config.{Config, ConfigFactory}

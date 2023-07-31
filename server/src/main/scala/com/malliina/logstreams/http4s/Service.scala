@@ -5,11 +5,12 @@ import cats.effect.{IO, Sync}
 import cats.effect.kernel.Async
 import cats.syntax.all.{toFlatMapOps, toFunctorOps}
 import com.malliina.app.AppMeta
+import com.malliina.database.DoobieDatabase
 import com.malliina.logback.TimeFormatter
 import com.malliina.logstreams.Errors
 import com.malliina.logstreams.auth.*
 import com.malliina.logstreams.auth.AuthProvider.{Google, PromptKey, SelectAccount}
-import com.malliina.logstreams.db.{DoobieDatabase, StreamsQuery}
+import com.malliina.logstreams.db.StreamsQuery
 import com.malliina.logstreams.html.Htmls
 import com.malliina.logstreams.html.Htmls.{PasswordKey, UsernameKey}
 import com.malliina.logstreams.http4s.BasicService.noCache

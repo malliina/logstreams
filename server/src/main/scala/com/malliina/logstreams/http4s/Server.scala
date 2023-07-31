@@ -7,10 +7,11 @@ import cats.effect.std.Dispatcher
 import cats.effect.{Async, ExitCode, IO, IOApp, Resource}
 import com.comcast.ip4s.{Port, host, port}
 import com.malliina.app.AppMeta
+import com.malliina.database.DoobieDatabase
 import com.malliina.http.io.HttpClientIO
 import com.malliina.logstreams.auth.{AuthBuilder, Auther, Auths, JWT}
 import com.malliina.logstreams.client.LogstreamsUtils
-import com.malliina.logstreams.db.{DoobieDatabase, DoobieDatabaseAuth, DoobieLogsDatabase}
+import com.malliina.logstreams.db.{DoobieDatabaseAuth, DoobieLogsDatabase}
 import com.malliina.logstreams.html.{AssetsSource, Htmls}
 import com.malliina.logstreams.models.{AppLogEvents, LogEntryInputs, LogSources}
 import com.malliina.logstreams.{AppMode, LocalConf, LogConf, LogstreamsConf}

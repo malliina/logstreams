@@ -7,13 +7,13 @@ import cats.syntax.flatMap.*
 import com.dimafeng.testcontainers.MySQLContainer
 import com.malliina.app.AppConf
 import com.malliina.logstreams.auth.*
-import com.malliina.logstreams.db.{Conf, DoobieDatabase}
 import com.malliina.logstreams.http4s.{Http4sAuth, Server, ServerComponents}
 import com.malliina.logstreams.{LocalConf, LogstreamsConf}
 import com.malliina.values.Username
 import munit.FunSuite
 import org.testcontainers.utility.DockerImageName
 import com.comcast.ip4s.port
+import com.malliina.database.{Conf, DoobieDatabase}
 import com.malliina.http.io.HttpClientIO
 
 import scala.concurrent.Promise

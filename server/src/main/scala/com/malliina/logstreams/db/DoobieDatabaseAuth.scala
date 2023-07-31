@@ -4,6 +4,7 @@ import cats.effect.IO
 import cats.*
 import cats.effect.*
 import cats.implicits.*
+import com.malliina.database.DoobieDatabase
 import com.malliina.logstreams.auth.UserError.{AlreadyExists, DoesNotExist}
 import com.malliina.logstreams.auth.{BasicCredentials, UserService}
 import com.malliina.logstreams.db.DoobieDatabaseAuth.log

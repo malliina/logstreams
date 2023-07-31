@@ -1,11 +1,11 @@
+import com.comcast.ip4s.IpLiteralSyntax
 import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
-import sbtcrossproject.CrossPlugin.autoImport.{CrossType => PortableType, crossProject => portableProject}
-import com.comcast.ip4s.IpLiteralSyntax
+import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 
 val malliinaGroup = "com.malliina"
-val webAuthVersion = "6.5.2"
-val primitivesVersion = "3.4.4"
+val webAuthVersion = "6.5.4"
+val primitivesVersion = "3.4.5"
 val munitVersion = "0.7.29"
 val munitCatsEffectVersion = "1.0.7"
 val webAuthDep = malliinaGroup %% "web-auth" % webAuthVersion
@@ -70,8 +70,8 @@ val client = project
     releaseProcess := tagReleaseProcess.value
   )
 
-val cross = portableProject(JSPlatform, JVMPlatform)
-  .crossType(PortableType.Full)
+val cross = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Full)
   .in(file("shared"))
   .settings(
     libraryDependencies ++= Seq("generic", "parser").map { m =>
@@ -115,11 +115,12 @@ val server = project
         "org.http4s" %% s"http4s-$m" % "0.23.23"
       } ++ Seq("core", "hikari").map { m =>
         "org.tpolecat" %% s"doobie-$m" % "1.0.0-RC4"
+      } ++ Seq("util-html", "database").map { m =>
+        "com.malliina" %% m % webAuthVersion
       } ++ Seq(
         "com.malliina" %% "config" % primitivesVersion,
         "org.flywaydb" % "flyway-core" % "7.15.0",
         "mysql" % "mysql-connector-java" % "8.0.33",
-        "com.malliina" %% "util-html" % webAuthVersion,
         webAuthDep,
         webAuthDep % Test classifier "tests",
         "com.dimafeng" %% "testcontainers-scala-mysql" % "0.40.17" % Test,

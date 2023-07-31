@@ -5,13 +5,9 @@ import cats.effect.kernel.{Async, Resource, Sync}
 import cats.effect.std.Dispatcher
 import cats.effect.unsafe.{IORuntime, IORuntimeConfig, Scheduler}
 import cats.syntax.all.{catsSyntaxFlatMapOps, toFunctorOps}
-import ch.qos.logback.classic.spi.ILoggingEvent
-import com.malliina.http.io.{HttpClientF, HttpClientF2, HttpClientIO, WebSocketF}
-import com.malliina.http.{HttpClient, OkClient, OkHttpBackend}
+import com.malliina.http.io.{HttpClientF2, HttpClientIO, WebSocketF}
 import com.malliina.logback.fs2.{FS2AppenderComps, LoggingComps}
-import com.malliina.logstreams.client.FS2Appender.{ResourceParts, ec}
-import fs2.concurrent.{SignallingRef, Topic}
-import io.circe.syntax.*
+import com.malliina.logstreams.client.FS2Appender.ResourceParts
 
 import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.ExecutionContext

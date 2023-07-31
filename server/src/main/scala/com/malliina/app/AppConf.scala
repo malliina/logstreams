@@ -1,9 +1,6 @@
 package com.malliina.app
 
-import java.nio.file.Paths
-
-import com.malliina.logstreams.db.Conf
-import com.typesafe.config.ConfigFactory
+import com.malliina.database.Conf
 
 trait AppConf:
   def database: Conf

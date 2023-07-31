@@ -113,13 +113,10 @@ val server = project
     libraryDependencies ++=
       Seq("ember-server", "circe", "dsl").map { m =>
         "org.http4s" %% s"http4s-$m" % "0.23.23"
-      } ++ Seq("core", "hikari").map { m =>
-        "org.tpolecat" %% s"doobie-$m" % "1.0.0-RC4"
       } ++ Seq("util-html", "database").map { m =>
         "com.malliina" %% m % webAuthVersion
       } ++ Seq(
         "com.malliina" %% "config" % primitivesVersion,
-        "org.flywaydb" % "flyway-core" % "7.15.0",
         "mysql" % "mysql-connector-java" % "8.0.33",
         webAuthDep,
         webAuthDep % Test classifier "tests",

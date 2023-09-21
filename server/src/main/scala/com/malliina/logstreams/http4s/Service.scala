@@ -1,12 +1,11 @@
 package com.malliina.logstreams.http4s
 
 import cats.data.NonEmptyList
-import cats.effect.{IO, Sync}
+import cats.effect.Sync
 import cats.effect.kernel.Async
 import cats.syntax.all.{toFlatMapOps, toFunctorOps}
 import com.malliina.app.AppMeta
 import com.malliina.database.DoobieDatabase
-import com.malliina.logback.TimeFormatter
 import com.malliina.logstreams.Errors
 import com.malliina.logstreams.auth.*
 import com.malliina.logstreams.auth.AuthProvider.{Google, PromptKey, SelectAccount}
@@ -15,7 +14,6 @@ import com.malliina.logstreams.html.Htmls
 import com.malliina.logstreams.html.Htmls.{PasswordKey, UsernameKey}
 import com.malliina.logstreams.http4s.BasicService.noCache
 import com.malliina.logstreams.http4s.Service.log
-import com.malliina.logstreams.http4s.UserRequest
 import com.malliina.logstreams.models.AppName
 import com.malliina.util.AppLogger
 import com.malliina.values.{Email, Password, Username}
@@ -23,13 +21,12 @@ import com.malliina.web.*
 import com.malliina.web.OAuthKeys.{Nonce, State}
 import com.malliina.web.Utils.randomString
 import io.circe.syntax.EncoderOps
+import org.http4s.circe.CirceEntityEncoder.circeEntityEncoder
 import org.http4s.headers.{Location, `WWW-Authenticate`}
 import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.{BasicCredentials as _, Callback as _, *}
-import org.http4s.circe.CirceEntityEncoder.circeEntityEncoder
 
-import java.time.format.DateTimeFormatter
-import java.time.{Instant, OffsetDateTime, OffsetTime, ZonedDateTime}
+import java.time.OffsetDateTime
 
 object Service:
   private val log = AppLogger(getClass)

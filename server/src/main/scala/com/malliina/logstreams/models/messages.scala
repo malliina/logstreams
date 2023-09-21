@@ -10,10 +10,7 @@ import io.circe.*
 import io.circe.syntax.*
 import io.circe.generic.semiauto.*
 
-case class LogEvents(events: List[LogEvent])
-
-object LogEvents:
-  implicit val json: Codec[LogEvents] = deriveCodec[LogEvents]
+case class LogEvents(events: List[LogEvent]) derives Codec.AsObject
 
 case class LogEntryInput(
   appName: Username,

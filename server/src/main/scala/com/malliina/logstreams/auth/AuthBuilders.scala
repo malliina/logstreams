@@ -1,7 +1,6 @@
 package com.malliina.logstreams.auth
 
-import cats.{Applicative, Functor}
-import cats.effect.IO
+import cats.Applicative
 import cats.effect.kernel.Sync
 import cats.syntax.all.toFunctorOps
 import com.malliina.logstreams.http4s.{Http4sAuth, IdentityError, JWTError, MissingCredentials}

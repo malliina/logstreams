@@ -1,6 +1,5 @@
 package com.malliina.logstreams.http4s
 
-import cats.Applicative
 import cats.data.Kleisli
 import cats.effect.kernel.Ref
 import cats.effect.std.Dispatcher
@@ -14,7 +13,7 @@ import com.malliina.logstreams.client.LogstreamsUtils
 import com.malliina.logstreams.db.{DoobieDatabaseAuth, DoobieLogsDatabase}
 import com.malliina.logstreams.html.{AssetsSource, Htmls}
 import com.malliina.logstreams.models.{AppLogEvents, LogEntryInputs, LogSources}
-import com.malliina.logstreams.{AppMode, LocalConf, LogConf, LogstreamsConf}
+import com.malliina.logstreams.{LocalConf, LogConf, LogstreamsConf}
 import com.malliina.util.AppLogger
 import com.malliina.web.GoogleAuthFlow
 import fs2.concurrent.Topic
@@ -24,7 +23,6 @@ import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.server.{Router, Server}
 import org.http4s.{HttpRoutes, Request, Response}
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{Duration, DurationInt}
 
 case class ServerComponents[F[_]: Async](

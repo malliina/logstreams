@@ -113,7 +113,7 @@ object SortOrder extends StringEnumCompanion[SortOrder]:
   case object Ascending extends SortOrder("asc")
   case object Descending extends SortOrder("desc")
 
-  implicit val queryDecoder: QueryParamDecoder[SortOrder] = QueryParsers.decoder[SortOrder](build)
+  given QueryParamDecoder[SortOrder] = QueryParsers.decoder[SortOrder](build)
 
   override def write(t: SortOrder): String = t.name
 

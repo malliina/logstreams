@@ -1,6 +1,5 @@
 package com.malliina.logstreams.http4s
 
-import cats.effect.IO
 import com.malliina.logstreams.auth.{AuthProvider, CookieConf, JWT, UserPayload}
 import com.malliina.values.{IdToken, Username}
 import io.circe.{Decoder, Encoder}

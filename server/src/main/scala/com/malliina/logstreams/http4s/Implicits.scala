@@ -1,12 +1,11 @@
 package com.malliina.logstreams.http4s
 
-import scalatags.generic.Frag
-import cats.effect.IO
 import com.malliina.values.Username
 import org.http4s.*
-import org.http4s.dsl.Http4sDsl
 import org.http4s.circe.CirceInstances
+import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`Content-Type`
+import scalatags.generic.Frag
 
 trait Extractors:
   object UsernameVar:

@@ -2,8 +2,6 @@ package com.malliina.logstreams.http4s
 
 import com.malliina.http.FullUrl
 import org.http4s.Request
-import org.http4s.headers.Host
-import org.http4s.util
 import org.typelevel.ci.CIStringSyntax
 
 object Urls:

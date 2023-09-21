@@ -1,8 +1,6 @@
 package com.malliina.logstreams.db
 
-import cats.effect.IO
 import cats.implicits.*
-import ch.qos.logback.classic.Level
 import com.malliina.database.DoobieDatabase
 import com.malliina.logstreams.db.DoobieLogsDatabase.log
 import com.malliina.logstreams.models.*

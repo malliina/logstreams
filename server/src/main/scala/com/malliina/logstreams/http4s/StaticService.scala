@@ -1,11 +1,10 @@
 package com.malliina.logstreams.http4s
 
 import cats.data.NonEmptyList
-import cats.effect.{Async, Sync}
+import cats.effect.Async
 import cats.implicits.*
 import com.malliina.app.BuildInfo
 import com.malliina.logstreams.http4s.StaticService.log
-import com.malliina.logstreams.{HashedAssets, LocalConf}
 import com.malliina.util.AppLogger
 import com.malliina.values.UnixPath
 import fs2.io.file.Path as FS2Path
@@ -14,7 +13,6 @@ import org.http4s.headers.`Cache-Control`
 import org.http4s.{Header, HttpRoutes, Request, StaticFile}
 import org.typelevel.ci.CIStringSyntax
 
-import java.nio.file.Files
 import scala.concurrent.duration.DurationInt
 
 object StaticService:

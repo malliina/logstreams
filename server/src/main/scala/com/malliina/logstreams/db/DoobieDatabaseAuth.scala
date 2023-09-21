@@ -1,8 +1,6 @@
 package com.malliina.logstreams.db
 
-import cats.effect.IO
 import cats.*
-import cats.effect.*
 import cats.implicits.*
 import com.malliina.database.DoobieDatabase
 import com.malliina.logstreams.auth.UserError.{AlreadyExists, DoesNotExist}

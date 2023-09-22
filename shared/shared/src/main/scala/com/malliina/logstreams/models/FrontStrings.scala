@@ -1,12 +1,18 @@
 package com.malliina.logstreams.models
 
+import com.malliina.html.{Bootstrap, Tags}
+
 object FrontStrings extends FrontStrings
 
 trait FrontStrings:
+  private val bs = Bootstrap(Tags(scalatags.Text))
   val AppsDropdown = "apps-dropdown"
   val AppsFiltered = "apps-filtered"
   val AppsDropdownMenuId = "apps-dropdown-menu"
+  val DisplayNone = "d-none"
   val DropdownItem = "dropdown-item"
+  val SearchFeedbackId = "search-feedback"
+  val SearchFeedbackRowId = "search-feedback-row"
 
   val LogLevelDropdown = "level-dropdown"
   val LogLevelDropdownButton = "level-dropdown-button"
@@ -23,6 +29,7 @@ trait FrontStrings:
 
   val SourceTableId = "source-table"
   val TableBodyId = "table-body"
+  val TableClasses = s"${bs.tables.defaultClass} $DisplayNone d-md-block"
   val TableHeadId = "table-head"
 
   val FromTimePickerId = "from-time-picker"

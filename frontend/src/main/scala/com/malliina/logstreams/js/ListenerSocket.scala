@@ -1,10 +1,10 @@
 package com.malliina.logstreams.js
 
-import com.malliina.logstreams.js.ScriptHelpers.{LogTableId, MobileContentId, OptionCompact, OptionVerbose, TableBodyId, TableHeadId, VerboseKey, elem, elemOptAs, getElem}
-import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents, LogEvent, LogLevel}
+import com.malliina.logstreams.js.ScriptHelpers.{DisplayNone, LogTableId, MobileContentId, OptionCompact, OptionVerbose, SearchFeedbackId, SearchFeedbackRowId, TableBodyId, TableClasses, TableHeadId, VerboseKey, elem, elemOptAs, getElem}
+import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents, FrontEvent, LogEvent, LogLevel, SimpleEvent}
 import io.circe.Json
 import org.scalajs.dom
-import org.scalajs.dom.{Event, HTMLElement, HTMLInputElement, HTMLTableElement, document}
+import org.scalajs.dom.{Event, HTMLElement, HTMLInputElement, HTMLParagraphElement, HTMLTableElement, document}
 import scalatags.JsDom.all.*
 
 case class RowContent(content: Frag, cellId: String, linkId: String, moreId: String)
@@ -23,10 +23,11 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
 
   val localStorage = dom.window.localStorage
 
-  lazy val tableBody = elem(TableBodyId)
-  lazy val mobileContent = elem(MobileContentId)
-  lazy val table = getElem[HTMLTableElement](LogTableId)
-
+  private lazy val tableBody = elem(TableBodyId)
+  private lazy val mobileContent = elem(MobileContentId)
+  private lazy val table = getElem[HTMLTableElement](LogTableId)
+  private lazy val searchFeedbackRow = elem(SearchFeedbackRowId)
+  private lazy val searchFeedback = getElem[HTMLParagraphElement](SearchFeedbackId)
   private def isVerbose: Boolean = settings.isVerbose
 
   private val responsiveClass = "d-none d-md-table-cell"
@@ -62,10 +63,26 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
     }
 
   override def handlePayload(payload: Json): Unit =
-    handleValidated(payload)(onLogEvents)
+    handleValidated(payload)(onFrontEvent)
 
-  private def onLogEvents(appLogEvents: AppLogEvents): Unit =
-    appLogEvents.events.foreach { e => onLogEvent(e) }
+  private def onFrontEvent(event: FrontEvent): Unit =
+    event match
+      case e @ SimpleEvent(event) =>
+        if e == SimpleEvent.loading then
+          table.className = DisplayNone
+          log.info("Loading...")
+          searchFeedback.innerText = "Loading..."
+          searchFeedbackRow.classList.remove(DisplayNone)
+        else if e == SimpleEvent.noData then
+          searchFeedbackRow.classList.remove(DisplayNone)
+          table.className = DisplayNone
+          searchFeedback.innerText = "No data for the current query."
+          log.info("No data.")
+        else ()
+      case AppLogEvents(events) =>
+        elem(SearchFeedbackRowId).classList.add(DisplayNone)
+        table.className = TableClasses
+        events.foreach { e => onLogEvent(e) }
 
   private def onLogEvent(event: AppLogEvent): Unit =
     mobileContent.prepend(mobileEntry(event).render)

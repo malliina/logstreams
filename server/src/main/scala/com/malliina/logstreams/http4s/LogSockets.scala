@@ -1,12 +1,9 @@
 package com.malliina.logstreams.http4s
 
 import cats.effect.kernel.{Async, Ref}
-import cats.effect.{IO, Resource}
-import cats.syntax.all.{toFunctorOps, toFlatMapOps}
-import ch.qos.logback.classic.Level
-import com.malliina.logstreams.db.{LogsDatabase, StreamsQuery, Utils}
+import cats.syntax.all.{toFlatMapOps, toFunctorOps}
+import com.malliina.logstreams.db.{LogsDatabase, StreamsQuery}
 import com.malliina.logstreams.http4s.LogSockets.log
-import com.malliina.logstreams.http4s.UserRequest
 import com.malliina.logstreams.models.*
 import com.malliina.util.AppLogger
 import fs2.concurrent.Topic
@@ -61,14 +58,17 @@ class LogSockets[F[_]: Async](
         subscription.map { es =>
           es.filter(e => query.apps.exists(app => app.name == e.source.name.name))
         }
-    val logEvents = Stream
+
+    val logEvents = Stream(SimpleEvent.loading) ++ Stream
       .eval(db.events(query))
       .flatMap { history =>
-        Stream(history.reverse) ++ filteredEvents.map(
-          _.filter(e => !history.events.exists(_.id == e.id))
-        )
+        val historyOrNoData = if history.isEmpty then SimpleEvent.noData else history.reverse
+        Stream(historyOrNoData) ++ filteredEvents
+          .map(
+            _.filter(e => !history.events.exists(_.id == e.id))
+          )
+          .filter(es => !es.isEmpty)
       }
-      .filter(_.events.nonEmpty)
     val toClient = pings
       .mergeHaltBoth(logEvents)
       .through(jsonTransform[FrontEvent])

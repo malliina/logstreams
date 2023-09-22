@@ -78,6 +78,7 @@ val cross = crossProject(JSPlatform, JVMPlatform)
       "io.circe" %%% s"circe-$m" % "0.14.5"
     } ++ Seq(
       "com.malliina" %%% "primitives" % primitivesVersion,
+      "com.malliina" %%% "util-html" % webAuthVersion,
       "com.lihaoyi" %%% "scalatags" % "0.12.0"
     )
   )

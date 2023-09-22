@@ -35,14 +35,16 @@ class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.printer):
     socket.send(asString)
 
   private def onMessage(msg: MessageEvent): Unit =
+//    if msg.`type` == "text" then
     parse(msg.data.toString).fold(
       fail => onJsonException(fail),
       json =>
         val isPing = json.hcursor.downField(EventKey).as[String].exists(_ == Ping)
         if !isPing then
-//          log.info(s"Handling json '$json'...")
+          //          log.info(s"Handling json '$json'...")
           handlePayload(json)
     )
+//    else log.error(Exception(s"Unsupported WebSocket message of type '${msg.`type`}'."))
 
   private def onConnected(e: Event): Unit = showConnected()
 
@@ -75,5 +77,6 @@ class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.printer):
   def clear(): Unit =
     elem(TableHeadId).innerHTML = ""
     elem(TableBodyId).innerHTML = ""
+    elem(MobileContentId).innerHTML = ""
 
   def close(): Unit = socket.close()

@@ -1,5 +1,7 @@
 package com.malliina.logstreams.models
 
+import com.malliina.logstreams.models
+import com.malliina.logstreams.models.LogsJson.evented
 import com.malliina.values.{EnumCompanion, ErrorMessage, WrappedString}
 import io.circe.*
 import io.circe.generic.semiauto.*
@@ -59,23 +61,22 @@ case class LogSource(
 ) derives Codec.AsObject
 
 sealed trait GenericEvent
+sealed trait FrontEvent extends GenericEvent
 
-case class SimpleEvent(event: String) extends FrontEvent with AdminEvent
+case class SimpleEvent(event: String) extends FrontEvent with AdminEvent derives Codec.AsObject
 
 object SimpleEvent:
-  implicit val json: Codec[SimpleEvent] = deriveCodec[SimpleEvent]
   val ping = SimpleEvent("ping")
+  val loading = SimpleEvent("loading")
+  val noData = SimpleEvent("noData")
 
-case class LogSources(sources: Seq[LogSource]) extends AdminEvent
-
-object LogSources:
-  implicit val json: Codec[LogSources] = deriveCodec[LogSources]
+case class LogSources(sources: Seq[LogSource]) extends AdminEvent derives Codec.AsObject
 
 sealed trait AdminEvent extends GenericEvent
 
 object AdminEvent:
   implicit val decoder: Decoder[AdminEvent] =
-    LogSources.json.or(SimpleEvent.json.map[AdminEvent](identity))
+    Decoder[LogSources].or(Decoder[SimpleEvent].map[AdminEvent](identity))
   implicit val encoder: Encoder[AdminEvent] = {
     case ls @ LogSources(_)  => ls.asJson
     case se @ SimpleEvent(_) => se.asJson
@@ -133,20 +134,18 @@ object AppLogEvent:
 case class AppLogEvents(events: Seq[AppLogEvent]) extends FrontEvent:
   def filter(p: AppLogEvent => Boolean): AppLogEvents = copy(events = events.filter(p))
   def reverse = AppLogEvents(events.reverse)
+  def isEmpty = events.isEmpty
 
 object AppLogEvents:
-  val encoder: Encoder[AppLogEvents] = deriveEncoder[AppLogEvents]
-  implicit val json: Codec[AppLogEvents] = deriveCodec[AppLogEvents]
-
-sealed trait FrontEvent extends GenericEvent
+  implicit val json: Codec[AppLogEvents] = evented("events", deriveCodec[AppLogEvents])
 
 object FrontEvent:
   implicit val reader: Decoder[FrontEvent] =
-    AppLogEvents.json.or(SimpleEvent.json.map[FrontEvent](identity))
-  implicit val encoder: Encoder[FrontEvent] = new Encoder[FrontEvent]:
-    final def apply(a: FrontEvent): Json = a match
-      case ale @ AppLogEvents(_) => ale.asJson
-      case se @ SimpleEvent(_)   => se.asJson
+    Decoder[AppLogEvents].or(Decoder[SimpleEvent].map[FrontEvent](identity))
+  implicit val encoder: Encoder[FrontEvent] = {
+    case ale @ AppLogEvents(_) => ale.asJson
+    case se @ SimpleEvent(_)   => se.asJson
+  }
 
 abstract class Companion[Raw, T](implicit d: Decoder[Raw], e: Encoder[Raw], o: Ordering[Raw]):
   def apply(raw: Raw): T
@@ -158,3 +157,16 @@ abstract class Companion[Raw, T](implicit d: Decoder[Raw], e: Encoder[Raw], o: O
   )
 
   implicit val ordering: Ordering[T] = o.on(raw)
+
+object LogsJson:
+  private val EventKey = "event"
+  private val eventDecoder = Decoder.decodeString.at(EventKey)
+
+  def evented[T](value: String, codec: Codec.AsObject[T]): Codec.AsObject[T] =
+    val decoder = eventDecoder.flatMap[T] { event =>
+      if event == value then codec
+      else Decoder.failed(DecodingFailure(s"Event is '$event', required '$value'.", Nil))
+    }
+    val encoder: Encoder.AsObject[T] = (t: T) =>
+      codec.encodeObject(t).deepMerge(JsonObject(EventKey -> value.asJson))
+    Codec.AsObject.from(decoder, encoder)

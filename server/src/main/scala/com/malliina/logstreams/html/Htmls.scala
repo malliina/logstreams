@@ -146,7 +146,7 @@ class Htmls(
 
   private def timePicker(labelText: String, divId: String) =
     val inputId = s"$divId-input"
-    divClass("col-sm-6 col-lg-4 my-2 mt-sm-0")(
+    divClass("col-sm-6 my-2 mt-sm-0")(
       label(`for` := inputId, `class` := "form-label")(labelText),
       div(
         id := divId,

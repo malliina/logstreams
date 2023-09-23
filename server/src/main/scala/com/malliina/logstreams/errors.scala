@@ -2,28 +2,20 @@ package com.malliina.logstreams
 
 import cats.data.NonEmptyList
 import com.malliina.values.ErrorMessage
-import com.malliina.web.JWTError
 import io.circe.*
-import io.circe.generic.semiauto.*
-import io.circe.syntax.*
 
-case class SingleError(message: String, key: String)
+case class SingleError(message: String, key: String) derives Codec.AsObject
 
 object SingleError:
-  implicit val json: Codec[SingleError] = deriveCodec[SingleError]
-
   def apply(message: String): SingleError = apply(message, "generic")
 
-case class Errors(errors: NonEmptyList[SingleError])
+case class Errors(errors: NonEmptyList[SingleError]) derives Codec.AsObject
 
 object Errors:
-  implicit val se: Codec[SingleError] = SingleError.json
-  import cats.implicits.*
-  implicit def nel[T: Codec]: Codec[NonEmptyList[T]] = Codec.from(
+  given [T: Codec]: Codec[NonEmptyList[T]] = Codec.from(
     Decoder.decodeNonEmptyList[T],
     Encoder.encodeNonEmptyList[T]
   )
-  implicit val json: Codec[Errors] = deriveCodec[Errors]
 
   def apply(message: ErrorMessage): Errors = Errors.single(message.message)
   def single(message: String): Errors = Errors(NonEmptyList.of(SingleError(message)))

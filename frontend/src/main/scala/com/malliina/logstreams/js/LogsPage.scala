@@ -15,15 +15,15 @@ class LogsPage:
   val settings: Settings = StorageSettings
   private val availableApps =
     elem(AppsDropdownMenuId).getElementsByClassName(DropdownItem).map(_.asInstanceOf[Anchor])
-  private var selectedFrom: Option[Date] = None
+  private var selectedFrom: Option[Date] = Option(defaultFromDate())
   private var selectedTo: Option[Date] = None
   def maxDate = new Date(Date.now())
-  private val fromPicker = makePicker(FromTimePickerId)
-  private val toPicker = makePicker(ToTimePickerId)
-  private def makePicker(elementId: String): TempusDominus =
+  private val fromPicker = makePicker(FromTimePickerId, selectedFrom)
+  private val toPicker = makePicker(ToTimePickerId, None)
+  private def makePicker(elementId: String, initialDate: Option[Date]): TempusDominus =
     TempusDominus(
       elem(elementId),
-      TimeOptions(TimeRestrictions(None, None), TimeLocalization(DateFormats.default))
+      TimeOptions(initialDate, TimeRestrictions(None, None), TimeLocalization(DateFormats.default))
     )
   private var socket: ListenerSocket = socketFor(settings.apps, settings.level, settings.query)
   availableApps.foreach { item =>
@@ -58,6 +58,7 @@ class LogsPage:
         newDate.foreach { date =>
           other.updateOptions(
             TimeOptions(
+              newDate,
               if isFrom then TimeRestrictions(min = newDate, max = Option(maxDate))
               else TimeRestrictions(min = None, max = newDate),
               TimeLocalization(DateFormats.default)
@@ -112,16 +113,17 @@ class LogsPage:
     val searchQuery = query.map(q => "q" -> q).toList
     val f = selectedFrom.map(d => "from" -> d.toISOString())
     val t = selectedTo.map(d => "to" -> d.toISOString())
-    val dates =
-      if f.isEmpty && t.isEmpty then
-        val from = new Date(Date.now())
-        from.setDate(from.getDate() - 2)
-        Seq("from" -> from.toISOString())
-      else f.toList ++ t.toList
+    val dates = f.toList ++ t.toList
     val params = (Seq("f" -> "json") ++ appsParams ++ levelParam ++ searchQuery ++ dates)
       .map((k, v) => s"$k=${URIUtils.encodeURIComponent(v)}")
       .mkString("&")
     s"/ws/logs?$params"
+
+  private def defaultFromDate(now: Date = new Date(Date.now())) =
+    val from = new Date(Date.now())
+    // now minus two days
+    from.setDate(from.getDate() - 2)
+    from
 
   private def reconnect(apps: Seq[AppName], level: LogLevel, query: Option[String]): Unit =
     socket.close()

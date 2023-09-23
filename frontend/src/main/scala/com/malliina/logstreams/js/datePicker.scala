@@ -67,12 +67,14 @@ object TimeRestrictions:
 
 @js.native
 trait TimeOptions extends js.Object:
+  def defaultDate: js.UndefOr[Date] = js.native
   def restrictions: TimeRestrictions = js.native
   def localization: TimeLocalization = js.native
 
 object TimeOptions:
-  def apply(r: TimeRestrictions, l: TimeLocalization) =
-    literal(restrictions = r, localization = l).asInstanceOf[TimeOptions]
+  def apply(defaultDate: Option[Date], r: TimeRestrictions, l: TimeLocalization) =
+    literal(defaultDate = defaultDate.getOrElse(()), restrictions = r, localization = l)
+      .asInstanceOf[TimeOptions]
 
 @js.native
 trait TimeSubscription extends js.Object:

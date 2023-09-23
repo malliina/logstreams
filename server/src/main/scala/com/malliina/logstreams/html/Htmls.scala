@@ -1,15 +1,16 @@
 package com.malliina.logstreams.html
 
 import com.malliina.html.HtmlImplicits.fullUrl
-import com.malliina.html.{Bootstrap, HtmlTags, TagPage}
+import com.malliina.html.{Bootstrap, HtmlTags}
 import com.malliina.http.FullUrl
 import com.malliina.live.LiveReload
 import com.malliina.logstreams.HashedAssets
-import com.malliina.logstreams.html.Htmls.*
+import com.malliina.logstreams.html.Htmls.{*, given}
 import com.malliina.logstreams.http4s.{LogRoutes, UserFeedback}
 import com.malliina.logstreams.models.{AppName, FrontStrings, LogLevel}
 import com.malliina.values.Username
 import org.http4s.Uri
+import scalatags.Text.TypedTag
 import scalatags.Text.all.*
 import scalatags.text.Builder
 
@@ -17,7 +18,9 @@ object Htmls:
   val UsernameKey = "username"
   val PasswordKey = "password"
 
-  implicit val uriAttr: AttrValue[Uri] = (t: Builder, a: Attr, v: Uri) =>
+  case class PageConf(titleText: String, bodyClasses: Seq[String])
+
+  given AttrValue[Uri] = (t: Builder, a: Attr, v: Uri) =>
     t.setAttr(a.name, Builder.GenericAttrValueSource(v.renderString))
 
   /** @param appName
@@ -111,12 +114,14 @@ class Htmls(
           )
         ),
         div(id := AppsFiltered)
-      ),
+      )
+    ),
+    divClass(s"$Row form-row")(
       timePicker("From", FromTimePickerId),
       timePicker("To", ToTimePickerId)
     ),
-    row(
-      div(`class` := "input-group mt-3 mb-3")(
+    divClass(s"$Row form-row")(
+      div(`class` := "input-group my-3")(
         input(
           `type` := "text",
           `class` := "form-control search-control",
@@ -141,7 +146,7 @@ class Htmls(
 
   private def timePicker(labelText: String, divId: String) =
     val inputId = s"$divId-input"
-    divClass("col-sm-6 col-md-4 mt-2 mb-2 mt-sm-0")(
+    divClass("col-sm-6 col-lg-4 my-2 mt-sm-0")(
       label(`for` := inputId, `class` := "form-label")(labelText),
       div(
         id := divId,
@@ -232,29 +237,27 @@ class Htmls(
       div(`class` := "wide-content", id := "page-content")(inner)
     )
 
-  def root(conf: PageConf, extraHeader: Modifier*)(inner: Modifier*) =
-    TagPage(
-      html(lang := "en")(
-        head(
-          titleTag(conf.titleText),
-          deviceWidthViewport,
-          link(
-            rel := "shortcut icon",
-            `type` := "image/png",
-            href := inlineOrUri("img/jag-16x16.png")
-          ),
-          cssFiles.map(file => cssLink(asset(file))),
-          extraHeader
+  def root(conf: PageConf, extraHeader: Modifier*)(inner: Modifier*): TypedTag[String] =
+    html(lang := "en")(
+      head(
+        titleTag(conf.titleText),
+        deviceWidthViewport,
+        link(
+          rel := "shortcut icon",
+          `type` := "image/png",
+          href := inlineOrUri("img/jag-16x16.png")
         ),
-        body(`class` := conf.bodyClasses.mkString(" "))(
-          section(inner),
-          scripts.map { js =>
-            jsScript(asset(js), defer)
-          },
-          externalScripts.map { js =>
-            jsScript(js, defer)
-          }
-        )
+        cssFiles.map(file => cssLink(asset(file))),
+        extraHeader
+      ),
+      body(`class` := conf.bodyClasses.mkString(" "))(
+        section(inner),
+        scripts.map { js =>
+          jsScript(asset(js), defer)
+        },
+        externalScripts.map { js =>
+          jsScript(js, defer)
+        }
       )
     )
 

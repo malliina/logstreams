@@ -90,7 +90,7 @@ case class LogEventOld(
   threadName: String,
   level: String,
   stackTrace: Option[String] = None
-):
+) derives Codec.AsObject:
   def toEvent =
     LogEvent(
       timeStamp,
@@ -101,9 +101,6 @@ case class LogEventOld(
       LogLevel.build(level).getOrElse(LogLevel.Info),
       stackTrace
     )
-
-object LogEventOld:
-  implicit val json: Codec[LogEventOld] = deriveCodec[LogEventOld]
 
 case class LogEvent(
   timestamp: Long,
@@ -117,7 +114,7 @@ case class LogEvent(
 
 object LogEvent:
   private val basicReader: Decoder[LogEvent] = deriveDecoder[LogEvent]
-  private val reader = basicReader.or(LogEventOld.json.map(_.toEvent))
+  private val reader = basicReader.or(Decoder[LogEventOld].map(_.toEvent))
   implicit val json: Codec[LogEvent] = Codec.from(reader, deriveEncoder[LogEvent])
 
 case class AppLogEvent(
@@ -126,10 +123,7 @@ case class AppLogEvent(
   event: LogEvent,
   added: Long,
   addedFormatted: String
-)
-
-object AppLogEvent:
-  implicit val json: Codec[AppLogEvent] = deriveCodec[AppLogEvent]
+) derives Codec.AsObject
 
 case class AppLogEvents(events: Seq[AppLogEvent]) extends FrontEvent:
   def filter(p: AppLogEvent => Boolean): AppLogEvents = copy(events = events.filter(p))
@@ -151,12 +145,12 @@ abstract class Companion[Raw, T](implicit d: Decoder[Raw], e: Encoder[Raw], o: O
   def apply(raw: Raw): T
   def raw(t: T): Raw
 
-  implicit val format: Codec[T] = Codec.from(
+  given Codec[T] = Codec.from(
     d.map(in => apply(in)),
     e.contramap[T](t => raw(t))
   )
 
-  implicit val ordering: Ordering[T] = o.on(raw)
+  given Ordering[T] = o.on(raw)
 
 object LogsJson:
   private val EventKey = "event"

@@ -53,7 +53,8 @@ class LogSockets[F[_]: Async](
         es.filter(_.event.level.int >= query.level.int)
       }
     val filteredEvents =
-      if query.apps.isEmpty then subscription
+      if query.query.isDefined then Stream.empty
+      else if query.apps.isEmpty then subscription
       else
         subscription.map { es =>
           es.filter(e => query.apps.exists(app => app.name == e.source.name.name))

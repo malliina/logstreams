@@ -14,6 +14,7 @@ trait FrontStrings:
   val SearchFeedbackId = "search-feedback"
   val SearchFeedbackRowId = "search-feedback-row"
 
+  val LoadingSpinner = "loading-spinner"
   val LogLevelDropdown = "level-dropdown"
   val LogLevelDropdownButton = "level-dropdown-button"
   val LogLevelDropdownMenuId = "level-dropdown-menu"

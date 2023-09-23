@@ -1,6 +1,7 @@
 package com.malliina.logstreams.js
 
-import com.malliina.logstreams.js.ScriptHelpers.{DisplayNone, LogTableId, MobileContentId, OptionCompact, OptionVerbose, SearchFeedbackId, SearchFeedbackRowId, TableBodyId, TableClasses, TableHeadId, VerboseKey, elem, elemOptAs, getElem}
+import com.malliina.logstreams.js.ScriptHelpers.{elem, elemOptAs, getElem}
+import com.malliina.logstreams.models.FrontStrings.*
 import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents, FrontEvent, LogEvent, LogLevel, SimpleEvent}
 import io.circe.Json
 import org.scalajs.dom
@@ -28,6 +29,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
   private lazy val table = getElem[HTMLTableElement](LogTableId)
   private lazy val searchFeedbackRow = elem(SearchFeedbackRowId)
   private lazy val searchFeedback = getElem[HTMLParagraphElement](SearchFeedbackId)
+  private lazy val loadingSpinner = getElem[HTMLElement](LoadingSpinner)
   private def isVerbose: Boolean = settings.isVerbose
 
   private val responsiveClass = "d-none d-md-table-cell"
@@ -69,18 +71,18 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
     event match
       case e @ SimpleEvent(event) =>
         if e == SimpleEvent.loading then
-          table.className = DisplayNone
-          log.info("Loading...")
-          searchFeedback.innerText = "Loading..."
-          searchFeedbackRow.classList.remove(DisplayNone)
+          table.hideFull()
+          searchFeedbackRow.hide()
+          loadingSpinner.show()
         else if e == SimpleEvent.noData then
-          searchFeedbackRow.classList.remove(DisplayNone)
-          table.className = DisplayNone
+          loadingSpinner.hide()
+          searchFeedbackRow.show()
+          table.hideFull()
           searchFeedback.innerText = "No data for the current query."
-          log.info("No data.")
         else ()
       case AppLogEvents(events) =>
-        elem(SearchFeedbackRowId).classList.add(DisplayNone)
+        loadingSpinner.hide()
+        searchFeedbackRow.hide()
         table.className = TableClasses
         events.foreach { e => onLogEvent(e) }
 

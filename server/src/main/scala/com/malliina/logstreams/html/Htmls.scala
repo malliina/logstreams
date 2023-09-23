@@ -129,6 +129,7 @@ class Htmls(
         )
       )
     ),
+    row(id := LoadingSpinner, `class` := "loader mx-auto my-3"),
     row(id := SearchFeedbackRowId, `class` := DisplayNone)(
       p(id := SearchFeedbackId)
     ),
@@ -202,7 +203,7 @@ class Htmls(
     )
 
   private def logEntriesTable(tableId: String) =
-    table(`class` := TableClasses, id := tableId)
+    table(`class` := DisplayNone, id := tableId)
 
   private def defaultTable(tableId: String, headers: Seq[String]) =
     defaultTableBase(tableId, headers.map(h => th(h)))

@@ -1,26 +1,19 @@
 package it
 
-import cats.effect.unsafe.implicits.global
-import cats.effect.{Deferred, IO, Resource}
+import cats.effect.{Deferred, IO}
 import com.malliina.http.FullUrl
-import com.malliina.http.io.SocketEvent.{Open, TextMessage}
-import com.malliina.http.io.{HttpClientF2, HttpClientIO, SocketEvent, WebSocketF}
+import com.malliina.http.io.SocketEvent.Open
+import com.malliina.http.io.{HttpClientF2, SocketEvent, WebSocketF}
 import com.malliina.logstreams.auth.BasicCredentials
 import com.malliina.logstreams.client.{HttpUtil, KeyValue}
 import com.malliina.logstreams.http4s.LogRoutes
 import com.malliina.logstreams.models.*
-import com.malliina.values.{Password, Username}
 import com.malliina.util.AppLogger
+import com.malliina.values.{Password, Username}
 import fs2.Stream
-import io.circe.Json
-import io.circe.syntax.EncoderOps
-import io.circe.parser.parse
+import io.circe.{Decoder, Json}
 import it.LogstreamsTests.testUsername
-import org.http4s.{Status, Uri}
-import org.slf4j.LoggerFactory
-
-import javax.net.ssl.SSLContext
-import scala.concurrent.Promise
+import org.http4s.Uri
 
 object LogstreamsTests:
   val testUsername = Username("u")
@@ -60,11 +53,14 @@ class LogstreamsTests extends TestServerSuite:
 
     val user = "u2"
     val task = withSource(user, client) { source =>
-      Deferred[IO, Json].flatMap { p =>
+      Deferred[IO, AppLogEvents].flatMap { p =>
         withListener(client) { listener =>
           val receive: IO[Unit] =
-            listener.jsonMessages
-              .evalMap(msg => p.complete(msg))
+            listener.jsonMessages.flatMap { json =>
+              Decoder[AppLogEvents]
+                .decodeJson(json)
+                .fold(fail => Stream.empty, es => Stream.eval(p.complete(es)))
+            }
               .take(1)
               .compile
               .drain
@@ -74,11 +70,10 @@ class LogstreamsTests extends TestServerSuite:
             _ <- source.send(payload)
             receivedEvent <- p.get
           yield
-            val jsonResult = receivedEvent.as[AppLogEvents]
-            assert(jsonResult.isRight)
-            val events = jsonResult.toOption.get
-            assertEquals(events.events.size, 1)
-            val event = events.events.head
+            val jsonResult = receivedEvent
+            val events = jsonResult.events
+            assertEquals(events.size, 1)
+            val event = events.head
             assertEquals(event.source.name, AppName(user))
             assertEquals(event.event.message, message)
         }

@@ -1,6 +1,6 @@
 package com.malliina.logstreams.js
 
-import org.scalajs.dom.Element
+import org.scalajs.dom.{Element, window}
 
 import scala.scalajs.js
 import scala.scalajs.js.Date
@@ -66,15 +66,56 @@ object TimeRestrictions:
     obj.asInstanceOf[TimeRestrictions]
 
 @js.native
+trait ButtonOptions extends js.Object:
+  def today: Boolean = js.native
+  def clear: Boolean = js.native
+  def close: Boolean = js.native
+
+object ButtonOptions:
+  def apply(today: Boolean = false, clear: Boolean = false, close: Boolean = false): ButtonOptions =
+    literal(today = today, clear = clear, close = close).asInstanceOf[ButtonOptions]
+
+@js.native
+trait DisplayOptions extends js.Object:
+  def buttons: ButtonOptions = js.native
+  def sideBySide: Boolean = js.native
+
+object DisplayOptions:
+  private val smallBreakpointPx = 576
+  def basic(close: Boolean) =
+    apply(ButtonOptions(close = close), sideBySide = window.innerWidth >= smallBreakpointPx)
+  def apply(buttons: ButtonOptions, sideBySide: Boolean = false): DisplayOptions =
+    literal(buttons = buttons, sideBySide = sideBySide).asInstanceOf[DisplayOptions]
+
+@js.native
 trait TimeOptions extends js.Object:
   def defaultDate: js.UndefOr[Date] = js.native
   def restrictions: TimeRestrictions = js.native
   def localization: TimeLocalization = js.native
+  def display: DisplayOptions = js.native
 
 object TimeOptions:
-  def apply(defaultDate: Option[Date], r: TimeRestrictions, l: TimeLocalization) =
-    literal(defaultDate = defaultDate.getOrElse(()), restrictions = r, localization = l)
+  def apply(
+    defaultDate: Option[Date],
+    r: TimeRestrictions,
+    l: TimeLocalization,
+    display: DisplayOptions
+  ) =
+    literal(
+      defaultDate = defaultDate.getOrElse(()),
+      restrictions = r,
+      localization = l,
+      display = display
+    )
       .asInstanceOf[TimeOptions]
+
+@js.native
+trait OptionsUpdate extends js.Object:
+  def restrictions: TimeRestrictions = js.native
+
+object OptionsUpdate:
+  def apply(restrictions: TimeRestrictions): OptionsUpdate =
+    literal(restrictions = restrictions).asInstanceOf[OptionsUpdate]
 
 @js.native
 trait TimeSubscription extends js.Object:
@@ -93,7 +134,7 @@ trait ChangeEvent extends BaseEvent:
 @js.native
 @JSImport("@eonasdan/tempus-dominus", "TempusDominus")
 class TempusDominus(e: Element, options: TimeOptions) extends js.Object:
-  def updateOptions(opts: TimeOptions, reset: Boolean): Unit = js.native
+  def updateOptions(opts: TimeOptions | OptionsUpdate, reset: Boolean): Unit = js.native
   def viewDate: js.UndefOr[Date] = js.native
   def picked: js.UndefOr[js.Array[Date]] = js.native
   def lastPicked: js.UndefOr[Date] = js.native

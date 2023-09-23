@@ -10,7 +10,7 @@ import scalatags.JsDom.all.*
 import scala.scalajs.js
 import scala.scalajs.js.{Date, JSON, URIUtils}
 
-class LogsPage:
+class LogsPage(log: BaseLogger):
   private val ActiveClass = "active"
   val settings: Settings = StorageSettings
   private val availableApps =
@@ -23,7 +23,12 @@ class LogsPage:
   private def makePicker(elementId: String, initialDate: Option[Date]): TempusDominus =
     TempusDominus(
       elem(elementId),
-      TimeOptions(initialDate, TimeRestrictions(None, None), TimeLocalization(DateFormats.default))
+      TimeOptions(
+        initialDate,
+        TimeRestrictions(None, None),
+        TimeLocalization(DateFormats.default),
+        DisplayOptions.basic(close = true)
+      )
     )
   private var socket: ListenerSocket = socketFor(settings.apps, settings.level, settings.query)
   availableApps.foreach { item =>
@@ -52,22 +57,22 @@ class LogsPage:
     picker.subscribe(
       "change.td",
       e =>
+        log.info(s"Change ${JSON.stringify(e)}")
         val ce = e.asInstanceOf[ChangeEvent]
         val newDate = ce.date.toOption
         if isFrom then selectedFrom = newDate else selectedTo = newDate
         newDate.foreach { date =>
           other.updateOptions(
-            TimeOptions(
-              newDate,
+            OptionsUpdate(
               if isFrom then TimeRestrictions(min = newDate, max = Option(maxDate))
-              else TimeRestrictions(min = None, max = newDate),
-              TimeLocalization(DateFormats.default)
+              else TimeRestrictions(min = None, max = newDate)
             ),
             reset = false
           )
         }
         updateSearch()
     )
+    picker.subscribe("hide.td", e => log.info("hide"))
 
   private def socketFor(apps: Seq[AppName], level: LogLevel, query: Option[String]) =
     ListenerSocket(pathFor(apps, level, query), settings, verboseSupport = true)

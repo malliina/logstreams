@@ -6,7 +6,7 @@ import io.circe.Json
 import scalatags.Text
 import scalatags.Text.all.*
 
-class SourcesPage extends BaseSocket("/ws/admins?f=json"):
+class SourcesPage(log: BaseLogger) extends BaseSocket("/ws/admins?f=json", log):
   val tableBody = elem(SourceTableId).getElementsByTagName("tbody").head
 
   override def handlePayload(payload: Json): Unit =

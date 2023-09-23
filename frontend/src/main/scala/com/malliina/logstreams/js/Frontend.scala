@@ -1,14 +1,9 @@
 package com.malliina.logstreams.js
 
-import com.malliina.http.FullUrl
 import com.malliina.logstreams.models.FrontStrings.*
 import org.scalajs.dom
-import org.scalajs.dom.{Element, HTMLElement}
 
 import scala.scalajs.js
-import scala.scalajs.js.Date
-import scala.scalajs.js.Dynamic.literal
-import scala.scalajs.js.JSConverters.*
 import scala.scalajs.js.annotation.JSImport
 
 object Frontend:
@@ -19,8 +14,9 @@ object Frontend:
   private val tempusDominusCss = TempusDominusCss
 
   def main(args: Array[String]): Unit =
-    if has(classes.Socket) then LogsPage()
-    if has(classes.Sources) then SourcesPage()
+    val log: BaseLogger = BaseLogger.printer
+    if has(classes.Socket) then LogsPage(log)
+    if has(classes.Sources) then SourcesPage(log)
 
   private def has(feature: String) = dom.document.body.classList.contains(feature)
 

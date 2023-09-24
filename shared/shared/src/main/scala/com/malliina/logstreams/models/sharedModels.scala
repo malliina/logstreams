@@ -68,8 +68,6 @@ case class SimpleEvent(event: String) extends FrontEvent with AdminEvent derives
 
 object SimpleEvent:
   val ping = SimpleEvent("ping")
-  val loading = SimpleEvent("loading")
-  val noData = SimpleEvent("noData")
 
 case class LogSources(sources: Seq[LogSource]) extends AdminEvent derives Codec.AsObject
 
@@ -139,8 +137,10 @@ case class SearchInfo(query: Option[String], from: Option[String], to: Option[St
 
 case class MetaEvent(event: String, meta: SearchInfo) extends FrontEvent derives Codec.AsObject
 object MetaEvent:
+  val Loading = "loading"
   val NoData = "noData"
   def noData(meta: SearchInfo) = MetaEvent(NoData, meta)
+  def loading(meta: SearchInfo) = MetaEvent(Loading, meta)
 
 object FrontEvent:
   implicit val reader: Decoder[FrontEvent] =

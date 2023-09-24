@@ -69,7 +69,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
 
   private def onFrontEvent(event: FrontEvent): Unit =
     event match
-      case me @ MetaEvent(e, meta) =>
+      case MetaEvent(e, meta) =>
         if e == MetaEvent.NoData then
           loadingSpinner.hide()
           searchFeedbackRow.show()
@@ -78,18 +78,13 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
             .map(q => s"No results for '$q'.")
             .getOrElse("No results for the current query.")
           searchFeedback.innerText = msg
-        else ()
-      case e @ SimpleEvent(event) =>
-        if e == SimpleEvent.loading then
+        else if e == MetaEvent.Loading then
           table.hideFull()
           searchFeedbackRow.hide()
           loadingSpinner.show()
-        else if e == SimpleEvent.noData then
-          loadingSpinner.hide()
-          searchFeedbackRow.show()
-          table.hideFull()
-          searchFeedback.innerText = "No data for the current query."
         else ()
+      case SimpleEvent(event) =>
+        ()
       case AppLogEvents(events) =>
         loadingSpinner.hide()
         searchFeedbackRow.hide()

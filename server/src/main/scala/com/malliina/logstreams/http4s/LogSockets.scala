@@ -60,11 +60,12 @@ class LogSockets[F[_]: Async](
           es.filter(e => query.apps.exists(app => app.name == e.source.name.name))
         }
 
-    val logEvents = Stream(SimpleEvent.loading) ++ Stream
+    val info = SearchInfo(query.query, from = None, to = None)
+    val logEvents = Stream(MetaEvent.loading(info)) ++ Stream
       .eval(db.events(query))
       .flatMap { history =>
         val historyOrNoData =
-          if history.isEmpty then MetaEvent.noData(SearchInfo(query.query, from = None, to = None))
+          if history.isEmpty then MetaEvent.noData(info)
           else history.reverse
         Stream(historyOrNoData) ++ filteredEvents
           .map(

@@ -6,7 +6,6 @@ import com.malliina.values.{EnumCompanion, ErrorMessage, WrappedString}
 import io.circe.*
 import io.circe.generic.semiauto.*
 import io.circe.syntax.*
-import cats.syntax.functor.*
 
 sealed abstract class LogLevel(val name: String, val int: Int) extends WrappedString:
   override def value = name
@@ -74,9 +73,9 @@ case class LogSources(sources: Seq[LogSource]) extends AdminEvent derives Codec.
 sealed trait AdminEvent extends GenericEvent
 
 object AdminEvent:
-  implicit val decoder: Decoder[AdminEvent] =
+  given Decoder[AdminEvent] =
     Decoder[LogSources].or(Decoder[SimpleEvent].map[AdminEvent](identity))
-  implicit val encoder: Encoder[AdminEvent] = {
+  given Encoder[AdminEvent] = {
     case ls @ LogSources(_)  => ls.asJson
     case se @ SimpleEvent(_) => se.asJson
   }
@@ -114,7 +113,7 @@ case class LogEvent(
 object LogEvent:
   private val basicReader: Decoder[LogEvent] = deriveDecoder[LogEvent]
   private val reader = basicReader.or(Decoder[LogEventOld].map(_.toEvent))
-  implicit val json: Codec[LogEvent] = Codec.from(reader, deriveEncoder[LogEvent])
+  given Codec[LogEvent] = Codec.from(reader, deriveEncoder[LogEvent])
 
 case class AppLogEvent(
   id: LogEntryId,
@@ -130,7 +129,7 @@ case class AppLogEvents(events: Seq[AppLogEvent]) extends FrontEvent:
   def isEmpty = events.isEmpty
 
 object AppLogEvents:
-  implicit val json: Codec[AppLogEvents] = evented("events", deriveCodec[AppLogEvents])
+  given Codec[AppLogEvents] = evented("events", deriveCodec[AppLogEvents])
 
 case class SearchInfo(query: Option[String], from: Option[String], to: Option[String])
   derives Codec.AsObject
@@ -143,17 +142,18 @@ object MetaEvent:
   def loading(meta: SearchInfo) = MetaEvent(Loading, meta)
 
 object FrontEvent:
-  implicit val reader: Decoder[FrontEvent] =
+  // using .widen fails, some dep issue, todo fix, workaround is to .map[Frontend](identity)
+  given Decoder[FrontEvent] =
     Decoder[AppLogEvents]
       .or(Decoder[MetaEvent].map[FrontEvent](identity))
       .or(Decoder[SimpleEvent].map[FrontEvent](identity))
-  implicit val encoder: Encoder[FrontEvent] = {
+  given Encoder[FrontEvent] = {
     case ale @ AppLogEvents(_) => ale.asJson
     case me @ MetaEvent(_, _)  => me.asJson
     case se @ SimpleEvent(_)   => se.asJson
   }
 
-abstract class Companion[Raw, T](implicit d: Decoder[Raw], e: Encoder[Raw], o: Ordering[Raw]):
+abstract class Companion[Raw, T](using d: Decoder[Raw], e: Encoder[Raw], o: Ordering[Raw]):
   def apply(raw: Raw): T
   def raw(t: T): Raw
 

@@ -6,6 +6,7 @@ import com.malliina.values.{EnumCompanion, ErrorMessage, WrappedString}
 import io.circe.*
 import io.circe.generic.semiauto.*
 import io.circe.syntax.*
+import cats.syntax.functor.*
 
 sealed abstract class LogLevel(val name: String, val int: Int) extends WrappedString:
   override def value = name
@@ -133,11 +134,22 @@ case class AppLogEvents(events: Seq[AppLogEvent]) extends FrontEvent:
 object AppLogEvents:
   implicit val json: Codec[AppLogEvents] = evented("events", deriveCodec[AppLogEvents])
 
+case class SearchInfo(query: Option[String], from: Option[String], to: Option[String])
+  derives Codec.AsObject
+
+case class MetaEvent(event: String, meta: SearchInfo) extends FrontEvent derives Codec.AsObject
+object MetaEvent:
+  val NoData = "noData"
+  def noData(meta: SearchInfo) = MetaEvent(NoData, meta)
+
 object FrontEvent:
   implicit val reader: Decoder[FrontEvent] =
-    Decoder[AppLogEvents].or(Decoder[SimpleEvent].map[FrontEvent](identity))
+    Decoder[AppLogEvents]
+      .or(Decoder[MetaEvent].map[FrontEvent](identity))
+      .or(Decoder[SimpleEvent].map[FrontEvent](identity))
   implicit val encoder: Encoder[FrontEvent] = {
     case ale @ AppLogEvents(_) => ale.asJson
+    case me @ MetaEvent(_, _)  => me.asJson
     case se @ SimpleEvent(_)   => se.asJson
   }
 

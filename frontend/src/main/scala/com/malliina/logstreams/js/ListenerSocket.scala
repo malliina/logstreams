@@ -2,7 +2,7 @@ package com.malliina.logstreams.js
 
 import com.malliina.logstreams.js.ScriptHelpers.{elem, elemOptAs, getElem}
 import com.malliina.logstreams.models.FrontStrings.*
-import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents, FrontEvent, LogEvent, LogLevel, SimpleEvent}
+import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents, FrontEvent, LogEvent, LogLevel, MetaEvent, SimpleEvent}
 import io.circe.Json
 import org.scalajs.dom
 import org.scalajs.dom.{Event, HTMLElement, HTMLInputElement, HTMLParagraphElement, HTMLTableElement, document}
@@ -69,6 +69,16 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
 
   private def onFrontEvent(event: FrontEvent): Unit =
     event match
+      case me @ MetaEvent(e, meta) =>
+        if e == MetaEvent.NoData then
+          loadingSpinner.hide()
+          searchFeedbackRow.show()
+          table.hideFull()
+          val msg = meta.query
+            .map(q => s"No results for '$q'.")
+            .getOrElse("No results for the current query.")
+          searchFeedback.innerText = msg
+        else ()
       case e @ SimpleEvent(event) =>
         if e == SimpleEvent.loading then
           table.hideFull()

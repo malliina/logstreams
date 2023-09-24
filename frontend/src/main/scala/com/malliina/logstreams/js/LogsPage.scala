@@ -27,7 +27,7 @@ class LogsPage(log: BaseLogger):
         initialDate,
         TimeRestrictions(None, None),
         TimeLocalization(DateFormats.default),
-        DisplayOptions.basic(close = true)
+        DisplayOptions.basic(close = true, closeIcon = "fa-solid fa-check")
       )
     )
   private var socket: ListenerSocket = socketFor(settings.apps, settings.level, settings.query)
@@ -55,11 +55,10 @@ class LogsPage(log: BaseLogger):
   val toSub = subscribeDate(toPicker, fromPicker, isFrom = false)
   private def subscribeDate(picker: TempusDominus, other: TempusDominus, isFrom: Boolean) =
     picker.subscribe(
-      "change.td",
+      "hide.td",
       e =>
-        log.info(s"Change ${JSON.stringify(e)}")
-        val ce = e.asInstanceOf[ChangeEvent]
-        val newDate = ce.date.toOption
+        val ce = e.asInstanceOf[DateEvent]
+        val newDate = ce.date.opt
         if isFrom then selectedFrom = newDate else selectedTo = newDate
         newDate.foreach { date =>
           other.updateOptions(
@@ -72,7 +71,6 @@ class LogsPage(log: BaseLogger):
         }
         updateSearch()
     )
-    picker.subscribe("hide.td", e => log.info("hide"))
 
   private def socketFor(apps: Seq[AppName], level: LogLevel, query: Option[String]) =
     ListenerSocket(pathFor(apps, level, query), settings, verboseSupport = true)

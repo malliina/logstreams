@@ -3,7 +3,7 @@ package com.malliina.logstreams.js
 import org.scalajs.dom.{Element, window}
 
 import scala.scalajs.js
-import scala.scalajs.js.Date
+import scala.scalajs.js.{Date, UndefOr}
 import scala.scalajs.js.Dynamic.literal
 import scala.scalajs.js.annotation.JSImport
 
@@ -76,16 +76,33 @@ object ButtonOptions:
     literal(today = today, clear = clear, close = close).asInstanceOf[ButtonOptions]
 
 @js.native
+trait IconOptions extends js.Object:
+  def close: String = js.native
+
+object IconOptions:
+  def apply(close: String = "fa-solid fa-xmark"): IconOptions =
+    literal(close = close).asInstanceOf[IconOptions]
+
+@js.native
 trait DisplayOptions extends js.Object:
   def buttons: ButtonOptions = js.native
   def sideBySide: Boolean = js.native
+  def icons: IconOptions = js.native
 
 object DisplayOptions:
   private val smallBreakpointPx = 576
-  def basic(close: Boolean) =
-    apply(ButtonOptions(close = close), sideBySide = window.innerWidth >= smallBreakpointPx)
-  def apply(buttons: ButtonOptions, sideBySide: Boolean = false): DisplayOptions =
-    literal(buttons = buttons, sideBySide = sideBySide).asInstanceOf[DisplayOptions]
+  def basic(close: Boolean, closeIcon: String) =
+    apply(
+      ButtonOptions(close = close),
+      sideBySide = window.innerWidth >= smallBreakpointPx,
+      icons = IconOptions(closeIcon)
+    )
+  def apply(
+    buttons: ButtonOptions,
+    sideBySide: Boolean = false,
+    icons: IconOptions = IconOptions()
+  ): DisplayOptions =
+    literal(buttons = buttons, sideBySide = sideBySide, icons = icons).asInstanceOf[DisplayOptions]
 
 @js.native
 trait TimeOptions extends js.Object:
@@ -126,10 +143,13 @@ trait BaseEvent extends js.Object:
   def `type`: String = js.native
 
 @js.native
-trait ChangeEvent extends BaseEvent:
-  def date: js.UndefOr[Date] = js.native
+trait ChangeEvent extends DateEvent:
   def isValid: Boolean = js.native
   def isClear: Boolean = js.native
+
+@js.native
+trait DateEvent extends BaseEvent:
+  def date: js.UndefOr[Date] = js.native
 
 @js.native
 @JSImport("@eonasdan/tempus-dominus", "TempusDominus")
@@ -144,3 +164,6 @@ class TempusDominus(e: Element, options: TimeOptions) extends js.Object:
 
 extension (td: TempusDominus)
   def date: Option[Date] = Option(td).flatMap(p => Option(p.viewDate)).flatMap(_.toOption)
+
+// Seems like UndefOrOps.toOption may return Option(null)
+extension [T](undor: js.UndefOr[T]) def opt = undor.toOption.filter(_ != null)

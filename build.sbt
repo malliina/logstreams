@@ -91,7 +91,8 @@ val frontend = project
   .disablePlugins(RevolverPlugin)
   .dependsOn(crossJs)
   .settings(
-    version := "1.0.0"
+    version := "1.0.0",
+    cwd := target.value
   )
 
 val server = project

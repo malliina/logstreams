@@ -3,10 +3,10 @@ package com.malliina.logstreams.http4s
 import cats.Applicative
 import com.malliina.logstreams.Errors
 import com.malliina.logstreams.http4s.BasicService.noCache
-import org.http4s.CacheDirective.{`must-revalidate`, `no-cache`, `no-store`}
-import org.http4s.{EntityEncoder, Request, Response, Status}
-import org.http4s.headers.`Cache-Control`
 import io.circe.syntax.EncoderOps
+import org.http4s.CacheDirective.{`must-revalidate`, `no-cache`, `no-store`}
+import org.http4s.headers.`Cache-Control`
+import org.http4s.{EntityEncoder, Request, Response}
 
 object BasicService:
   val noCache = `Cache-Control`(`no-cache`(), `no-store`, `must-revalidate`)

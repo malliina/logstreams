@@ -89,7 +89,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
         loadingSpinner.hide()
         searchFeedbackRow.hide()
         table.className = TableClasses
-        events.foreach { e => onLogEvent(e) }
+        events.foreach(e => onLogEvent(e))
 
   private def onLogEvent(event: AppLogEvent): Unit =
     mobileContent.prepend(mobileEntry(event).render)

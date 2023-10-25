@@ -91,7 +91,9 @@ class Http4sAuth[F[_]](
           .find(_.name == cookieName)
           .map(c => IdToken(c.content))
           .toRight(MissingCredentials(s"Cookie not found: '$cookieName'.", headers))
-      t <- jwt.verify[T](cookie).left.map { err =>
-        JWTError(err, headers)
-      }
+      t <- jwt
+        .verify[T](cookie)
+        .left
+        .map: err =>
+          JWTError(err, headers)
     yield t

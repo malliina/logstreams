@@ -65,7 +65,7 @@ object Auths extends AuthBuilder:
         case _ =>
           Left(MissingCredentials("Basic auth expected.", hs))
     }
-    .getOrElse { Left(MissingCredentials("No credentials.", hs)) }
+    .getOrElse(Left(MissingCredentials("No credentials.", hs)))
 
   private def fail(headers: Headers): Left[IdentityError, Nothing] = Left(
     MissingCredentials("Invalid credentials.", headers)

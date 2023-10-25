@@ -2,7 +2,7 @@ package com.malliina.logstreams.http4s
 
 import cats.data.NonEmptyList
 import cats.effect.Async
-import cats.implicits.*
+import cats.syntax.all.{catsSyntaxApplicativeId, toFlatMapOps}
 import com.malliina.app.BuildInfo
 import com.malliina.logstreams.http4s.StaticService.log
 import com.malliina.util.AppLogger

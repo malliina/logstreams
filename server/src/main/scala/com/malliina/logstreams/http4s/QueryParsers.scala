@@ -17,18 +17,21 @@ trait QueryParsers:
   def parseOpt[T](q: Query, key: String)(implicit
     dec: QueryParamDecoder[T]
   ): Option[Either[Errors, T]] =
-    q.params.get(key).map { g =>
-      dec.decode(QueryParameterValue(g)).toEither.left.map { failures =>
-        Errors(failures.map(pf => SingleError(pf.sanitized, "input")))
-      }
-    }
+    q.params
+      .get(key)
+      .map: g =>
+        dec
+          .decode(QueryParameterValue(g))
+          .toEither
+          .left
+          .map: failures =>
+            Errors(failures.map(pf => SingleError(pf.sanitized, "input")))
 
   def parseOptE[T: QueryParamDecoder](q: Query, key: String): Either[Errors, Option[T]] =
     parseOpt(q, key).map(e => e.map(t => Option(t))).getOrElse(Right(None))
 
   def decoder[T](validate: String => Either[ErrorMessage, T]): QueryParamDecoder[T] =
-    QueryParamDecoder.stringQueryParamDecoder.emap { s =>
-      validate(s).left.map { err => parseFailure(err.message) }
-    }
+    QueryParamDecoder.stringQueryParamDecoder.emap: s =>
+      validate(s).left.map(err => parseFailure(err.message))
 
   def parseFailure(message: String) = ParseFailure(message, message)

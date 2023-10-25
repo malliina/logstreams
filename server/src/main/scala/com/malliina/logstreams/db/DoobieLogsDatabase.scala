@@ -12,27 +12,24 @@ object DoobieLogsDatabase:
   private val log = AppLogger(getClass)
 
 class DoobieLogsDatabase[F[_]](db: DoobieDatabase[F]) extends LogsDatabase[F]:
-  def insert(events: List[LogEntryInput]): F[EntriesWritten] = db.run {
-    val insertions = events.traverse { e =>
+  def insert(events: List[LogEntryInput]): F[EntriesWritten] = db.run:
+    val insertions = events.traverse: e =>
       sql"""insert into LOGS(APP, ADDRESS, MESSAGE, LOGGER, THREAD, LEVEL, STACKTRACE, TIMESTAMP) 
             values(${e.appName}, ${e.remoteAddress}, ${e.message}, ${e.loggerName}, ${e.threadName}, ${e.level}, ${e.stackTrace}, ${e.timestamp})""".update
         .withUniqueGeneratedKeys[LogEntryId]("ID")
-    }
-    insertions.flatMap { idList =>
-      idList.toNel.map { ids =>
-        val inClause = Fragments.in(fr"ID", ids)
-        sql"""select ID, APP, ADDRESS, TIMESTAMP, MESSAGE, LOGGER, THREAD, LEVEL, STACKTRACE, ADDED
+    insertions.flatMap: idList =>
+      idList.toNel
+        .map: ids =>
+          val inClause = Fragments.in(fr"ID", ids)
+          sql"""select ID, APP, ADDRESS, TIMESTAMP, MESSAGE, LOGGER, THREAD, LEVEL, STACKTRACE, ADDED
               from LOGS 
               where $inClause""".query[LogEntryRow].to[List]
-      }.getOrElse {
-        List.empty[LogEntryRow].pure[ConnectionIO]
-      }.map { list =>
-        EntriesWritten(events, list)
-      }
-    }
-  }
+        .getOrElse:
+          List.empty[LogEntryRow].pure[ConnectionIO]
+        .map: list =>
+          EntriesWritten(events, list)
 
-  def events(query: StreamsQuery = StreamsQuery.default): F[AppLogEvents] = db.run {
+  def events(query: StreamsQuery = StreamsQuery.default): F[AppLogEvents] = db.run:
     val levels = LogLevel.all
       .filter(l => l.int >= query.level.int)
       .toList
@@ -52,7 +49,8 @@ class DoobieLogsDatabase[F[_]](db: DoobieDatabase[F]) extends LogsDatabase[F]:
     sql"""select ID, APP, ADDRESS, TIMESTAMP, MESSAGE, LOGGER, THREAD, LEVEL, STACKTRACE, ADDED
           from LOGS $whereClause 
           order by ADDED $order, ID $order
-          limit ${query.limit} offset ${query.offset}""".query[LogEntryRow].to[List].map { rows =>
-      AppLogEvents(rows.map(_.toEvent))
-    }
-  }
+          limit ${query.limit} offset ${query.offset}"""
+      .query[LogEntryRow]
+      .to[List]
+      .map: rows =>
+        AppLogEvents(rows.map(_.toEvent))

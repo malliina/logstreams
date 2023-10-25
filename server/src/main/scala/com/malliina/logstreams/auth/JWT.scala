@@ -45,25 +45,25 @@ object JWT:
       yield Parsed(token, signed, claims, json)
 
   case class Verified private (parsed: Parsed):
-    def expiresIn(now: Instant): Option[FiniteDuration] = parsed.exp.map { exp =>
+    def expiresIn(now: Instant): Option[FiniteDuration] = parsed.exp.map: exp =>
       (exp.toEpochMilli - now.toEpochMilli).millis
-    }
     private def readString(key: String) = parsed.readString(key)
     def token = parsed.token
     def read[T: Decoder](key: String): Either[JWTError, T] =
-      parsed.claimsJson.hcursor.downField(key).as[T].left.map { errors =>
-        InvalidClaims(token, ErrorMessage(s"Invalid claims: '$errors'."))
-      }
+      parsed.claimsJson.hcursor
+        .downField(key)
+        .as[T]
+        .left
+        .map: errors =>
+          InvalidClaims(token, ErrorMessage(s"Invalid claims: '$errors'."))
     def parse[T](key: String)(implicit r: Readable[T]): Either[JWTError, T] =
-      readString(key).flatMap { s =>
+      readString(key).flatMap: s =>
         r.read(s).left.map(err => InvalidClaims(token, err))
-      }
 
   object Verified:
     // No expiration => never expired
-    private def checkExpiration(parsed: Parsed, now: Instant) = parsed.exp.flatMap { e =>
+    private def checkExpiration(parsed: Parsed, now: Instant) = parsed.exp.flatMap: e =>
       if now.isBefore(e) then None else Option(Expired(parsed.token, e, now))
-    }
 
     def verify(parsed: Parsed, secret: SecretKey, now: Instant): Either[JWTError, Verified] =
       val verifier = new MACVerifier(secret.value)
@@ -94,11 +94,11 @@ class JWT(secret: SecretKey, dataKey: String = "data"):
     IdToken(signed.serialize())
 
   def verify[T: Decoder](token: TokenValue, now: Instant = Instant.now()): Either[JWTError, T] =
-    verifyToken(token, now).flatMap { v =>
+    verifyToken(token, now).flatMap: v =>
       v.read[T](dataKey)
-    }
 
   private def verifyToken(token: TokenValue, now: Instant): Either[JWTError, JWT.Verified] =
-    JWT.Parsed(token).flatMap { p =>
-      Verified.verify(p, secret, now)
-    }
+    JWT
+      .Parsed(token)
+      .flatMap: p =>
+        Verified.verify(p, secret, now)

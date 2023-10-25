@@ -1,7 +1,7 @@
 package com.malliina.logstreams.http4s
 
 import com.malliina.values.Username
-import org.http4s.*
+import org.http4s.{Charset, EntityEncoder, MediaType, syntax}
 import org.http4s.circe.CirceInstances
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`Content-Type`

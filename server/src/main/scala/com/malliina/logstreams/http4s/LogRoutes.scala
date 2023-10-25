@@ -1,8 +1,8 @@
 package com.malliina.logstreams.http4s
 
 import com.malliina.values.Username
-import org.http4s.*
-import org.http4s.implicits.*
+import org.http4s.Uri
+import org.http4s.implicits.uri
 
 object LogRoutes extends LogRoutes
 

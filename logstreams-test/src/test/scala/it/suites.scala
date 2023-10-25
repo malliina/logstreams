@@ -27,7 +27,7 @@ case class TestDatabase(conf: Conf, container: Option[MySQLContainer])
 object DatabaseUtils:
   val testDatabase: Resource[IO, TestDatabase] = Resource.make {
     IO.delay {
-      val localTestDb = testConf().map { conf => TestDatabase(conf, None) }
+      val localTestDb = testConf().map(conf => TestDatabase(conf, None))
       localTestDb.getOrElse {
         val image = DockerImageName.parse("mysql:8.0.33")
         val c = MySQLContainer(mysqlImageVersion = image)

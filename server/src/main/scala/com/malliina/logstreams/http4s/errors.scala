@@ -1,7 +1,6 @@
 package com.malliina.logstreams.http4s
 
 import com.malliina.web.AuthError
-import io.circe.{DecodingFailure, Json}
 import org.http4s.Headers
 
 class MissingCredentialsException(error: MissingCredentials) extends IdentityException(error)

@@ -1,14 +1,11 @@
 package com.malliina.logstreams.models
 
-import java.time.{Instant, ZoneId}
-import java.util.TimeZone
 import ch.qos.logback.classic.Level
 import com.malliina.logback.LogbackFormatting
-import com.malliina.logstreams.models.LogEntryRow.toLevel
 import com.malliina.values.Username
-import io.circe.*
-import io.circe.syntax.*
-import io.circe.generic.semiauto.*
+import io.circe.Codec
+
+import java.time.Instant
 
 case class LogEvents(events: List[LogEvent]) derives Codec.AsObject
 

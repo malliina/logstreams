@@ -15,51 +15,41 @@ object DoobieDatabaseAuth:
   private val log = AppLogger(getClass)
 
 class DoobieDatabaseAuth[F[_]](db: DoobieDatabase[F]) extends UserService[F]:
-  def add(creds: BasicCredentials): F[Either[AlreadyExists, Unit]] = db.run {
+  def add(creds: BasicCredentials): F[Either[AlreadyExists, Unit]] = db.run:
     val existsIO = sql"select exists(select USER from USERS where USER = ${creds.username})"
       .query[Boolean]
       .unique
-    existsIO.flatMap[Either[AlreadyExists, Unit]] { exists =>
+    existsIO.flatMap[Either[AlreadyExists, Unit]]: exists =>
       if exists then Left[AlreadyExists, Unit](AlreadyExists(creds.username)).pure[ConnectionIO]
       else
         val hashed = hash(creds)
-        sql"""insert into USERS(USER, PASS_HASH) values (${creds.username}, $hashed)""".update.run.map {
-          _ =>
+        sql"""insert into USERS(USER, PASS_HASH) values (${creds.username}, $hashed)""".update.run
+          .map: _ =>
             Right(())
-        }
-    }
 
-  }
-
-  def update(creds: BasicCredentials): F[Either[DoesNotExist, Unit]] = db.run {
+  def update(creds: BasicCredentials): F[Either[DoesNotExist, Unit]] = db.run:
     val user = creds.username
     val hashed = hash(creds)
-    sql"""update USERS set PASS_HASH = $hashed where USER = $user""".update.run.map { rowCount =>
+    sql"""update USERS set PASS_HASH = $hashed where USER = $user""".update.run.map: rowCount =>
       if rowCount > 0 then
         log.info(s"Updated the password of '$user'.")
         Right(())
       else Left(DoesNotExist(user))
-    }
-  }
 
-  def remove(user: Username): F[Either[DoesNotExist, Unit]] = db.run {
-    sql"delete from USERS where USER = $user".update.run.map { rowCount =>
+  def remove(user: Username): F[Either[DoesNotExist, Unit]] = db.run:
+    sql"delete from USERS where USER = $user".update.run.map: rowCount =>
       if rowCount > 0 then
         log.info(s"Removed '$user'.")
         Right(())
       else Left(DoesNotExist(user))
-    }
-  }
 
-  def isValid(creds: BasicCredentials) = db.run {
+  def isValid(creds: BasicCredentials) = db.run:
     val hashed = hash(creds)
     sql"select exists(select USER from USERS where USER = ${creds.username} and PASS_HASH = $hashed)"
       .query[Boolean]
       .unique
-  }
 
-  def all(): F[List[Username]] = db.run {
+  def all(): F[List[Username]] = db.run:
     sql"select USER from USERS order by USER".query[Username].to[List]
-  }
 
   private def hash(creds: BasicCredentials): Password = Utils.hash(creds)

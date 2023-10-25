@@ -46,7 +46,7 @@ class Service[F[_]: Async](
     case GET -> Root / "ping"   => ok(AppMeta.ThisApp)
     case req @ GET -> Root =>
       webAuth(req) { user =>
-        users.all().flatMap { us => ok(htmls.logs(us.map(u => AppName(u.name)))) }
+        users.all().flatMap(us => ok(htmls.logs(us.map(u => AppName(u.name)))))
       }
     case req @ GET -> Root / "sources" =>
       webAuth(req) { src =>
@@ -54,7 +54,7 @@ class Service[F[_]: Async](
       }
     case req @ GET -> Root / "users" =>
       webAuth(req) { user =>
-        users.all().flatMap { us => ok(htmls.users(us, None)) }
+        users.all().flatMap(us => ok(htmls.users(us, None)))
       }
     case req @ POST -> Root / "users" =>
       webAuth(req) { user =>

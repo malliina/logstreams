@@ -1,6 +1,6 @@
 package com.malliina.logstreams.html
 
-import com.malliina.html.HtmlImplicits.fullUrl
+import com.malliina.html.HtmlImplicits.given
 import com.malliina.html.{Bootstrap, HtmlTags}
 import com.malliina.http.FullUrl
 import com.malliina.live.LiveReload

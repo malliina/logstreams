@@ -17,11 +17,10 @@ object AppMode:
   case object Prod extends AppMode
   case object Dev extends AppMode
 
-  implicit val reader: ConfigReadable[AppMode] = ConfigReadable.string.emap {
+  given ConfigReadable[AppMode] = ConfigReadable.string.emap:
     case "prod" => Right(Prod)
     case "dev"  => Right(Dev)
     case other  => Left(ErrorMessage(s"Invalid mode: '$other'. Mode must be 'prod' or 'dev'."))
-  }
 
 object LocalConf:
   private val homeDir = Paths.get(sys.props("user.home"))

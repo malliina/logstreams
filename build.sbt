@@ -4,15 +4,15 @@ import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 
 val malliinaGroup = "com.malliina"
-val webAuthVersion = "6.5.5"
-val primitivesVersion = "3.4.5"
+val webAuthVersion = "6.5.7"
+val primitivesVersion = "3.4.6"
 val munitVersion = "0.7.29"
 val munitCatsEffectVersion = "1.0.7"
 val webAuthDep = malliinaGroup %% "web-auth" % webAuthVersion
 
 val serverVersion = "0.7.0"
 
-val scala3 = "3.3.0"
+val scala3 = "3.3.1"
 
 inThisBuild(
   Seq(
@@ -39,7 +39,7 @@ val fs2 = project
   .enablePlugins(MavenCentralPlugin)
   .settings(
     libraryDependencies ++= Seq("classic", "core").map { m =>
-      "ch.qos.logback" % s"logback-$m" % "1.4.8"
+      "ch.qos.logback" % s"logback-$m" % "1.4.11"
     } ++ Seq(
       "com.malliina" %%% "primitives" % primitivesVersion,
       "co.fs2" %% "fs2-core" % "3.7.0",
@@ -75,7 +75,7 @@ val cross = crossProject(JSPlatform, JVMPlatform)
   .in(file("shared"))
   .settings(
     libraryDependencies ++= Seq("generic", "parser").map { m =>
-      "io.circe" %%% s"circe-$m" % "0.14.5"
+      "io.circe" %%% s"circe-$m" % "0.14.6"
     } ++ Seq(
       "com.malliina" %%% "primitives" % primitivesVersion,
       "com.malliina" %%% "util-html" % webAuthVersion,
@@ -122,7 +122,7 @@ val server = project
         "mysql" % "mysql-connector-java" % "8.0.33",
         webAuthDep,
         webAuthDep % Test classifier "tests",
-        "com.dimafeng" %% "testcontainers-scala-mysql" % "0.40.17" % Test,
+        "com.dimafeng" %% "testcontainers-scala-mysql" % "0.41.0" % Test,
         "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
       ),
     Compile / packageDoc / publishArtifact := false,

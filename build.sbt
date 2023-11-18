@@ -4,8 +4,8 @@ import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 
 val malliinaGroup = "com.malliina"
-val webAuthVersion = "6.5.7"
-val primitivesVersion = "3.4.6"
+val webAuthVersion = "6.6.1"
+val primitivesVersion = "3.5.2"
 val munitVersion = "0.7.29"
 val munitCatsEffectVersion = "1.0.7"
 val webAuthDep = malliinaGroup %% "web-auth" % webAuthVersion
@@ -114,7 +114,7 @@ val server = project
     ),
     libraryDependencies ++=
       Seq("ember-server", "circe", "dsl").map { m =>
-        "org.http4s" %% s"http4s-$m" % "0.23.23"
+        "org.http4s" %% s"http4s-$m" % "0.23.24"
       } ++ Seq("util-html", "database").map { m =>
         "com.malliina" %% m % webAuthVersion
       } ++ Seq(

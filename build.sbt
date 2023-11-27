@@ -85,6 +85,8 @@ val cross = crossProject(JSPlatform, JVMPlatform)
 val crossJvm = cross.jvm
 val crossJs = cross.js
 
+val installDeps = taskKey[Unit]("Runs npm install")
+
 val frontend = project
   .in(file("frontend"))
   .enablePlugins(NodeJsPlugin, RollupPlugin)
@@ -92,7 +94,8 @@ val frontend = project
   .dependsOn(crossJs)
   .settings(
     version := "1.0.0",
-    cwd := target.value
+    cwd := target.value,
+    installDeps := RollupPlugin.npmInstall(npmRoot.value, streams.value.log)
   )
 
 val server = project

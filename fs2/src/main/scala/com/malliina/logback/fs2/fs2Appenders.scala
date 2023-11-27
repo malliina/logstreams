@@ -1,9 +1,8 @@
 package com.malliina.logback.fs2
 
-import cats.Monad
 import cats.effect.kernel.Async
 import cats.effect.std.Dispatcher
-import cats.effect.{Concurrent, IO, Resource}
+import cats.effect.{Concurrent, Resource}
 import cats.syntax.all.{toFlatMapOps, toFunctorOps}
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.AppenderBase

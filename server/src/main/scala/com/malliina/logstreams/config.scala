@@ -1,14 +1,11 @@
 package com.malliina.logstreams
 
-import cats.data.NonEmptyList
 import com.malliina.app.BuildInfo
-import com.malliina.config.{ConfigError, ConfigNode, Env, InvalidValue}
+import com.malliina.config.{ConfigError, ConfigNode, Env}
 import com.malliina.database.Conf
-import com.malliina.http.FullUrl
 import com.malliina.logstreams.auth.SecretKey
-import com.malliina.values.{ErrorMessage, Password, Readable}
+import com.malliina.values.{Password, Readable}
 import com.malliina.web.{AuthConf, ClientId, ClientSecret}
-import com.typesafe.config.{Config, ConfigFactory}
 
 import java.nio.file.Paths
 

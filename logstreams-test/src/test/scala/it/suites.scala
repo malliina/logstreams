@@ -1,23 +1,19 @@
 package it
 
-import cats.effect.unsafe.implicits.global
-import cats.effect.{IO, Resource}
 import cats.effect.kernel.Sync
+import cats.effect.{IO, Resource}
 import cats.syntax.flatMap.*
+import com.comcast.ip4s.port
 import com.dimafeng.testcontainers.MySQLContainer
 import com.malliina.app.AppConf
+import com.malliina.config.ConfigError
+import com.malliina.database.{Conf, DoobieDatabase}
+import com.malliina.http.io.HttpClientIO
 import com.malliina.logstreams.auth.*
 import com.malliina.logstreams.http4s.{Http4sAuth, Server, ServerComponents}
 import com.malliina.logstreams.{LocalConf, LogstreamsConf}
-import com.malliina.values.Username
-import munit.FunSuite
+import com.malliina.values.{Password, Username}
 import org.testcontainers.utility.DockerImageName
-import com.comcast.ip4s.port
-import com.malliina.database.{Conf, DoobieDatabase}
-import com.malliina.http.io.HttpClientIO
-
-import scala.concurrent.Promise
-import scala.util.Try
 
 class LogsAppConf(override val database: Conf) extends AppConf:
   override def close(): Unit = ()
@@ -52,10 +48,18 @@ object DatabaseUtils:
       }
   }
 
-  private def testConf(): Either[Throwable, Conf] =
-    Try(
-      LogstreamsConf.parseDatabase(LocalConf.conf.getConfig("logstreams").getConfig("testdb"))
-    ).toEither
+  private def testConf(): Either[ConfigError, Conf] =
+    LocalConf.conf
+      .parse[Password]("logstreams.testdb.pass")
+      .map: pass =>
+        Conf(
+          "jdbc:mysql://localhost:3306/testlogstreams",
+          "testlogstreams",
+          pass.pass,
+          Conf.MySQLDriver,
+          maxPoolSize = 2,
+          autoMigrate = true
+        )
 
   private def truncateTestData(conf: Conf): IO[Int] =
     import doobie.implicits.*
@@ -76,7 +80,7 @@ trait MUnitDatabaseSuite:
 trait ServerSuite extends MUnitDatabaseSuite:
   self: munit.CatsEffectSuite =>
   val http = ResourceFixture(HttpClientIO.resource)
-  val conf = IO.delay(LogstreamsConf.parse().copy(db = db().conf))
+  val conf = IO.delay(LogstreamsConf.parseUnsafe().copy(db = db().conf))
   val testResource = Resource.eval(conf).flatMap { conf =>
     Server.server(conf, testAuths, port"12345")
   }

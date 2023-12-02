@@ -1,16 +1,16 @@
 package com.malliina.logstreams.auth
 
-import com.malliina.logstreams.{ConfigReadable, SingleError}
+import com.malliina.config.ConfigReadable
+import com.malliina.logstreams.SingleError
 import com.malliina.values.{Email, Password, Username}
-import io.circe.*
-import io.circe.generic.semiauto.*
-import io.circe.syntax.*
+import io.circe.Codec
 
 case class SecretKey(value: String) extends AnyVal:
   override def toString = "****"
 
 object SecretKey:
-  implicit val config: ConfigReadable[SecretKey] = ConfigReadable.string.map(apply)
+  val dev = SecretKey("app-jwt-signing-secret-goes-here-must-be-sufficiently-long")
+  given ConfigReadable[SecretKey] = ConfigReadable.string.map(apply)
 
 case class BasicCredentials(username: Username, password: Password)
 
@@ -33,11 +33,9 @@ object CookieConf:
     s"$prefix-prompt"
   )
 
-case class UserPayload(username: Username)
+case class UserPayload(username: Username) derives Codec.AsObject
 
 object UserPayload:
-  implicit val json: Codec[UserPayload] = deriveCodec[UserPayload]
-
   def email(email: Email): UserPayload = apply(Username(email.value))
 
 sealed abstract class AuthProvider(val name: String)

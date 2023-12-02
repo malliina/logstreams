@@ -5,7 +5,7 @@ import cats.effect.kernel.Ref
 import cats.effect.std.Dispatcher
 import cats.effect.{Async, ExitCode, IO, IOApp, Resource}
 import com.comcast.ip4s.{Port, host, port}
-import com.malliina.app.AppMeta
+import com.malliina.app.{AppMeta, BuildInfo}
 import com.malliina.database.DoobieDatabase
 import com.malliina.http.io.HttpClientIO
 import com.malliina.logstreams.auth.{AuthBuilder, Auther, Auths, JWT}
@@ -83,7 +83,7 @@ object Server extends IOApp:
       val users = DoobieDatabaseAuth(db)
       val auths: Auther[F] = authBuilder(users, Http4sAuth(JWT(conf.secret)))
       val google = GoogleAuthFlow(conf.google, http)
-      val isProd = LocalConf.isProd
+      val isProd = BuildInfo.isProd
       Service(
         db,
         users,
@@ -94,16 +94,13 @@ object Server extends IOApp:
       )
 
   private def makeHandler[F[_]: Async](service: Service[F], socketBuilder: WebSocketBuilder2[F]) =
-    GZip {
-      HSTS {
-        orNotFound {
+    GZip:
+      HSTS:
+        orNotFound:
           Router(
             "/" -> service.routes(socketBuilder),
             "/assets" -> StaticService[F].routes
           )
-        }
-      }
-    }
 
   private def orNotFound[F[_]: Async](
     rs: HttpRoutes[F]
@@ -111,4 +108,4 @@ object Server extends IOApp:
     Kleisli(req => rs.run(req).getOrElseF(BasicService[F].notFound(req)))
 
   override def run(args: List[String]): IO[ExitCode] =
-    server[IO](LogstreamsConf.parse(), Auths).use(_ => IO.never).as(ExitCode.Success)
+    server[IO](LogstreamsConf.parseUnsafe(), Auths).use(_ => IO.never).as(ExitCode.Success)

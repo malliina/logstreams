@@ -29,12 +29,12 @@ object LogstreamsConf:
 
   def parseIO[F[_]: Sync] = Sync[F].fromEither(parseConf)
 
-  def parseConf = for
+  private def parseConf = for
     node <- logsNode
     parsed <- parse(node)
   yield parsed
 
-  def parse(c: ConfigNode): Either[ConfigError, LogstreamsConf] =
+  private def parse(c: ConfigNode): Either[ConfigError, LogstreamsConf] =
     val env = Env.read[String]("ENV_NAME")
     val isStaging = env.contains("staging")
     val isProd = env.contains("prod")

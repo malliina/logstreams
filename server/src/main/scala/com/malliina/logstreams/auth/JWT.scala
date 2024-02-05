@@ -56,7 +56,7 @@ object JWT:
         .left
         .map: errors =>
           InvalidClaims(token, ErrorMessage(s"Invalid claims: '$errors'."))
-    def parse[T](key: String)(implicit r: Readable[T]): Either[JWTError, T] =
+    def parse[T](key: String)(using r: Readable[T]): Either[JWTError, T] =
       readString(key).flatMap: s =>
         r.read(s).left.map(err => InvalidClaims(token, err))
 

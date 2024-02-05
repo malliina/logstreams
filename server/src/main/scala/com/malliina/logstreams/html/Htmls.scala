@@ -198,10 +198,16 @@ class Htmls(
             )
         ),
         div6(
-          postableForm(reverse.addUser)(
-            inGroup(UsernameKey, Text, "Username"),
-            passwordGroup(PasswordKey, "Password"),
-            blockSubmitButton()("Add User")
+          form(action := reverse.addUser, method := Post)(
+            div(cls := "mb-3")(
+              label(`for` := "username-input", cls := "form-label")("Username"),
+              input(tpe := "text", cls := "form-control", id := "username-input")
+            ),
+            div(cls := "mb-3")(
+              label(`for` := "password-input", cls := "form-label")("Password"),
+              input(tpe := "password", cls := "form-control", id := "password-input")
+            ),
+            button(tpe := "submit", cls := "btn btn-primary")("Add User")
           )
         )
       )

@@ -35,10 +35,9 @@ object Auths extends AuthBuilder:
       basic(hs).map { creds =>
         users
           .isValid(creds)
-          .map { isValid =>
+          .map: isValid =>
             if isValid then Right(creds.username)
             else fail(hs)
-          }
       }
         .fold(
           err => F.pure(Left(err: IdentityError)),
@@ -50,21 +49,19 @@ object Auths extends AuthBuilder:
       Applicative[F].pure(
         auth
           .authenticate(hs)
-          .flatMap { u =>
+          .flatMap: u =>
             if u.name == authorizedEmail.value then Right(u)
             else Left(JWTError(PermissionError(ErrorMessage(s"User '$u' is not authorized.")), hs))
-          }
       )
 
   private def basic(hs: Headers) = hs
     .get[Authorization]
-    .map { h =>
+    .map: h =>
       h.credentials match
         case org.http4s.BasicCredentials(user, pass) =>
           Right(com.malliina.logstreams.auth.BasicCredentials(Username(user), Password(pass)))
         case _ =>
           Left(MissingCredentials("Basic auth expected.", hs))
-    }
     .getOrElse(Left(MissingCredentials("No credentials.", hs)))
 
   private def fail(headers: Headers): Left[IdentityError, Nothing] = Left(

@@ -58,11 +58,12 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
 
   private def updateVerbose(newVerbose: Boolean): Unit =
     settings.saveVerbose(newVerbose)
-    document.getElementsByClassName(VerboseKey).foreach { e =>
-      val element = e.asInstanceOf[HTMLElement]
-      val classes = element.classList
-      if newVerbose then classes.remove(Off) else classes.add(Off)
-    }
+    document
+      .getElementsByClassName(VerboseKey)
+      .foreach: e =>
+        val element = e.asInstanceOf[HTMLElement]
+        val classes = element.classList
+        if newVerbose then classes.remove(Off) else classes.add(Off)
 
   override def handlePayload(payload: Json): Unit =
     handleValidated(payload)(onFrontEvent)
@@ -96,20 +97,18 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
     val entry = event.event
     val row: RowContent = toRow(event)
     val stackId = s"stack-${row.linkId}"
-    entry.stackTrace.foreach { stackTrace =>
+    entry.stackTrace.foreach: stackTrace =>
       val errorRow = tr(`class` := Hidden, id := stackId)(
         td(colspan := s"$ColumnCount")(pre(stackTrace))
       )
       tableBody.insertBefore(errorRow.render, tableBody.firstChild)
-    }
     tableBody.insertBefore(row.content.render, tableBody.firstChild)
     // Toggles text wrapping for long texts when clicked
     val cell = getElem[HTMLElement](row.cellId)
 //    cell.onclick = _ => cell.toggleClass(CellContent)
     // Shows stacktrace if present
-    elemOptAs[HTMLElement](row.linkId).foreach { e =>
+    elemOptAs[HTMLElement](row.linkId).foreach: e =>
       e.onclick = _ => elem(stackId).asInstanceOf[HTMLElement].toggleClass(Hidden)
-    }
     val moreCell = getElem[HTMLElement](row.moreId)
     moreCell.onclick = _ =>
       moreCell.toggleClass("open")

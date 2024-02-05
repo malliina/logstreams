@@ -41,24 +41,22 @@ class Service[F[_]: Async](
 ) extends BasicService[F]:
   val reverse = LogRoutes
   val F = Sync[F]
+
   def routes(socketBuilder: WebSocketBuilder2[F]): HttpRoutes[F] = HttpRoutes.of[F] {
     case GET -> Root / "health" => ok(AppMeta.ThisApp)
     case GET -> Root / "ping"   => ok(AppMeta.ThisApp)
     case req @ GET -> Root =>
-      webAuth(req) { user =>
+      webAuth(req): user =>
         users.all().flatMap(us => ok(htmls.logs(us.map(u => AppName(u.name)))))
-      }
     case req @ GET -> Root / "sources" =>
-      webAuth(req) { src =>
+      webAuth(req): src =>
         ok(htmls.sources)
-      }
     case req @ GET -> Root / "users" =>
-      webAuth(req) { user =>
+      webAuth(req): user =>
         users.all().flatMap(us => ok(htmls.users(us, None)))
-      }
     case req @ POST -> Root / "users" =>
-      webAuth(req) { user =>
-        req.decode[UrlForm] { form =>
+      webAuth(req): user =>
+        req.decode[UrlForm]: form =>
           def read[T](key: String, build: String => T) =
             form.getFirst(key).map(build).toRight(Errors.single(s"Missing '$key'."))
           val maybeCreds = for
@@ -68,43 +66,42 @@ class Service[F[_]: Async](
           maybeCreds.fold(
             err => unauthorized(err),
             newUser =>
-              users.add(newUser).flatMap { e =>
-                e.fold(
-                  err =>
-                    val msg = buildMessage(
-                      user,
-                      s"failed to add '${newUser.username}' because that user already exists."
-                    )
-                    log.error(msg)
-                  ,
-                  _ => ()
-                )
-                SeeOther(Location(reverse.allUsers))
-              }
+              users
+                .add(newUser)
+                .flatMap: e =>
+                  e.fold(
+                    err =>
+                      val msg = buildMessage(
+                        user,
+                        s"failed to add '${newUser.username}' because that user already exists."
+                      )
+                      log.error(msg)
+                    ,
+                    _ => ()
+                  )
+                  SeeOther(Location(reverse.allUsers))
           )
-        }
-      }
     case req @ POST -> Root / "users" / UsernameVar(targetUser) / "delete" =>
-      webAuth(req) { principal =>
-        users.remove(targetUser).flatMap { res =>
-          val feedback = res.fold(
-            _ =>
-              log.error(
-                buildMessage(
-                  principal,
-                  s"failed to delete '$targetUser' because that user does not exist"
+      webAuth(req): principal =>
+        users
+          .remove(targetUser)
+          .flatMap: res =>
+            val feedback = res.fold(
+              _ =>
+                log.error(
+                  buildMessage(
+                    principal,
+                    s"failed to delete '$targetUser' because that user does not exist"
+                  )
                 )
-              )
-            //            UserFeedback.error(s"User '$user' does not exist.")
-            ,
-            _ => log.info(buildMessage(principal, s"deleted '$targetUser'."))
-            //            UserFeedback.success(s"Deleted '$user'.")
-          )
-          SeeOther(Location(reverse.allUsers))
-        }
-      }
+              //            UserFeedback.error(s"User '$user' does not exist.")
+              ,
+              _ => log.info(buildMessage(principal, s"deleted '$targetUser'."))
+              //            UserFeedback.success(s"Deleted '$user'.")
+            )
+            SeeOther(Location(reverse.allUsers))
     case req @ GET -> Root / "ws" / "logs" =>
-      webAuth(req) { principal =>
+      webAuth(req): principal =>
         val user = principal.user
         StreamsQuery
           .fromQuery(req.uri.query)
@@ -117,19 +114,16 @@ class Service[F[_]: Async](
               log.info(s"Opening log stream at level ${query.level} for '$user'...")
               sockets.listener(query, socketBuilder)
           )
-      }
     case req @ GET -> Root / "ws" / "admins" =>
-      webAuth(req) { principal =>
+      webAuth(req): principal =>
         sockets.admin(principal, socketBuilder)
-      }
     case req @ GET -> Root / "ws" / "sources" =>
-      sourceAuth(req.headers) { src =>
+      sourceAuth(req.headers): src =>
         log.info(s"Connection authenticated for source '$src'.")
         sockets.source(
           UserRequest(src, req.headers, Urls.address(req), OffsetDateTime.now()),
           socketBuilder
         )
-      }
     case req @ GET -> Root / "oauth" =>
       startHinted(Google, google, req)
     case req @ GET -> Root / "oauthcb" =>
@@ -145,47 +139,44 @@ class Service[F[_]: Async](
     provider: AuthProvider,
     validator: LoginHint[F],
     req: Request[F]
-  ): F[Response[F]] = F.delay {
-    val redirectUrl = Urls.hostOnly(req) / LogRoutes.googleCallback.renderString
-    val lastIdCookie = req.cookies.find(_.name == cookieNames.lastId)
-    val promptValue = req.cookies
-      .find(_.name == cookieNames.prompt)
-      .map(_.content)
-      .orElse(Option(SelectAccount).filter(_ => lastIdCookie.isEmpty))
-    val extra = promptValue.map(c => Map(PromptKey -> c)).getOrElse(Map.empty)
-    val maybeEmail = lastIdCookie.map(_.content).filter(_ => extra.isEmpty)
-    maybeEmail.foreach { hint =>
-      log.info(s"Starting OAuth flow with $provider using login hint '$hint'...")
-    }
-    promptValue.foreach { prompt =>
-      log.info(s"Starting OAuth flow with $provider using prompt '$prompt'...")
-    }
-    (redirectUrl, maybeEmail, extra)
-  }.flatMap { case (redirectUrl, maybeEmail, extra) =>
-    validator.startHinted(redirectUrl, maybeEmail, extra).flatMap { s =>
-      startLoginFlow(s, req)
-    }
-  }
+  ): F[Response[F]] = F
+    .delay:
+      val redirectUrl = Urls.hostOnly(req) / LogRoutes.googleCallback.renderString
+      val lastIdCookie = req.cookies.find(_.name == cookieNames.lastId)
+      val promptValue = req.cookies
+        .find(_.name == cookieNames.prompt)
+        .map(_.content)
+        .orElse(Option(SelectAccount).filter(_ => lastIdCookie.isEmpty))
+      val extra = promptValue.map(c => Map(PromptKey -> c)).getOrElse(Map.empty)
+      val maybeEmail = lastIdCookie.map(_.content).filter(_ => extra.isEmpty)
+      maybeEmail.foreach: hint =>
+        log.info(s"Starting OAuth flow with $provider using login hint '$hint'...")
+      promptValue.foreach: prompt =>
+        log.info(s"Starting OAuth flow with $provider using prompt '$prompt'...")
+      (redirectUrl, maybeEmail, extra)
+    .flatMap:
+      case (redirectUrl, maybeEmail, extra) =>
+        validator
+          .startHinted(redirectUrl, maybeEmail, extra)
+          .flatMap: s =>
+            startLoginFlow(s, req)
 
   private def startLoginFlow(s: Start, req: Request[F]): F[Response[F]] = F.delay {
     val state = randomString()
-    val encodedParams = (s.params ++ Map(OAuthKeys.State -> state)).map { case (k, v) =>
+    val encodedParams = (s.params ++ Map(OAuthKeys.State -> state)).map: (k, v) =>
       k -> Utils.urlEncode(v)
-    }
     val url = s.authorizationEndpoint.append(s"?${stringify(encodedParams)}")
     log.info(s"Redirecting to '$url' with state '$state'...")
     val sessionParams = Seq(State -> state) ++ s.nonce
       .map(n => Seq(Nonce -> n))
       .getOrElse(Nil)
     (url, sessionParams)
-  }.flatMap { case (url, sessionParams) =>
-    SeeOther(Location(Uri.unsafeFromString(url.url))).map { res =>
+  }.flatMap: (url, sessionParams) =>
+    SeeOther(Location(Uri.unsafeFromString(url.url))).map: res =>
       val session = sessionParams.toMap.asJson
       auths.web
         .withSession(session, req, res)
         .putHeaders(noCache)
-    }
-  }
 
   private def handleCallback(
     req: Request[F],
@@ -201,12 +192,11 @@ class Service[F[_]: Async](
       session.get(Nonce),
       Urls.hostOnly(req) / LogRoutes.googleCallback.renderString
     )
-    validate(cb).flatMap { e =>
+    validate(cb).flatMap: e =>
       e.fold(
         err => unauthorized(Errors(err.message)),
         email => userResult(email, provider, req)
       )
-    }
 
   private def userResult(
     email: Email,
@@ -217,35 +207,34 @@ class Service[F[_]: Async](
       .find(_.name == cookieNames.returnUri)
       .flatMap(c => Uri.fromString(c.content).toOption)
       .getOrElse(LogRoutes.index)
-    SeeOther(Location(returnUri)).map { res =>
+    SeeOther(Location(returnUri)).map: res =>
       auths.web.withAppUser(UserPayload.email(email), provider, req, res)
-    }
 
   private def stringify(map: Map[String, String]): String =
     map.map { case (key, value) => s"$key=$value" }.mkString("&")
 
   private def webAuth(req: Request[F])(code: UserRequest => F[Response[F]]) =
-    auths.viewers.authenticate(req.headers).flatMap { e =>
-      e.map { user =>
-        code(UserRequest(user, req.headers, Urls.address(req), OffsetDateTime.now()))
-      }.recover { err =>
-        log.debug(s"Unauthorized. $err")
-        unauthorized(Errors.single(s"Unauthorized."))
-      }
-    }
+    auths.viewers
+      .authenticate(req.headers)
+      .flatMap: e =>
+        e.map: user =>
+          code(UserRequest(user, req.headers, Urls.address(req), OffsetDateTime.now()))
+        .recover: err =>
+            log.debug(s"Unauthorized. $err")
+            unauthorized(Errors.single(s"Unauthorized."))
 
   private def sourceAuth(headers: Headers)(code: Username => F[Response[F]]) =
-    auths.sources.authenticate(headers).flatMap { e =>
-      e.map { user =>
-        code(user)
-      }.recover { err =>
-        log.warn(s"Unauthorized. $err")
-        Unauthorized(
-          `WWW-Authenticate`(NonEmptyList.of(Challenge("myscheme", "myrealm"))),
-          Errors.single(s"Unauthorized.")
-        )
-      }
-    }
+    auths.sources
+      .authenticate(headers)
+      .flatMap: e =>
+        e.map: user =>
+          code(user)
+        .recover: err =>
+            log.warn(s"Unauthorized. $err")
+            Unauthorized(
+              `WWW-Authenticate`(NonEmptyList.of(Challenge("myscheme", "myrealm"))),
+              Errors.single(s"Unauthorized.")
+            )
 
   private def buildMessage(req: UserRequest, message: String) =
     s"User '${req.user}' from '${req.address}' $message."

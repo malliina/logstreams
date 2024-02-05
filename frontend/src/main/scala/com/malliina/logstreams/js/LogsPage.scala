@@ -4,11 +4,11 @@ import com.malliina.logstreams.js.ScriptHelpers.{AppsDropdownMenuId, AppsFiltere
 import com.malliina.logstreams.models.FrontStrings.ToTimePickerId
 import com.malliina.logstreams.models.{AppName, LogLevel}
 import org.scalajs.dom.html.Anchor
-import org.scalajs.dom.{Event, HTMLButtonElement, HTMLInputElement, KeyboardEvent, MouseEvent, URL, URLSearchParams, window}
+import org.scalajs.dom.{HTMLButtonElement, HTMLInputElement, KeyboardEvent, MouseEvent}
 import scalatags.JsDom.all.*
 
 import scala.scalajs.js
-import scala.scalajs.js.{Date, JSON, URIUtils}
+import scala.scalajs.js.{Date, URIUtils}
 
 class LogsPage(log: BaseLogger):
   private val ActiveClass = "active"
@@ -37,16 +37,15 @@ class LogsPage(log: BaseLogger):
   }
   private val availableLogLevels =
     elem(LogLevelDropdownMenuId).getElementsByClassName(DropdownItem).map(_.asInstanceOf[Anchor])
-  availableLogLevels.foreach { item =>
+  availableLogLevels.foreach: item =>
     item.onclick = (_: MouseEvent) =>
-      LogLevel.build(item.textContent).foreach { level =>
-        updateLogLevel(level)
-      }
-  }
+      LogLevel
+        .build(item.textContent)
+        .foreach: level =>
+          updateLogLevel(level)
   private val searchInput = getElem[HTMLInputElement](SearchInput)
-  settings.query.foreach { q =>
+  settings.query.foreach: q =>
     searchInput.value = q
-  }
   getElem[HTMLButtonElement](SearchButton).onclick = (e: MouseEvent) => updateSearch()
   searchInput.onkeydown = (ke: KeyboardEvent) => if ke.key == "Enter" then updateSearch()
   renderActiveLevel(availableLogLevels, settings.level)
@@ -60,7 +59,7 @@ class LogsPage(log: BaseLogger):
         val ce = e.asInstanceOf[DateEvent]
         val newDate = ce.date.opt
         if isFrom then selectedFrom = newDate else selectedTo = newDate
-        newDate.foreach { date =>
+        newDate.foreach: date =>
           other.updateOptions(
             OptionsUpdate(
               if isFrom then TimeRestrictions(min = newDate, max = Option(maxDate))
@@ -68,7 +67,6 @@ class LogsPage(log: BaseLogger):
             ),
             reset = false
           )
-        }
         updateSearch()
     )
 
@@ -83,17 +81,15 @@ class LogsPage(log: BaseLogger):
     }
     val target = elem(AppsFiltered)
     target.innerHTML = ""
-    buttons.foreach { btn =>
+    buttons.foreach: btn =>
       target.appendChild(btn)
-    }
 
   private def renderActiveLevel(levels: Seq[Anchor], active: LogLevel): Unit =
     elem(LogLevelDropdownButton).innerHTML = active.name
-    levels.foreach { item =>
+    levels.foreach: item =>
       if item.textContent == active.name && !item.classList.contains(ActiveClass) then
         item.classList.add(ActiveClass)
       else item.classList.remove(ActiveClass)
-    }
 
   private def updateFilter(apps: Seq[AppName]): Unit =
     renderApps(apps)

@@ -1,207 +1,222 @@
 h1, h2 {
-    margin-top: 20px;
-    margin-bottom: 10px;
+  margin-top: 20px;
+  margin-bottom: 10px;
 }
 
 .navbar {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .top-padding {
-    padding-top: 60px;
+  padding-top: 60px;
 }
 
 .cell-content {
-    white-space: nowrap;
+  white-space: nowrap;
 }
 
 .cell-wide {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 400px;
-    /* Flexes this column to take up any available width */
-    width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 400px;
+  /* Flexes this column to take up any available width */
+  width: 100%;
 }
 
 .cell-more {
-    cursor: pointer;
-    background-size: 16px;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-image: url("../img/angles-down.svg");
+  cursor: pointer;
+  background-size: 16px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-image: url("../img/angles-down.svg");
 
-    &.open {
-        background-image: url("../img/angles-up.svg");
-    }
+  &.open {
+    background-image: url("../img/angles-up.svg");
+  }
 }
 
 .cell-more-content {
-    width: 16px;
+  width: 16px;
 }
 
 .wide-content {
-    padding-left: 15px;
-    padding-right: 15px;
-    margin-left: auto;
-    margin-right: auto;
+  padding-left: 15px;
+  padding-right: 15px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .page-header {
-    margin: 40px 0 20px;
-    border-bottom: 1px solid #eee;
+  margin: 40px 0 20px;
+  border-bottom: 1px solid #eee;
 }
 
-.table .table-button {
-    padding-top: 8px;
-    padding-bottom: 8px;
+.table {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.table-form {
+  margin-bottom: 0;
 }
 
 .hidden {
-    display: none;
+  display: none;
 }
 
 .compact-group {
-    margin-bottom: 8px;
-    display: inline-block;
+  margin-bottom: 8px;
+  display: inline-block;
 }
 
 .verbose {
-    &.off {
-        display: none;
-    }
+  &.off {
+    display: none;
+  }
 }
 
 #apps-dropdown {
-    display: inline-block;
-    margin-right: 8px;
+  display: inline-block;
+  margin-right: 8px;
 }
 
 #apps-filtered {
-    display: inline-block;
+  display: inline-block;
 
-    > button {
-        margin-right: 4px;
+  > button {
+    margin-right: 4px;
 
-        &:last-child {
-            margin-right: 0;
-        }
+    &:last-child {
+      margin-right: 0;
     }
+  }
 }
 
 .search-control {
-    max-width: 600px;
+  max-width: 600px;
 }
 
 .nav-item {
-    opacity: 0.7;
+  opacity: 0.7;
 
-    &:hover {
-        opacity: 0.9;
-        cursor: pointer;
-    }
+  &:hover {
+    opacity: 0.9;
+    cursor: pointer;
+  }
 
-    &.active {
-        opacity: 1;
-    }
+  &.active {
+    opacity: 1;
+  }
 }
 
 .nav-icon {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    background-repeat: no-repeat;
-    opacity: 0.7;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background-repeat: no-repeat;
+  opacity: 0.7;
 
-    &.list {
-        background-image: url("../img/list.svg");
-    }
+  &.list {
+    background-image: url("../img/list.svg");
+  }
 
-    &.tower-broadcast {
-        background-image: url("../img/tower-broadcast.svg");
-    }
+  &.tower-broadcast {
+    background-image: url("../img/tower-broadcast.svg");
+  }
 
-    &.user {
-        background-image: url("../img/user.svg");
-    }
+  &.user {
+    background-image: url("../img/user.svg");
+  }
 }
 
 .mobile-header {
-    display: flex;
-    justify-content: space-between;
+  display: flex;
+  justify-content: space-between;
 }
 
 .mobile-app {
-    width: 100px;
+  width: 100px;
 }
 
 .mobile-message {
-    margin-top: 8px;
-    margin-bottom: 8px;
+  margin-top: 8px;
+  margin-bottom: 8px;
 }
 
 .mobile-secondary {
-    color: gray;
+  color: gray;
 }
 
 .mobile-error {
-    color: #aa2222;
+  color: #aa2222;
 }
 
 .time-calendar {
-    background-image: url("../img/calendar.svg");
-    background-repeat: no-repeat;
-    background-size: 100%;
-    background-position: center;
-    width: 14px;
-    height: 16px;
+  background-image: url("../img/calendar.svg");
+  background-repeat: no-repeat;
+  background-size: 100%;
+  background-position: center;
+  width: 14px;
+  height: 16px;
 }
 
 .time-picker {
-    width: 22px;
-    height: 22px;
-    background-repeat: no-repeat;
-    background-position: center;
+  width: 22px;
+  height: 22px;
+  background-repeat: no-repeat;
+  background-position: center;
 
-    &.close {
-        background-image: url("../img/check.svg");
-    }
-    &.clear {
-        background-image: url("../img/trash-can.svg");
-    }
-    &.time {
-        background-image: url("../img/clock.svg");
-    }
-    &.date {
-        background-image: url("../img/calendar-regular.svg");
-    }
-    &.up {
-        background-image: url("../img/chevron-up.svg");
-    }
-    &.down {
-        background-image: url("../img/chevron-down.svg");
-    }
-    &.previous {
-        background-image: url("../img/chevron-left.svg");
-    }
-    &.next {
-        background-image: url("../img/chevron-right.svg");
-    }
+  &.close {
+    background-image: url("../img/check.svg");
+  }
+
+  &.clear {
+    background-image: url("../img/trash-can.svg");
+  }
+
+  &.time {
+    background-image: url("../img/clock.svg");
+  }
+
+  &.date {
+    background-image: url("../img/calendar-regular.svg");
+  }
+
+  &.up {
+    background-image: url("../img/chevron-up.svg");
+  }
+
+  &.down {
+    background-image: url("../img/chevron-down.svg");
+  }
+
+  &.previous {
+    background-image: url("../img/chevron-left.svg");
+  }
+
+  &.next {
+    background-image: url("../img/chevron-right.svg");
+  }
 }
 
 .loader {
-    border: 5px solid #f3f3f3;
-    border-top: 5px solid #555;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    animation: spin 2s linear infinite;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #555;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 2s linear infinite;
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .form-row {
-    max-width: 700px;
+  max-width: 700px;
 }

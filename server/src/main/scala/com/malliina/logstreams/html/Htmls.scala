@@ -184,17 +184,16 @@ class Htmls(
         div6(
           if us.isEmpty then leadPara("No users.")
           else
-            headeredTable(tables.stripedHover, Seq("Username", "Actions"))(
-              tbody(us.map { user =>
+            headeredTable(s"${tables.stripedHover} align-middle", Seq("Username", "Actions"))(
+              tbody(us.map: user =>
                 tr(
                   td(user.name),
                   td(`class` := "table-button")(
-                    postableForm(reverse.removeUser(user))(
+                    postableForm(reverse.removeUser(user), cls := "table-form")(
                       button(`class` := s"${btn.danger} ${btn.sm}")(" Delete")
                     )
                   )
-                )
-              })
+                ))
             )
         ),
         div6(

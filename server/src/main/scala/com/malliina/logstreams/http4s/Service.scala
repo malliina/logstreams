@@ -73,11 +73,13 @@ class Service[F[_]: Async](
                     err =>
                       val msg = buildMessage(
                         user,
-                        s"failed to add '${newUser.username}' because that user already exists."
+                        s"failed to add '${newUser.username}' because that user already exists"
                       )
                       log.error(msg)
                     ,
-                    _ => ()
+                    _ =>
+                      log.info(buildMessage(user, s"added '${newUser.username}'"))
+                      ()
                   )
                   SeeOther(Location(reverse.allUsers))
           )
@@ -96,7 +98,7 @@ class Service[F[_]: Async](
                 )
               //            UserFeedback.error(s"User '$user' does not exist.")
               ,
-              _ => log.info(buildMessage(principal, s"deleted '$targetUser'."))
+              _ => log.info(buildMessage(principal, s"deleted '$targetUser'"))
               //            UserFeedback.success(s"Deleted '$user'.")
             )
             SeeOther(Location(reverse.allUsers))
@@ -211,7 +213,7 @@ class Service[F[_]: Async](
       auths.web.withAppUser(UserPayload.email(email), provider, req, res)
 
   private def stringify(map: Map[String, String]): String =
-    map.map { case (key, value) => s"$key=$value" }.mkString("&")
+    map.map((key, value) => s"$key=$value").mkString("&")
 
   private def webAuth(req: Request[F])(code: UserRequest => F[Response[F]]) =
     auths.viewers

@@ -24,7 +24,8 @@ class DoobieDatabaseAuth[F[_]](db: DoobieDatabase[F]) extends UserService[F]:
       else
         val hashed = hash(creds)
         sql"""insert into USERS(USER, PASS_HASH) values (${creds.username}, $hashed)""".update.run
-          .map: _ =>
+          .map: rows =>
+            if rows > 0 then log.info(s"Inserted user '${creds.username}'.")
             Right(())
 
   def update(creds: BasicCredentials): F[Either[DoesNotExist, Unit]] = db.run:

@@ -123,22 +123,22 @@ class Htmls(
     divClass(s"$Row form-row")(
       div(`class` := "input-group my-3")(
         input(
-          `type` := "text",
-          `class` := "form-control search-control",
+          tpe := "text",
+          cls := "form-control search-control",
           aria.label := "Search input",
           id := SearchInput,
           placeholder := "Message, stacktrace, thread, ..."
         ),
-        button(`type` := "button", `class` := "btn btn-outline-primary", id := SearchButton)(
+        button(tpe := "button", cls := "btn btn-outline-primary", id := SearchButton)(
           "Search"
         )
       )
     ),
-    row(id := LoadingSpinner, `class` := "loader mx-auto my-3"),
-    row(id := SearchFeedbackRowId, `class` := DisplayNone)(
+    row(id := LoadingSpinner, cls := "loader mx-auto my-3"),
+    row(id := SearchFeedbackRowId, cls := DisplayNone)(
       p(id := SearchFeedbackId)
     ),
-    row(`class` := classes.MobileList)(
+    row(cls := classes.MobileList)(
       div(id := MobileContentId)
     ),
     logEntriesTable(LogTableId)(thead(id := TableHeadId), tbody(id := TableBodyId))
@@ -147,23 +147,23 @@ class Htmls(
   private def timePicker(labelText: String, divId: String) =
     val inputId = s"$divId-input"
     divClass("col-sm-6 my-2 mt-sm-0")(
-      label(`for` := inputId, `class` := "form-label")(labelText),
+      label(`for` := inputId, cls := "form-label")(labelText),
       div(
         id := divId,
         data("td-target-input") := "nearest",
-        `class` := "input-group"
+        cls := "input-group"
       )(
         input(
           id := inputId,
-          `class` := "form-control",
+          cls := "form-control",
           data("td-target") := s"#$divId"
         ),
         span(
-          `class` := "input-group-text",
+          cls := "input-group-text",
           data("td-target") := s"#$divId",
           data("td-toggle") := "datetimepicker"
         )(
-          span(`class` := "time-calendar")
+          span(cls := "time-calendar")
         )
       )
     )
@@ -200,12 +200,17 @@ class Htmls(
         div6(
           form(action := reverse.addUser, method := Post)(
             div(cls := "mb-3")(
-              label(`for` := "username-input", cls := "form-label")("Username"),
-              input(tpe := "text", cls := "form-control", id := "username-input")
+              label(`for` := UsernameKey, cls := "form-label")("Username"),
+              input(tpe := "text", cls := "form-control", id := UsernameKey, name := UsernameKey)
             ),
             div(cls := "mb-3")(
-              label(`for` := "password-input", cls := "form-label")("Password"),
-              input(tpe := "password", cls := "form-control", id := "password-input")
+              label(`for` := PasswordKey, cls := "form-label")("Password"),
+              input(
+                tpe := "password",
+                cls := "form-control",
+                id := PasswordKey,
+                name := PasswordKey
+              )
             ),
             button(tpe := "submit", cls := "btn btn-primary")("Add User")
           )
@@ -258,12 +263,10 @@ class Htmls(
       ),
       body(`class` := conf.bodyClasses.mkString(" "))(
         section(inner),
-        scripts.map { js =>
-          jsScript(asset(js), defer)
-        },
-        externalScripts.map { js =>
+        scripts.map: js =>
+          jsScript(asset(js), defer),
+        externalScripts.map: js =>
           jsScript(js, defer)
-        }
       )
     )
 

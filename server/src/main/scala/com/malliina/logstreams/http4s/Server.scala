@@ -71,7 +71,9 @@ object Server extends IOApp:
       _ <- Resource.eval(
         LogstreamsUtils.installIfEnabled(LogConf.name, LogConf.userAgent, dispatcher, http)
       )
-      db <- DoobieDatabase.init[F](conf.db)
+      db <-
+        if conf.isFull then DoobieDatabase.init[F](conf.db)
+        else Resource.pure(DoobieDatabase.fast(conf.db))
       logsTopic <- Resource.eval(Topic[F, LogEntryInputs])
       adminsTopic <- Resource.eval(Topic[F, LogSources])
       connecteds <- Resource.eval(Ref[F].of(LogSources(Nil)))

@@ -18,7 +18,14 @@ object LocalConf:
     if BuildInfo.isProd then ConfigNode.load("application-prod.conf")
     else ConfigNode.default(localConfFile)
 
-case class LogstreamsConf(secret: SecretKey, db: Conf, google: AuthConf)
+case class LogstreamsConf(
+  isTest: Boolean,
+  isProdBuild: Boolean,
+  secret: SecretKey,
+  db: Conf,
+  google: AuthConf
+):
+  def isFull = isProdBuild || isTest
 
 object LogstreamsConf:
   private val googleClientId = ClientId(
@@ -45,6 +52,8 @@ object LogstreamsConf:
       dbPass <- c.parse[Password]("db.pass")
       googleSecret <- c.parse[ClientSecret]("google.client-secret")
     yield LogstreamsConf(
+      isTest = false,
+      isProdBuild = BuildInfo.isProd,
       secret,
       if BuildInfo.isProd then prodDatabaseConf(dbPass, if isStaging then 2 else 5)
       else devDatabaseConf(dbPass),

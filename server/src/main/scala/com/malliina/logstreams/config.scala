@@ -1,5 +1,6 @@
 package com.malliina.logstreams
 
+import cats.effect.kernel.Sync
 import com.malliina.app.BuildInfo
 import com.malliina.config.{ConfigError, ConfigNode, Env}
 import com.malliina.database.Conf
@@ -24,11 +25,16 @@ object LogstreamsConf:
     "122390040180-qflbc31ourl9gfinfl7jhl0jk70i8jur.apps.googleusercontent.com"
   )
 
-  private def logsConf = LocalConf.conf.parse[ConfigNode]("logstreams").toOption.get
+  private def logsNode = LocalConf.conf.parse[ConfigNode]("logstreams")
 
-  def parseUnsafe() = parse().fold(err => throw err, identity)
+  def parseIO[F[_]: Sync] = Sync[F].fromEither(parseConf)
 
-  def parse(c: ConfigNode = logsConf): Either[ConfigError, LogstreamsConf] =
+  def parseConf = for
+    node <- logsNode
+    parsed <- parse(node)
+  yield parsed
+
+  def parse(c: ConfigNode): Either[ConfigError, LogstreamsConf] =
     val env = Env.read[String]("ENV_NAME")
     val isStaging = env.contains("staging")
     val isProd = env.contains("prod")

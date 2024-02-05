@@ -108,4 +108,7 @@ object Server extends IOApp:
     Kleisli(req => rs.run(req).getOrElseF(BasicService[F].notFound(req)))
 
   override def run(args: List[String]): IO[ExitCode] =
-    server[IO](LogstreamsConf.parseUnsafe(), Auths).use(_ => IO.never).as(ExitCode.Success)
+    for
+      conf <- LogstreamsConf.parseIO[IO]
+      app <- server[IO](conf, Auths).use(_ => IO.never).as(ExitCode.Success)
+    yield app

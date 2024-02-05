@@ -80,7 +80,7 @@ trait MUnitDatabaseSuite:
 trait ServerSuite extends MUnitDatabaseSuite:
   self: munit.CatsEffectSuite =>
   val http = ResourceFixture(HttpClientIO.resource)
-  val conf = IO.delay(LogstreamsConf.parseUnsafe().copy(db = db().conf))
+  val conf = LogstreamsConf.parseIO[IO].map(_.copy(db = db().conf))
   val testResource = Resource.eval(conf).flatMap { conf =>
     Server.server(conf, testAuths, port"12345")
   }

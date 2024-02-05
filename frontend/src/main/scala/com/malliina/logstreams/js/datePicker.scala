@@ -77,11 +77,54 @@ object ButtonOptions:
 
 @js.native
 trait IconOptions extends js.Object:
-  def close: String = js.native
+  def `type`: js.UndefOr[String] = js.native
+  def close: js.UndefOr[String] = js.native
+  def clear: js.UndefOr[String] = js.native
+  def time: js.UndefOr[String] = js.native
+  def date: js.UndefOr[String] = js.native
+  def up: js.UndefOr[String] = js.native
+  def down: js.UndefOr[String] = js.native
+  def previous: js.UndefOr[String] = js.native
+  def next: js.UndefOr[String] = js.native
+  def today: js.UndefOr[String] = js.native
 
 object IconOptions:
-  def apply(close: String = "fa-solid fa-xmark"): IconOptions =
-    literal(close = close).asInstanceOf[IconOptions]
+  def default = IconOptions(
+    "icons",
+    "time-picker close",
+    "time-picker clear",
+    "time-picker time",
+    "time-picker date",
+    "time-picker up",
+    "time-picker down",
+    "time-picker previous",
+    "time-picker next",
+    "time-picker today"
+  )
+  def apply(
+    `type`: String,
+    close: String,
+    clear: String,
+    time: String,
+    date: String,
+    up: String,
+    down: String,
+    previous: String,
+    next: String,
+    today: String
+  ): IconOptions =
+    literal(
+      `type` = `type`,
+      close = close,
+      clear = clear,
+      time = time,
+      date = date,
+      up = up,
+      down = down,
+      previous = previous,
+      next = next,
+      today = today
+    ).asInstanceOf[IconOptions]
 
 @js.native
 trait DisplayOptions extends js.Object:
@@ -91,16 +134,18 @@ trait DisplayOptions extends js.Object:
 
 object DisplayOptions:
   private val smallBreakpointPx = 576
-  def basic(close: Boolean, closeIcon: String) =
+
+  def basic(close: Boolean) =
     apply(
       ButtonOptions(close = close),
       sideBySide = window.innerWidth >= smallBreakpointPx,
-      icons = IconOptions(closeIcon)
+      icons = IconOptions.default
     )
+
   def apply(
     buttons: ButtonOptions,
-    sideBySide: Boolean = false,
-    icons: IconOptions = IconOptions()
+    icons: IconOptions,
+    sideBySide: Boolean = false
   ): DisplayOptions =
     literal(buttons = buttons, sideBySide = sideBySide, icons = icons).asInstanceOf[DisplayOptions]
 

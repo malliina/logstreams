@@ -4,7 +4,7 @@ import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 
 val malliinaGroup = "com.malliina"
-val webAuthVersion = "6.6.1"
+val webAuthVersion = "6.6.3"
 val primitivesVersion = "3.5.2"
 val munitVersion = "0.7.29"
 val munitCatsEffectVersion = "1.0.7"
@@ -117,7 +117,7 @@ val server = project
     ),
     libraryDependencies ++=
       Seq("ember-server", "circe", "dsl").map { m =>
-        "org.http4s" %% s"http4s-$m" % "0.23.24"
+        "org.http4s" %% s"http4s-$m" % "0.23.25"
       } ++ Seq("util-html", "database").map { m =>
         "com.malliina" %% m % webAuthVersion
       } ++ Seq(
@@ -125,7 +125,7 @@ val server = project
         "mysql" % "mysql-connector-java" % "8.0.33",
         webAuthDep,
         webAuthDep % Test classifier "tests",
-        "com.dimafeng" %% "testcontainers-scala-mysql" % "0.41.0" % Test,
+        "com.dimafeng" %% "testcontainers-scala-mysql" % "0.41.2" % Test,
         "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
       ),
     Compile / packageDoc / publishArtifact := false,

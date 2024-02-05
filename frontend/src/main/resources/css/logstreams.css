@@ -28,10 +28,10 @@ h1, h2 {
     background-size: 16px;
     background-repeat: no-repeat;
     background-position: center;
-    background-image: url("../images/angles-down.svg");
+    background-image: url("../img/angles-down.svg");
 
     &.open {
-        background-image: url("../images/angles-up.svg");
+        background-image: url("../img/angles-up.svg");
     }
 }
 
@@ -113,15 +113,15 @@ h1, h2 {
     opacity: 0.7;
 
     &.list {
-        background-image: url("../images/list.svg");
+        background-image: url("../img/list.svg");
     }
 
     &.tower-broadcast {
-        background-image: url("../images/tower-broadcast.svg");
+        background-image: url("../img/tower-broadcast.svg");
     }
 
     &.user {
-        background-image: url("../images/user.svg");
+        background-image: url("../img/user.svg");
     }
 }
 
@@ -148,12 +148,44 @@ h1, h2 {
 }
 
 .time-calendar {
-    background-image: url("../images/calendar.svg");
+    background-image: url("../img/calendar.svg");
     background-repeat: no-repeat;
     background-size: 100%;
     background-position: center;
     width: 14px;
     height: 16px;
+}
+
+.time-picker {
+    width: 22px;
+    height: 22px;
+    background-repeat: no-repeat;
+    background-position: center;
+
+    &.close {
+        background-image: url("../img/check.svg");
+    }
+    &.clear {
+        background-image: url("../img/trash-can.svg");
+    }
+    &.time {
+        background-image: url("../img/clock.svg");
+    }
+    &.date {
+        background-image: url("../img/calendar-regular.svg");
+    }
+    &.up {
+        background-image: url("../img/chevron-up.svg");
+    }
+    &.down {
+        background-image: url("../img/chevron-down.svg");
+    }
+    &.previous {
+        background-image: url("../img/chevron-left.svg");
+    }
+    &.next {
+        background-image: url("../img/chevron-right.svg");
+    }
 }
 
 .loader {

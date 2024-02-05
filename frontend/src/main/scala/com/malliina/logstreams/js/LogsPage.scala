@@ -27,7 +27,7 @@ class LogsPage(log: BaseLogger):
         initialDate,
         TimeRestrictions(None, None),
         TimeLocalization(DateFormats.default),
-        DisplayOptions.basic(close = true, closeIcon = "fa-solid fa-check")
+        DisplayOptions.basic(close = true)
       )
     )
   private var socket: ListenerSocket = socketFor(settings.apps, settings.level, settings.query)

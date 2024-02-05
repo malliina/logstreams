@@ -10,7 +10,6 @@ object Frontend:
   private val p = Popper
   private val b = Bootstrap
   private val bootstrapCss = BootstrapCss
-  private val fontAwesomeCss = FontAwesomeCss
   private val tempusDominusCss = TempusDominusCss
 
   def main(args: Array[String]): Unit =
@@ -31,10 +30,6 @@ object Bootstrap extends js.Object
 @js.native
 @JSImport("bootstrap/dist/css/bootstrap.min.css", JSImport.Namespace)
 object BootstrapCss extends js.Object
-
-@js.native
-@JSImport("@fortawesome/fontawesome-free/css/all.min.css", JSImport.Namespace)
-object FontAwesomeCss extends js.Object
 
 @js.native
 @JSImport("@eonasdan/tempus-dominus/dist/css/tempus-dominus.css", JSImport.Namespace)

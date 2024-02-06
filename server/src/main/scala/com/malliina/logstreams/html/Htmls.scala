@@ -4,7 +4,7 @@ import com.malliina.html.HtmlImplicits.given
 import com.malliina.html.{Bootstrap, HtmlTags}
 import com.malliina.http.FullUrl
 import com.malliina.live.LiveReload
-import com.malliina.logstreams.HashedAssets
+import com.malliina.logstreams.{FileAssets, HashedAssets}
 import com.malliina.logstreams.html.Htmls.{*, given}
 import com.malliina.logstreams.http4s.{LogRoutes, UserFeedback}
 import com.malliina.logstreams.models.{AppName, FrontStrings, LogLevel}
@@ -32,8 +32,11 @@ object Htmls:
     */
   def forApp(appName: String, isProd: Boolean, assets: AssetsSource): Htmls =
     val externalScripts = if isProd then Nil else FullUrl.build(LiveReload.script).toSeq
-    val appScripts = Seq("frontend.js")
-    Htmls(appScripts, externalScripts, Seq("frontend.css", "styles.css"), assets)
+
+    val appScripts =
+      if isProd then Seq(FileAssets.frontend_js)
+      else Seq(FileAssets.frontend_js, "frontend-loader.js", "main.js")
+    Htmls(appScripts, externalScripts, Seq(FileAssets.frontend_css, FileAssets.styles_css), assets)
 
 class Htmls(
   scripts: Seq[String],

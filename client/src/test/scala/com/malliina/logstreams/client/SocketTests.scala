@@ -20,7 +20,7 @@ class SocketTests extends munit.CatsEffectSuite:
       http <- HttpClientIO.resource[IO]
       socket <- WebSocketF.build[IO](url, headers.map(kv => kv.key -> kv.value).toMap, http.client)
     yield socket
-    val resource = Dispatcher[IO]
+    val resource = Dispatcher.parallel[IO]
     val (d, dc) = resource.allocated[Dispatcher[IO]].unsafeRunSync()
     val (socket, closer) = d.unsafeRunSync(s.allocated[WebSocketF[IO]])
     d.unsafeRunAndForget(socket.events.compile.drain)

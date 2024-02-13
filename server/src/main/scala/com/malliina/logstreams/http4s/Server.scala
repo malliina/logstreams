@@ -13,7 +13,7 @@ import com.malliina.logstreams.client.LogstreamsUtils
 import com.malliina.logstreams.db.{DoobieDatabaseAuth, DoobieLogsDatabase}
 import com.malliina.logstreams.html.{AssetsSource, Htmls}
 import com.malliina.logstreams.models.{AppLogEvents, LogEntryInputs, LogSources}
-import com.malliina.logstreams.{LocalConf, LogConf, LogstreamsConf}
+import com.malliina.logstreams.{LogConf, LogstreamsConf}
 import com.malliina.util.AppLogger
 import com.malliina.web.GoogleAuthFlow
 import fs2.concurrent.Topic

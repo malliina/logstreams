@@ -22,9 +22,9 @@ case class TestDatabase(conf: Conf, container: Option[MySQLContainer])
 
 object DatabaseUtils:
   val testDatabase: Resource[IO, TestDatabase] = Resource.make {
-    IO.delay {
+    IO.delay:
       val localTestDb = testConf().map(conf => TestDatabase(conf, None))
-      localTestDb.getOrElse {
+      localTestDb.getOrElse:
         val image = DockerImageName.parse("mysql:8.0.33")
         val c = MySQLContainer(mysqlImageVersion = image)
         c.start()
@@ -39,13 +39,10 @@ object DatabaseUtils:
           ),
           Option(c)
         )
-      }
-    }
   } { cont =>
     truncateTestData(cont.conf) >>
-      IO.delay {
+      IO.delay:
         cont.container.foreach(_.stop())
-      }
   }
 
   private def testConf(): Either[ConfigError, Conf] =
@@ -65,12 +62,11 @@ object DatabaseUtils:
     import doobie.implicits.*
     DoobieDatabase
       .default[IO](conf)
-      .use { database =>
+      .use: database =>
         for
           l <- database.run(sql"delete from LOGS".update.run)
           u <- database.run(sql"delete from USERS".update.run)
         yield l + u
-      }
 
 trait MUnitDatabaseSuite:
   self: munit.CatsEffectSuite =>
@@ -81,9 +77,10 @@ trait ServerSuite extends MUnitDatabaseSuite:
   self: munit.CatsEffectSuite =>
   val http = ResourceFixture(HttpClientIO.resource)
   val conf = LogstreamsConf.parseIO[IO].map(_.copy(isTest = true, db = db().conf))
-  val testResource = Resource.eval(conf).flatMap { conf =>
-    Server.server(conf, testAuths, port"12345")
-  }
+  val testResource = Resource
+    .eval(conf)
+    .flatMap: conf =>
+      Server.server(conf, testAuths, port"12345")
   val server = ResourceSuiteLocalFixture("server", testResource)
 
   def testAuths: AuthBuilder = new AuthBuilder:

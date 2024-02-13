@@ -58,62 +58,62 @@ class Htmls(
   def logs(apps: Seq[AppName]) = baseIndex("logs", bodyClasses = Seq(classes.Socket))(
     headerRow("Logs"),
     row(
-      div(`class` := s"col-sm-2 col-md-3 mt-1 mt-sm-0 d-none d-md-block")(
+      div(cls := s"col-sm-2 col-md-3 mt-1 mt-sm-0 d-none d-md-block")(
         div(
-          `class` := "btn-group",
+          cls := "btn-group",
           role := "group",
           aria.label := "Verbose or compact"
         )(
           input(
-            `class` := "btn-check",
-            `type` := "radio",
+            cls := "btn-check",
+            tpe := "radio",
             name := "options",
             id := OptionVerbose,
             autocomplete := "off"
           ),
           label(
-            `class` := "btn btn-sm btn-outline-primary",
+            cls := "btn btn-sm btn-outline-primary",
             `for` := OptionVerbose
           )("Verbose"),
           input(
-            `class` := "btn-check",
-            `type` := "radio",
+            cls := "btn-check",
+            tpe := "radio",
             name := "options",
             id := OptionCompact,
             autocomplete := "off"
           ),
           label(
-            `class` := "btn btn-sm btn-outline-primary",
+            cls := "btn btn-sm btn-outline-primary",
             `for` := OptionCompact
           )("Compact")
         )
       ),
       divClass("col-sm-2 col-md-2 col-lg-1")(
-        div(id := LogLevelDropdown, `class` := "dropdown")(
+        div(id := LogLevelDropdown, cls := "dropdown")(
           button(
             id := LogLevelDropdownButton,
-            `class` := s"btn btn-info btn-sm $DropdownToggle",
-            `type` := "button",
+            cls := s"btn btn-info btn-sm $DropdownToggle",
+            tpe := "button",
             data("bs-toggle") := "dropdown",
             aria.haspopup := "true",
             aria.expanded := "false"
           )("Level"),
-          div(`class` := DropdownMenu, id := LogLevelDropdownMenuId)(
-            LogLevel.all.map(l => a(`class` := DropdownItem, href := "#")(l.name))
+          div(cls := DropdownMenu, id := LogLevelDropdownMenuId)(
+            LogLevel.all.map(l => a(cls := DropdownItem, href := "#")(l.name))
           )
         )
       ),
       divClass("col-sm-6 col-md-7 mt-2 mb-2 mt-sm-0")(
-        div(id := AppsDropdown, `class` := "dropdown")(
+        div(id := AppsDropdown, cls := "dropdown")(
           button(
-            `class` := s"btn btn-primary btn-sm $DropdownToggle",
-            `type` := "button",
+            cls := s"btn btn-primary btn-sm $DropdownToggle",
+            tpe := "button",
             data("bs-toggle") := "dropdown",
             aria.haspopup := "true",
             aria.expanded := "false"
           )("Apps"),
-          div(`class` := DropdownMenu, id := AppsDropdownMenuId)(
-            apps.map(app => a(`class` := DropdownItem, href := "#")(app.name))
+          div(cls := DropdownMenu, id := AppsDropdownMenuId)(
+            apps.map(app => a(cls := DropdownItem, href := "#")(app.name))
           )
         ),
         div(id := AppsFiltered)
@@ -124,7 +124,7 @@ class Htmls(
       timePicker("To", ToTimePickerId)
     ),
     divClass(s"$Row form-row")(
-      div(`class` := "input-group my-3")(
+      div(cls := "input-group my-3")(
         input(
           tpe := "text",
           cls := "form-control search-control",
@@ -179,7 +179,7 @@ class Htmls(
   )
 
   def users(us: Seq[Username], feedback: Option[UserFeedback]) =
-//    val csrfInput = input(`type` := "hidden", name := csrf.name, value := raw(csrf.value).render)
+//    val csrfInput = input(tpe := "hidden", name := csrf.name, value := raw(csrf.value).render)
     baseIndex("users")(
       headerRow("Users"),
       fullRow(feedback.fold(empty)(feedbackDiv)),
@@ -191,9 +191,9 @@ class Htmls(
               tbody(us.map: user =>
                 tr(
                   td(user.name),
-                  td(`class` := "table-button")(
+                  td(cls := "table-button")(
                     postableForm(reverse.removeUser(user), cls := "table-form")(
-                      button(`class` := s"${btn.danger} ${btn.sm}")(" Delete")
+                      button(cls := s"${btn.danger} ${btn.sm}")(" Delete")
                     )
                   )
                 ))
@@ -221,13 +221,13 @@ class Htmls(
     )
 
   private def logEntriesTable(tableId: String) =
-    table(`class` := DisplayNone, id := tableId)
+    table(cls := DisplayNone, id := tableId)
 
   private def defaultTable(tableId: String, headers: Seq[String]) =
     defaultTableBase(tableId, headers.map(h => th(h)))
 
   private def defaultTableBase(tableId: String, headers: Modifier) =
-    table(`class` := tables.defaultClass, id := tableId)(
+    table(cls := tables.defaultClass, id := tableId)(
       thead(tr(headers)),
       tbody
     )
@@ -235,7 +235,7 @@ class Htmls(
   private def baseIndex(tabName: String, bodyClasses: Seq[String] = Nil)(inner: Modifier*) =
     def navItem(thisTabName: String, tabId: String, url: Uri, faName: String) =
       val itemClass = if tabId == tabName then "nav-item active" else "nav-item"
-      li(`class` := itemClass)(a(href := url, `class` := "nav-link")(fa(faName), s" $thisTabName"))
+      li(cls := itemClass)(a(href := url, cls := "nav-link")(fa(faName), s" $thisTabName"))
 
     root(PageConf("logstreams", bodyClasses))(
       navbar.simple(
@@ -247,7 +247,7 @@ class Htmls(
           navItem("Users", "users", reverse.allUsers, "user")
         )
       ),
-      div(`class` := "wide-content", id := "page-content")(inner)
+      div(cls := "wide-content", id := "page-content")(inner)
     )
 
   def root(conf: PageConf, extraHeader: Modifier*)(inner: Modifier*): TypedTag[String] =
@@ -257,13 +257,13 @@ class Htmls(
         deviceWidthViewport,
         link(
           rel := "shortcut icon",
-          `type` := "image/png",
+          tpe := "image/png",
           href := inlineOrUri("img/jag-16x16.png")
         ),
         cssFiles.map(file => cssLink(asset(file))),
         extraHeader
       ),
-      body(`class` := conf.bodyClasses.mkString(" "))(
+      body(cls := conf.bodyClasses.mkString(" "))(
         section(inner),
         scripts.map: js =>
           jsScript(asset(js), defer),
@@ -287,9 +287,9 @@ class Htmls(
     formGroup(
       labelFor(elemId)(labelText),
       divClass("controls")(
-        namedInput(elemId, `type` := inType, `class` := s"$FormControl $InputMd", required)
+        namedInput(elemId, tpe := inType, cls := s"$FormControl $InputMd", required)
       )
     )
 
   private def fa(faName: String) =
-    i(`class` := s"nav-icon $faName", title := faName, aria.hidden := tags.True)
+    i(cls := s"nav-icon $faName", title := faName, aria.hidden := tags.True)

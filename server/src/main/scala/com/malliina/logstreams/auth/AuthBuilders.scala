@@ -32,13 +32,13 @@ object Auths extends AuthBuilder:
   def sources[F[_]: Sync](users: UserService[F]): Http4sAuthenticator[F, Username] =
     (hs: Headers) =>
       val F = Sync[F]
-      basic(hs).map { creds =>
-        users
-          .isValid(creds)
-          .map: isValid =>
-            if isValid then Right(creds.username)
-            else fail(hs)
-      }
+      basic(hs)
+        .map: creds =>
+          users
+            .isValid(creds)
+            .map: isValid =>
+              if isValid then Right(creds.username)
+              else fail(hs)
         .fold(
           err => F.pure(Left(err: IdentityError)),
           identity

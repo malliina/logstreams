@@ -2,7 +2,7 @@ package com.malliina.logstreams.js
 
 import com.malliina.logstreams.js.ScriptHelpers.{elem, elemOptAs, getElem}
 import com.malliina.logstreams.models.FrontStrings.*
-import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents, FrontEvent, LogEvent, LogLevel, MetaEvent, SimpleEvent}
+import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents, FrontEvent, LogLevel, MetaEvent, SimpleEvent}
 import io.circe.Json
 import org.scalajs.dom
 import org.scalajs.dom.{Event, HTMLElement, HTMLInputElement, HTMLParagraphElement, HTMLTableElement, document}
@@ -34,7 +34,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
 
   private val responsiveClass = "d-none d-md-table-cell"
 
-  private val responsiveTh = th(`class` := responsiveClass)
+  private val responsiveTh = th(cls := responsiveClass)
 
   if verboseSupport then
     val verboseClass = names(VerboseKey, if isVerbose then "" else Off)
@@ -43,9 +43,9 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
         th("App"),
         th("Time"),
         th("Message"),
-        th(`class` := verboseClass)("Logger"),
-        th(`class` := verboseClass)("Thread"),
-        th(div(`class` := "cell-more-content")),
+        th(cls := verboseClass)("Logger"),
+        th(cls := verboseClass)("Thread"),
+        th(div(cls := "cell-more-content")),
         th("Level")
       ).render
     )
@@ -98,7 +98,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
     val row: RowContent = toRow(event)
     val stackId = s"stack-${row.linkId}"
     entry.stackTrace.foreach: stackTrace =>
-      val errorRow = tr(`class` := Hidden, id := stackId)(
+      val errorRow = tr(cls := Hidden, id := stackId)(
         td(colspan := s"$ColumnCount")(pre(stackTrace))
       )
       tableBody.insertBefore(errorRow.render, tableBody.firstChild)
@@ -130,33 +130,33 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
     val levelCell: Modifier = entry.stackTrace
       .map(_ => a(href := "#", id := linkId)(level.name))
       .getOrElse(level.name)
-    val frag = tr(`class` := rowClass)(
+    val frag = tr(cls := rowClass)(
       cell(event.source.name.name),
       cell(entry.timeFormatted),
       wideCell(entry.message, msgCellId),
       cell(entry.loggerName, hideable = true, responsive = false),
       cell(entry.threadName, hideable = true, responsive = false),
-      td(`class` := "cell-more", id := moreId)(a(href := "#")),
-      td(`class` := responsiveClass)(levelCell)
+      td(cls := "cell-more", id := moreId)(a(href := "#")),
+      td(cls := responsiveClass)(levelCell)
     )
     RowContent(frag, msgCellId, linkId, moreId)
 
   private def mobileEntry(event: AppLogEvent) =
     val entry = event.event
     div(
-      div(`class` := "mobile-header")(
-        span(`class` := "mobile-app")(event.source.name.name),
+      div(cls := "mobile-header")(
+        span(cls := "mobile-app")(event.source.name.name),
         span(entry.timeFormatted)
       ),
-      div(`class` := "mobile-message")(event.event.message),
+      div(cls := "mobile-message")(event.event.message),
       entry.stackTrace.fold(modifier()) { stackTrace =>
-        div(`class` := "mobile-message mobile-error")(stackTrace)
+        div(cls := "mobile-message mobile-error")(stackTrace)
       },
-      div(`class` := "mobile-header")(
-        div(`class` := "mobile-secondary")(entry.level.name),
-        div(`class` := "mobile-secondary")(entry.loggerName)
+      div(cls := "mobile-header")(
+        div(cls := "mobile-secondary")(entry.level.name),
+        div(cls := "mobile-secondary")(entry.loggerName)
       ),
-      div(`class` := "mobile-secondary")(entry.threadName),
+      div(cls := "mobile-secondary")(entry.threadName),
       hr
     )
 
@@ -177,9 +177,9 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
     )
 
   private def wideCell(content: String, cellId: String) =
-    td(`class` := s"$CellContent $CellWide", id := cellId)(content)
+    td(cls := s"$CellContent $CellWide", id := cellId)(content)
 
   private def toCell(content: String, clazz: String) =
-    td(`class` := clazz)(content)
+    td(cls := clazz)(content)
 
   private def names(ns: String*): String = ns.map(_.trim).filter(_.nonEmpty).mkString(" ")

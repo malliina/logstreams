@@ -11,7 +11,7 @@ package object js:
     override def length: Int = nodes.length
     override def apply(idx: Int): T = nodes(idx)
 
-  implicit class HTMLElementOps[E <: HTMLElement](element: E):
+  extension [T <: HTMLElement](element: T)
     def toggleClass(cls: String): Boolean =
       val list = element.classList
       if list.contains(cls) then list.remove(cls)

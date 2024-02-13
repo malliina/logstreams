@@ -30,16 +30,15 @@ class LogstreamsTests extends TestServerSuite:
   def components = server().app
   def users = components.users
 
-  http.test("can open socket") { client =>
+  http.test("can open socket"): client =>
     val c = creds("u1")
-    users.add(c).flatMap { _ =>
-      withSource(c.username.name, client) { socket =>
-        IO(assertEquals(1, 1))
-      }
-    }
-  }
+    users
+      .add(c)
+      .flatMap: _ =>
+        withSource(c.username.name, client): socket =>
+          IO(assertEquals(1, 1))
 
-  http.test("sent message is received by listener") { client =>
+  http.test("sent message is received by listener"): client =>
     val message = "hello, world"
     val testEvent = LogEvent(
       System.currentTimeMillis(),
@@ -52,15 +51,15 @@ class LogstreamsTests extends TestServerSuite:
     )
 
     val user = "u2"
-    val task = withSource(user, client) { source =>
-      Deferred[IO, AppLogEvents].flatMap { p =>
-        withListener(client) { listener =>
+    val task = withSource(user, client): source =>
+      Deferred[IO, AppLogEvents].flatMap: p =>
+        withListener(client): listener =>
           val receive: IO[Unit] =
-            listener.jsonMessages.flatMap { json =>
-              Decoder[AppLogEvents]
-                .decodeJson(json)
-                .fold(fail => Stream.empty, es => Stream.eval(p.complete(es)))
-            }
+            listener.jsonMessages
+              .flatMap: json =>
+                Decoder[AppLogEvents]
+                  .decodeJson(json)
+                  .fold(fail => Stream.empty, es => Stream.eval(p.complete(es)))
               .take(1)
               .compile
               .drain
@@ -76,85 +75,70 @@ class LogstreamsTests extends TestServerSuite:
             val event = events.head
             assertEquals(event.source.name, AppName(user))
             assertEquals(event.event.message, message)
-        }
-      }
-    }
     for
       _ <- users.add(creds(user))
       _ <- users.add(testCreds)
       t <- task
     yield t
-  }
 
-  http.test("admin receives status") { client =>
-    withAdminEvents(client) { events =>
+  http.test("admin receives status"): client =>
+    withAdminEvents(client): events =>
       events.take(1).compile.toList
-    }.map { jsons =>
+    .map: jsons =>
       assertEquals(jsons.length, 1)
       assert(jsons.head.as[LogSources].isRight)
-    }
-  }
 
   // 1. admin joins, no viewers 2. viewer joins 3. another admin joins 4. viewer disconnects
   http.test(
     "admin receives status on connect and updates when a source connects and disconnects"
-  ) { client =>
+  ): client =>
     val user = "u3"
-    Deferred[IO, Json].flatMap { status =>
-      Deferred[IO, Json].flatMap { update =>
-        Deferred[IO, Json].flatMap { disconnectedPromise =>
-          components.users.add(creds(user)).flatMap { _ =>
-            withAdminEvents(client) { jsons =>
-              val listen = jsons
-                .take(3)
-                .evalMap { json =>
-                  for
-                    wasStatusEmpty <- status.complete(json)
-                    wasUpdateEmpty <-
-                      if wasStatusEmpty then IO.pure(false) else update.complete(json)
-                    _ <-
-                      if wasStatusEmpty || wasUpdateEmpty then IO.pure(false)
-                      else disconnectedPromise.complete(json)
-                  yield ()
-                }
-              val check =
-                status.get.flatMap { statusJson =>
-                  val msg = statusJson.as[LogSources]
-                  assert(msg.isRight)
-                  assert(msg.toOption.get.sources.isEmpty)
-                  val task = withSource(user, client) { _ =>
-                    update.get.flatMap { updateJson =>
-                      val upd = updateJson.as[LogSources]
-                      assert(upd.isRight)
-                      val sources = upd.toOption.get.sources
-                      assertEquals(sources.size, 1)
-                      assertEquals(sources.head.name.name, user)
-                      val task22 = withAdminEvents(client) { jsons =>
-                        jsons.take(1).compile.toList.map(_.head)
-                      }
-                      task22.map { adminStatusJson =>
-                        val res = adminStatusJson.as[LogSources]
-                        assert(res.isRight)
-                        val statusUpdate = res.fold(err => throw err, identity)
-                        assert(statusUpdate.sources.nonEmpty)
-                      }
-                    }
+    Deferred[IO, Json].flatMap: status =>
+      Deferred[IO, Json].flatMap: update =>
+        Deferred[IO, Json].flatMap: disconnectedPromise =>
+          components.users
+            .add(creds(user))
+            .flatMap: _ =>
+              withAdminEvents(client): jsons =>
+                val listen = jsons
+                  .take(3)
+                  .evalMap { json =>
+                    for
+                      wasStatusEmpty <- status.complete(json)
+                      wasUpdateEmpty <-
+                        if wasStatusEmpty then IO.pure(false) else update.complete(json)
+                      _ <-
+                        if wasStatusEmpty || wasUpdateEmpty then IO.pure(false)
+                        else disconnectedPromise.complete(json)
+                    yield ()
                   }
-                  for
-                    _ <- task
-                    disconnected <- disconnectedPromise.get
-                  yield
-                    val disconnectUpdate = disconnected.as[LogSources]
-                    assert(disconnectUpdate.isRight)
-                    assert(disconnectUpdate.toOption.get.sources.isEmpty)
-                }
-              listen.concurrently(Stream.eval(check)).compile.drain
-            }
-          }
-        }
-      }
-    }
-  }
+                val check =
+                  status.get.flatMap: statusJson =>
+                    val msg = statusJson.as[LogSources]
+                    assert(msg.isRight)
+                    assert(msg.toOption.get.sources.isEmpty)
+                    val task = withSource(user, client): _ =>
+                      update.get.flatMap: updateJson =>
+                        val upd = updateJson.as[LogSources]
+                        assert(upd.isRight)
+                        val sources = upd.toOption.get.sources
+                        assertEquals(sources.size, 1)
+                        assertEquals(sources.head.name.name, user)
+                        val task22 = withAdminEvents(client): jsons =>
+                          jsons.take(1).compile.toList.map(_.head)
+                        task22.map: adminStatusJson =>
+                          val res = adminStatusJson.as[LogSources]
+                          assert(res.isRight)
+                          val statusUpdate = res.fold(err => throw err, identity)
+                          assert(statusUpdate.sources.nonEmpty)
+                    for
+                      _ <- task
+                      disconnected <- disconnectedPromise.get
+                    yield
+                      val disconnectUpdate = disconnected.as[LogSources]
+                      assert(disconnectUpdate.isRight)
+                      assert(disconnectUpdate.toOption.get.sources.isEmpty)
+                listen.concurrently(Stream.eval(check)).compile.drain
 
   def withAdmin[T](httpClient: HttpClientF2[IO])(code: WebSocketF[IO] => IO[T]) =
     openAuthedSocket(testUser, LogRoutes.sockets.admins, httpClient)(code)
@@ -197,17 +181,18 @@ class LogstreamsTests extends TestServerSuite:
   def openSocket[T](url: FullUrl, headers: List[KeyValue], httpClient: HttpClientF2[IO])(
     code: WebSocketF[IO] => IO[T]
   ): IO[T] =
-    httpClient.socket(url, headers.map(kv => kv.key -> kv.value).toMap).use { socket =>
-      val openEvents = socket.events.collect { case o @ Open(_, _) =>
-        o
-      }
-      openEvents.take(1).compile.toList >> IO(log.info(s"Opened $url.")) >> code(socket)
-    }
+    httpClient
+      .socket(url, headers.map(kv => kv.key -> kv.value).toMap)
+      .use: socket =>
+        val openEvents = socket.events.collect:
+          case o @ Open(_, _) => o
+        openEvents.take(1).compile.toList >> IO(log.info(s"Opened $url.")) >> code(socket)
 
   def openSocket2[T](url: FullUrl, headers: List[KeyValue], httpClient: HttpClientF2[IO])(
     code: Stream[IO, Json] => IO[T]
   ): IO[T] =
-    httpClient.socket(url, headers.map(kv => kv.key -> kv.value).toMap).use { socket =>
-      val stream = socket.jsonMessages.concurrently(Stream.eval(socket.connectSocket))
-      code(stream)
-    }
+    httpClient
+      .socket(url, headers.map(kv => kv.key -> kv.value).toMap)
+      .use: socket =>
+        val stream = socket.jsonMessages.concurrently(Stream.eval(socket.connectSocket))
+        code(stream)

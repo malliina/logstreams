@@ -1,7 +1,7 @@
 package com.malliina.logstreams
 
 package object http4s:
-  implicit class EitherOps[L, R](val e: Either[L, R]) extends AnyVal:
+  extension [L, R](e: Either[L, R])
     def recover[RR >: R](recover: L => RR): RR =
       e.fold(recover, identity)
 

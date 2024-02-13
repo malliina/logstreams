@@ -13,12 +13,11 @@ import scala.concurrent.{Await, Future}
 class FS2IOAppenderTests extends FunSuite:
   val log = LoggerFactory.getLogger(getClass)
 
-  test("Stream.toList") {
+  test("Stream.toList"):
     val value = Stream.emit(1).covary[IO].compile.toList.unsafeRunSync().head
     assertEquals(value, 1)
-  }
 
-  test("hi") {
+  test("hi"):
     FS2AppenderComps
       .resource[IO]
       .map(comps => DefaultFS2IOAppender(comps))
@@ -41,6 +40,5 @@ class FS2IOAppenderTests extends FunSuite:
       //    assertEquals(events.head.message, firstMessage)
       }
       .unsafeRunSync()
-  }
 
   def await[T](f: Future[T]): T = Await.result(f, 3.seconds)

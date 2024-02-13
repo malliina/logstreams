@@ -83,11 +83,10 @@ class FS2AppenderF[F[_]: Async](
         val task: F[Unit] = logEvents
           .groupWithin(100, 200.millis)
           .evalMap(es => socket.send(LogEvents(es.toList)))
-          .onComplete {
+          .onComplete:
             fs2.Stream
               .eval(F.delay(addInfo(s"Appender [$name] completed.")))
               .flatMap(_ => fs2.Stream.empty)
-          }
           .compile
           .drain
         d.unsafeRunAndForget(task)

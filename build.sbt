@@ -12,7 +12,7 @@ val webAuthDep = malliinaGroup %% "web-auth" % webAuthVersion
 
 val serverVersion = "0.7.0"
 
-val scala3 = "3.3.1"
+val scala3 = "3.4.0"
 
 inThisBuild(
   Seq(
@@ -117,7 +117,7 @@ val server = project
     ),
     libraryDependencies ++=
       Seq("ember-server", "circe", "dsl").map { m =>
-        "org.http4s" %% s"http4s-$m" % "0.23.25"
+        "org.http4s" %% s"http4s-$m" % "0.23.26"
       } ++ Seq("util-html", "database").map { m =>
         "com.malliina" %% m % webAuthVersion
       } ++ Seq(

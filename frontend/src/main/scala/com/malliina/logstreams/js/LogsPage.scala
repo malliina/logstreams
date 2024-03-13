@@ -2,7 +2,7 @@ package com.malliina.logstreams.js
 
 import com.malliina.logstreams.js.ScriptHelpers.{AppsDropdownMenuId, AppsFiltered, DropdownItem, FromTimePickerId, LogLevelDropdownButton, LogLevelDropdownMenuId, SearchButton, SearchInput, elem, getElem}
 import com.malliina.logstreams.models.FrontStrings.ToTimePickerId
-import com.malliina.logstreams.models.{AppName, LogLevel}
+import com.malliina.logstreams.models.{AppName, LogLevel, Queries}
 import org.scalajs.dom.html.Anchor
 import org.scalajs.dom.{HTMLButtonElement, HTMLInputElement, KeyboardEvent, MouseEvent}
 import scalatags.JsDom.all.*
@@ -11,6 +11,7 @@ import scala.scalajs.js
 import scala.scalajs.js.{Date, URIUtils}
 
 class LogsPage(log: BaseLogger):
+  private val qs = QueryString.parse
   private val ActiveClass = "active"
   val settings: Settings = StorageSettings
   private val availableApps =
@@ -71,6 +72,15 @@ class LogsPage(log: BaseLogger):
     )
 
   private def socketFor(apps: Seq[AppName], level: LogLevel, query: Option[String]) =
+    qs.set(LogLevel.Key, level.name)
+    qs.delete(AppName.Key)
+    apps.foreach: app =>
+      qs.append(AppName.Key, app.name)
+    qs.setOrDelete(Queries.Q, query)
+    qs.setOrDelete(Queries.From, selectedFrom.map(_.toISOString()))
+    qs.setOrDelete(Queries.To, selectedTo.map(_.toISOString()))
+    qs.commit()
+    // This opens a websocket
     ListenerSocket(pathFor(apps, level, query), settings, verboseSupport = true)
 
   private def renderApps(apps: Seq[AppName]): Unit =
@@ -107,11 +117,12 @@ class LogsPage(log: BaseLogger):
     reconnect(settings.apps, settings.level, query)
 
   private def pathFor(apps: Seq[AppName], level: LogLevel, query: Option[String]): String =
-    val appsParams = apps.map(app => "app" -> app.name)
+    // TODO read from query string
+    val appsParams = apps.map(app => AppName.Key -> app.name)
     val levelParam = Seq(LogLevel.Key -> level.name)
-    val searchQuery = query.map(q => "q" -> q).toList
-    val f = selectedFrom.map(d => "from" -> d.toISOString())
-    val t = selectedTo.map(d => "to" -> d.toISOString())
+    val searchQuery = query.map(q => Queries.Q -> q).toList
+    val f = selectedFrom.map(d => Queries.From -> d.toISOString())
+    val t = selectedTo.map(d => Queries.To -> d.toISOString())
     val dates = f.toList ++ t.toList
     val params = (Seq("f" -> "json") ++ appsParams ++ levelParam ++ searchQuery ++ dates)
       .map((k, v) => s"$k=${URIUtils.encodeURIComponent(v)}")

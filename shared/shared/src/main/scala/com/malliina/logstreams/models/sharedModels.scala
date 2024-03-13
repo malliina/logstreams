@@ -7,6 +7,11 @@ import io.circe.*
 import io.circe.generic.semiauto.*
 import io.circe.syntax.*
 
+object Queries:
+  val From = "from"
+  val To = "to"
+  val Q = "q"
+
 sealed abstract class LogLevel(val name: String, val int: Int) extends WrappedString:
   override def value = name
 
@@ -40,6 +45,7 @@ case class AppName(name: String) extends AnyVal:
   override def toString: String = name
 
 object AppName extends Companion[String, AppName]:
+  val Key = "app"
   override def raw(t: AppName): String = t.name
 
 case class LogEntryId(id: Long) extends AnyVal:
@@ -169,10 +175,9 @@ object LogsJson:
   private val eventDecoder = Decoder.decodeString.at(EventKey)
 
   def evented[T](value: String, codec: Codec.AsObject[T]): Codec.AsObject[T] =
-    val decoder = eventDecoder.flatMap[T] { event =>
+    val decoder = eventDecoder.flatMap[T]: event =>
       if event == value then codec
       else Decoder.failed(DecodingFailure(s"Event is '$event', required '$value'.", Nil))
-    }
     val encoder: Encoder.AsObject[T] = (t: T) =>
       codec.encodeObject(t).deepMerge(JsonObject(EventKey -> value.asJson))
     Codec.AsObject.from(decoder, encoder)

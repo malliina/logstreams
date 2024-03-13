@@ -24,7 +24,7 @@ class TimeFormatter(simpleDateFormat: String):
           new CachingDateFormatter(CoreConstants.ISO8601_PATTERN, helsinki)
         )
 
-  def format(timeStamp: Long): String = formatter format timeStamp
+  def format(timeStamp: Long): String = formatter.format(timeStamp)
 
 object TimeFormatter:
   val helsinki = ZoneId.of("Europe/Helsinki")

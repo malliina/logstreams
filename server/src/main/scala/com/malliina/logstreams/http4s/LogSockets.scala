@@ -3,7 +3,7 @@ package com.malliina.logstreams.http4s
 import cats.effect.kernel.{Async, Ref}
 import cats.syntax.all.{toFlatMapOps, toFunctorOps}
 import com.malliina.logstreams.db.{LogsDatabase, StreamsQuery}
-import com.malliina.logstreams.http4s.LogSockets.log
+import com.malliina.logstreams.http4s.LogSockets.{instantFormatter, log}
 import com.malliina.logstreams.models.*
 import com.malliina.util.AppLogger
 import fs2.concurrent.Topic
@@ -23,6 +23,7 @@ import scala.concurrent.duration.DurationInt
 object LogSockets:
   private val log = AppLogger(getClass)
   private val dateTimeFormatter = DateTimeFormatter.ISO_DATE_TIME
+  private val instantFormatter = DateTimeFormatter.ISO_INSTANT
 
 class LogSockets[F[_]: Async](
   logs: Topic[F, LogEntryInputs],
@@ -58,7 +59,12 @@ class LogSockets[F[_]: Async](
         subscription.map: es =>
           es.filter(e => query.apps.exists(app => app.name == e.source.name.name))
 
-    val info = SearchInfo(query.query, from = None, to = None)
+    val time = query.timeRange
+    val info = SearchInfo(
+      query.query,
+      from = time.from.map(instantFormatter.format),
+      to = time.to.map(instantFormatter.format)
+    )
     val logEvents = Stream(MetaEvent.loading(info)) ++ Stream
       .eval(db.events(query))
       .flatMap: history =>

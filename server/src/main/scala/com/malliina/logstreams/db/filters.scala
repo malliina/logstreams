@@ -3,14 +3,14 @@ package com.malliina.logstreams.db
 import com.malliina.logback.TimeFormatter
 import com.malliina.logstreams.Errors
 import com.malliina.logstreams.http4s.QueryParsers
-import com.malliina.logstreams.models.LogLevel
-import com.malliina.values.{ErrorMessage, StringEnumCompanion, Username}
+import com.malliina.logstreams.models.{AppName, LogLevel, Queries}
+import com.malliina.values.{StringEnumCompanion, Username}
 import org.http4s.{Query, QueryParamDecoder}
 
-import concurrent.duration.DurationInt
-import java.time.{Instant, LocalDate, OffsetDateTime}
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import java.time.{Instant, LocalDate, OffsetDateTime}
+import scala.concurrent.duration.DurationInt
 
 case class TimeRange(from: Option[Instant], to: Option[Instant]):
   def isEmpty = from.isEmpty && to.isEmpty
@@ -21,8 +21,8 @@ case class TimeRange(from: Option[Instant], to: Option[Instant]):
     case other              => ""
 
 object TimeRange:
-  private val From = "from"
-  private val To = "to"
+  private val From = Queries.From
+  private val To = Queries.To
 
   val none = TimeRange(None, None)
   private val instantDecoder =
@@ -46,15 +46,15 @@ object TimeRange:
 
   private def bindInstant(key: String, q: Query): Either[Errors, Option[Instant]] =
     QueryParsers
-      .parseOptE[Instant](q, key)(instantDecoder)
+      .parseOptE[Instant](q, key)(using instantDecoder)
       .orElse(
         QueryParsers
-          .parseOptE[LocalDate](q, key)(localDateEncoder)
+          .parseOptE[LocalDate](q, key)(using localDateEncoder)
           .map(_.map(_.atStartOfDay(TimeFormatter.helsinki).toInstant))
       )
       .orElse(
         QueryParsers
-          .parseOptE[OffsetDateTime](q, key)(offsetDateTimeEncoder)
+          .parseOptE[OffsetDateTime](q, key)(using offsetDateTimeEncoder)
           .map(_.map(_.toInstant))
       )
 
@@ -70,10 +70,10 @@ case class StreamsQuery(
   def queryStar = query.map(q => s"$q*")
 
 object StreamsQuery:
-  val AppKey = "app"
+  val AppKey = AppName.Key
   val Limit = "limit"
   val Offset = "offset"
-  val Query = "q"
+  val Query = Queries.Q
 
   def default = StreamsQuery(
     Nil,

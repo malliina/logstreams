@@ -4,8 +4,8 @@ import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 
 val malliinaGroup = "com.malliina"
-val webAuthVersion = "6.6.4"
-val primitivesVersion = "3.5.2"
+val webAuthVersion = "6.7.0"
+val primitivesVersion = "3.6.0"
 val munitVersion = "0.7.29"
 val munitCatsEffectVersion = "1.0.7"
 val webAuthDep = malliinaGroup %% "web-auth" % webAuthVersion
@@ -39,10 +39,10 @@ val fs2 = project
   .enablePlugins(MavenCentralPlugin)
   .settings(
     libraryDependencies ++= Seq("classic", "core").map { m =>
-      "ch.qos.logback" % s"logback-$m" % "1.4.11"
+      "ch.qos.logback" % s"logback-$m" % "1.5.5"
     } ++ Seq(
       "com.malliina" %%% "primitives" % primitivesVersion,
-      "co.fs2" %% "fs2-core" % "3.7.0",
+      "co.fs2" %% "fs2-core" % "3.9.4",
       "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
     ),
     moduleName := "logback-fs2",
@@ -125,7 +125,7 @@ val server = project
         "mysql" % "mysql-connector-java" % "8.0.33",
         webAuthDep,
         webAuthDep % Test classifier "tests",
-        "com.dimafeng" %% "testcontainers-scala-mysql" % "0.41.2" % Test,
+        "com.dimafeng" %% "testcontainers-scala-mysql" % "0.41.3" % Test,
         "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test
       ),
     Compile / packageDoc / publishArtifact := false,

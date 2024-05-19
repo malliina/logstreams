@@ -61,7 +61,7 @@ object LogstreamsConf:
     )
 
   private def prodDatabaseConf(password: Password, maxPoolSize: Int) = Conf(
-    "jdbc:mysql://database8-nuqmhn2cxlhle.mysql.database.azure.com:3306/logstreams",
+    "jdbc:mysql://localhost:3306/logstreams",
     "logstreams",
     password.pass,
     Conf.MySQLDriver,

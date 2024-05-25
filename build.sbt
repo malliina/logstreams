@@ -104,7 +104,8 @@ val server = project
     FileTreePlugin,
     BuildInfoPlugin,
     ServerPlugin,
-    LiveRevolverPlugin
+    LiveRevolverPlugin,
+    DebPlugin
   )
   .dependsOn(crossJvm, client)
   .settings(
@@ -135,13 +136,7 @@ val server = project
     liveReloadPort := port"10103",
     dependentModule := crossJvm,
     Compile / resourceDirectories += io.Path.userHome / ".logstreams",
-    Compile / packageDoc / mappings := Nil,
-    Compile / packageDoc / publishArtifact := false,
-    maintainer := "Michael Skogberg <malliina123@gmail.com>",
-    packageSummary := "Logstreams backend",
-    packageDescription := "Log management server.",
-    Linux / daemonUser := "logstreams",
-    Linux / packageName := "logstreams"
+    Linux / name := "logstreams"
   )
 
 val it = Project("logstreams-test", file("logstreams-test"))

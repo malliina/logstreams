@@ -111,9 +111,8 @@ class LogSockets[F[_]: Async](
               ))
             F.pure(inputs)
         )
-        event.flatMap { e =>
+        event.flatMap: e =>
           publishLogged(e, logs)
-        }
       case f => F.delay(log.debug(s"Unknown WebSocket frame: $f"))
     log.info(s"Server ${user.user} with agent ${user.userAgent.getOrElse("unknown")} joined.")
     val id = com.malliina.web.Utils.randomString().take(7)

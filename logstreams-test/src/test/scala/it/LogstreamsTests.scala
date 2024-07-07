@@ -102,7 +102,7 @@ class LogstreamsTests extends TestServerSuite:
               withAdminEvents(client): jsons =>
                 val listen = jsons
                   .take(3)
-                  .evalMap { json =>
+                  .evalMap: json =>
                     for
                       wasStatusEmpty <- status.complete(json)
                       wasUpdateEmpty <-
@@ -111,7 +111,6 @@ class LogstreamsTests extends TestServerSuite:
                         if wasStatusEmpty || wasUpdateEmpty then IO.pure(false)
                         else disconnectedPromise.complete(json)
                     yield ()
-                  }
                 val check =
                   status.get.flatMap: statusJson =>
                     val msg = statusJson.as[LogSources]

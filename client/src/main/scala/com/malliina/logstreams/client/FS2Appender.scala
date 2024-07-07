@@ -47,9 +47,10 @@ object FS2Appender:
     http: HttpClientF2[F],
     extraHeaders: Map[String, String] = Map.empty
   ): F[FS2AppenderF[F]] =
-    FS2AppenderComps.io(d).map { parts =>
-      FS2AppenderF(ResourceParts(parts, http, Async[F].unit), extraHeaders)
-    }
+    FS2AppenderComps
+      .io(d)
+      .map: parts =>
+        FS2AppenderF(ResourceParts(parts, http, Async[F].unit), extraHeaders)
 
 class FS2Appender(
   res: ResourceParts[IO]

@@ -149,9 +149,8 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
         span(entry.timeFormatted)
       ),
       div(cls := "mobile-message")(event.event.message),
-      entry.stackTrace.fold(modifier()) { stackTrace =>
-        div(cls := "mobile-message mobile-error")(stackTrace)
-      },
+      entry.stackTrace.fold(modifier()): stackTrace =>
+        div(cls := "mobile-message mobile-error")(stackTrace),
       div(cls := "mobile-header")(
         div(cls := "mobile-secondary")(entry.level.name),
         div(cls := "mobile-secondary")(entry.loggerName)
@@ -162,9 +161,10 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
 
   private val chars = "abcdefghijklmnopqrstuvwxyz"
   private def randomString(ofLength: Int): String =
-    (0 until ofLength).map { _ =>
-      chars.charAt(math.floor(math.random() * chars.length).toInt)
-    }.mkString
+    (0 until ofLength)
+      .map: _ =>
+        chars.charAt(math.floor(math.random() * chars.length).toInt)
+      .mkString
 
   private def cell(content: String, hideable: Boolean = false, responsive: Boolean = true) =
     toCell(

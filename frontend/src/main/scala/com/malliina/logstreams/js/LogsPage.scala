@@ -32,10 +32,9 @@ class LogsPage(log: BaseLogger):
       )
     )
   private var socket: ListenerSocket = socketFor(settings.apps, settings.level, settings.query)
-  availableApps.foreach { item =>
+  availableApps.foreach: item =>
     item.onclick =
       (_: MouseEvent) => updateFilter(settings.appendDistinct(AppName(item.textContent)))
-  }
   private val availableLogLevels =
     elem(LogLevelDropdownMenuId).getElementsByClassName(DropdownItem).map(_.asInstanceOf[Anchor])
   availableLogLevels.foreach: item =>
@@ -84,11 +83,10 @@ class LogsPage(log: BaseLogger):
     ListenerSocket(pathFor(apps, level, query), settings, verboseSupport = true)
 
   private def renderApps(apps: Seq[AppName]): Unit =
-    val buttons = apps.map { app =>
+    val buttons = apps.map: app =>
       val selected = button(`type` := "button", `class` := "btn btn-info btn-sm")(app.name).render
       selected.onclick = (_: MouseEvent) => updateFilter(settings.remove(app))
       selected
-    }
     val target = elem(AppsFiltered)
     target.innerHTML = ""
     buttons.foreach: btn =>

@@ -21,7 +21,7 @@ class FS2IOAppenderTests extends FunSuite:
     FS2AppenderComps
       .resource[IO]
       .map(comps => DefaultFS2IOAppender(comps))
-      .use { appender =>
+      .use: appender =>
         LogbackUtils.installAppender(appender)
         val f = appender.logEvents
           .take(2)
@@ -38,7 +38,6 @@ class FS2IOAppenderTests extends FunSuite:
         IO.pure(42)
       // TODO apparently the messages may be unordered, try to fix
       //    assertEquals(events.head.message, firstMessage)
-      }
       .unsafeRunSync()
 
   def await[T](f: Future[T]): T = Await.result(f, 3.seconds)

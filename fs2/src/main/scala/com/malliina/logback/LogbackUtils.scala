@@ -29,9 +29,8 @@ object LogbackUtils:
     LogbackUtils.installAppender(appender)
     val root = lc.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME)
     root.setLevel(rootLevel)
-    levelsByLogger.foreach { (loggerName, level) =>
+    levelsByLogger.foreach: (loggerName, level) =>
       lc.getLogger(loggerName).setLevel(level)
-    }
     lc
 
   def appender[T](

@@ -22,29 +22,27 @@ class LogsAppConf(override val database: Conf) extends AppConf:
 case class TestDatabase(conf: Conf, container: Option[MySQLContainer])
 
 object DatabaseUtils:
-  val testDatabase: Resource[IO, TestDatabase] = Resource.make {
-    IO.delay:
-      val localTestDb = testConf().map(conf => TestDatabase(conf, None))
-      localTestDb.getOrElse:
-        val image = DockerImageName.parse("mysql:8.0.33")
-        val c = MySQLContainer(mysqlImageVersion = image)
-        c.start()
-        TestDatabase(
-          Conf(
-            c.jdbcUrl,
-            c.username,
-            c.password,
-            c.driverClassName,
-            maxPoolSize = 2,
-            autoMigrate = true
-          ),
-          Option(c)
-        )
-  } { cont =>
+  private def acquire = IO.delay:
+    val localTestDb = testConf().map(conf => TestDatabase(conf, None))
+    localTestDb.getOrElse:
+      val image = DockerImageName.parse("mysql:8.0.33")
+      val c = MySQLContainer(mysqlImageVersion = image)
+      c.start()
+      TestDatabase(
+        Conf(
+          c.jdbcUrl,
+          c.username,
+          c.password,
+          c.driverClassName,
+          maxPoolSize = 2,
+          autoMigrate = true
+        ),
+        Option(c)
+      )
+  val testDatabase: Resource[IO, TestDatabase] = Resource.make(acquire): cont =>
     truncateTestData(cont.conf) >>
       IO.delay:
         cont.container.foreach(_.stop())
-  }
 
   private def testConf(): Either[ConfigError, Conf] =
     LocalConf.conf

@@ -60,8 +60,8 @@ object LogstreamsUtils:
         http,
         Map(HttpUtil.UserAgent -> conf.userAgent)
       )
-      .flatMap { appender =>
-        Async[F].delay {
+      .flatMap: appender =>
+        Async[F].delay:
           appender.setContext(lc)
           appender.setName("LOGSTREAMS")
           appender.setEndpoint("wss://logs.malliina.com/ws/sources")
@@ -69,8 +69,6 @@ object LogstreamsUtils:
           appender.setPassword(conf.pass)
           appender.setEnabled(conf.enabled)
           LogbackUtils.installAppender(appender)
-        }
-      }
 
   def env(key: String): Either[ErrorMessage, String] =
     sys.env.get(key).toRight(ErrorMessage(s"No $key environment variable set."))

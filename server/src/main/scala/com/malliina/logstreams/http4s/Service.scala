@@ -163,22 +163,23 @@ class Service[F[_]: Async](
           .flatMap: s =>
             startLoginFlow(s, req)
 
-  private def startLoginFlow(s: Start, req: Request[F]): F[Response[F]] = F.delay {
-    val state = randomString()
-    val encodedParams = (s.params ++ Map(OAuthKeys.State -> state)).map: (k, v) =>
-      k -> Utils.urlEncode(v)
-    val url = s.authorizationEndpoint.append(s"?${stringify(encodedParams)}")
-    log.info(s"Redirecting to '$url' with state '$state'...")
-    val sessionParams = Seq(State -> state) ++ s.nonce
-      .map(n => Seq(Nonce -> n))
-      .getOrElse(Nil)
-    (url, sessionParams)
-  }.flatMap: (url, sessionParams) =>
-    SeeOther(Location(Uri.unsafeFromString(url.url))).map: res =>
-      val session = sessionParams.toMap.asJson
-      auths.web
-        .withSession(session, req, res)
-        .putHeaders(noCache)
+  private def startLoginFlow(s: Start, req: Request[F]): F[Response[F]] = F
+    .delay:
+      val state = randomString()
+      val encodedParams = (s.params ++ Map(OAuthKeys.State -> state)).map: (k, v) =>
+        k -> Utils.urlEncode(v)
+      val url = s.authorizationEndpoint.append(s"?${stringify(encodedParams)}")
+      log.info(s"Redirecting to '$url' with state '$state'...")
+      val sessionParams = Seq(State -> state) ++ s.nonce
+        .map(n => Seq(Nonce -> n))
+        .getOrElse(Nil)
+      (url, sessionParams)
+    .flatMap: (url, sessionParams) =>
+      SeeOther(Location(Uri.unsafeFromString(url.url))).map: res =>
+        val session = sessionParams.toMap.asJson
+        auths.web
+          .withSession(session, req, res)
+          .putHeaders(noCache)
 
   private def handleCallback(
     req: Request[F],

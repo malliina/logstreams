@@ -13,6 +13,7 @@ import com.malliina.logstreams.auth.*
 import com.malliina.logstreams.http4s.{Http4sAuth, Server, ServerComponents}
 import com.malliina.logstreams.{LocalConf, LogstreamsConf}
 import com.malliina.values.{Password, Username}
+import munit.AnyFixture
 import org.testcontainers.utility.DockerImageName
 
 class LogsAppConf(override val database: Conf) extends AppConf:
@@ -71,11 +72,11 @@ object DatabaseUtils:
 trait MUnitDatabaseSuite:
   self: munit.CatsEffectSuite =>
   val db = ResourceSuiteLocalFixture("database", DatabaseUtils.testDatabase)
-  override def munitFixtures: Seq[Fixture[?]] = Seq(db)
+  override def munitFixtures: Seq[AnyFixture[?]] = Seq(db)
 
 trait ServerSuite extends MUnitDatabaseSuite:
   self: munit.CatsEffectSuite =>
-  val http = ResourceFixture(HttpClientIO.resource)
+  val http = ResourceFunFixture(HttpClientIO.resource[IO])
   val conf = LogstreamsConf.parseIO[IO].map(_.copy(isTest = true, db = db().conf))
   val testResource = Resource
     .eval(conf)
@@ -87,7 +88,7 @@ trait ServerSuite extends MUnitDatabaseSuite:
     override def apply[F[_]: Sync](users: UserService[F], web: Http4sAuth[F]) =
       TestAuther(users, web, Username("u"))
 
-  override def munitFixtures: Seq[Fixture[?]] = Seq(db, server)
+  override def munitFixtures: Seq[AnyFixture[?]] = Seq(db, server)
 
 abstract class TestServerSuite extends munit.CatsEffectSuite with ServerSuite
 

@@ -4,7 +4,7 @@ import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 
 val malliinaGroup = "com.malliina"
-val webAuthVersion = "6.9.0"
+val webAuthVersion = "6.9.1"
 val primitivesVersion = "3.7.1"
 val munitVersion = "1.0.0"
 val munitCatsEffectVersion = "2.0.0"

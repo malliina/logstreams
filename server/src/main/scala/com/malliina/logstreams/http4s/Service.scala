@@ -66,7 +66,6 @@ class Service[F[_]: Async](
     case req @ GET -> Root / "users" =>
       webAuth(req): user =>
         val feedback = req.feedbackAs[UserFeedback]
-        log.info(s"Feedback is $feedback, cookie ${req.cookies}")
         users
           .all()
           .flatMap(us => ok(htmls.users(us, feedback)).clearFeedback)

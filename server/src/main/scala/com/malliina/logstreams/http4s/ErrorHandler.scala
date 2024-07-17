@@ -7,7 +7,7 @@ import org.http4s.Response
 
 import scala.util.control.NonFatal
 
-class ErrorHandler[F[_]: Async] extends BasicService[F]:
+class ErrorHandler[F[_]: Async] extends LogsService[F]:
   private val log = AppLogger(getClass)
 
   def partial: PartialFunction[Throwable, F[Response[F]]] =

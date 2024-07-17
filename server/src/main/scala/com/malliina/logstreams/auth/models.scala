@@ -1,7 +1,7 @@
 package com.malliina.logstreams.auth
 
 import com.malliina.config.ConfigReadable
-import com.malliina.logstreams.SingleError
+import com.malliina.http.SingleError
 import com.malliina.values.{Email, Password, Username}
 import io.circe.Codec
 

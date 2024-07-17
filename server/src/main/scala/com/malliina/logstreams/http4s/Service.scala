@@ -6,16 +6,16 @@ import cats.effect.kernel.Async
 import cats.syntax.all.{catsSyntaxApplicativeError, toFlatMapOps, toFunctorOps}
 import com.malliina.app.AppMeta
 import com.malliina.database.DoobieDatabase
+import com.malliina.http.{Errors, SingleError}
 import com.malliina.http4s.{FormDecoders, FormReadable, FormReadableT}
 import com.malliina.logstreams.auth.*
 import com.malliina.logstreams.auth.AuthProvider.{Google, PromptKey, SelectAccount}
 import com.malliina.logstreams.db.StreamsQuery
 import com.malliina.logstreams.html.Htmls
 import com.malliina.logstreams.html.Htmls.{PasswordKey, UsernameKey}
-import com.malliina.logstreams.http4s.BasicService.noCache
+import com.malliina.http4s.BasicService.noCache
 import com.malliina.logstreams.http4s.Service.log
 import com.malliina.logstreams.models.AppName
-import com.malliina.logstreams.{Errors, SingleError}
 import com.malliina.util.AppLogger
 import com.malliina.values.{Email, Password, Username}
 import com.malliina.web.*
@@ -39,7 +39,7 @@ class Service[F[_]: Async](
   auths: Auther[F],
   sockets: LogSockets[F],
   google: GoogleAuthFlow[F]
-) extends BasicService[F]
+) extends LogsService[F]
   with FormDecoders[F]:
   val reverse = LogRoutes
   val F = Sync[F]

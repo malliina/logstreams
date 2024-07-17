@@ -1,8 +1,8 @@
 package com.malliina.logstreams.db
 
+import com.malliina.http.Errors
+import com.malliina.http4s.QueryParsers
 import com.malliina.logback.TimeFormatter
-import com.malliina.logstreams.Errors
-import com.malliina.logstreams.http4s.QueryParsers
 import com.malliina.logstreams.models.{AppName, LogLevel, Queries}
 import com.malliina.values.{StringEnumCompanion, Username}
 import org.http4s.{Query, QueryParamDecoder}

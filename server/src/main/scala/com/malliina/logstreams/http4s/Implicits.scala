@@ -25,10 +25,3 @@ trait MyScalatagsInstances:
       .stringEncoder[F]
       .contramap[C](content => content.render)
       .withContentType(`Content-Type`(mediaType, charset))
-
-abstract class Implicits[F[_]]
-  extends syntax.AllSyntax
-  with Http4sDsl[F]
-  with Extractors
-  with CirceInstances
-  with MyScalatagsInstances

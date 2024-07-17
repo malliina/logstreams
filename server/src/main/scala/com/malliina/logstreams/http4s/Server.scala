@@ -73,7 +73,7 @@ object Server extends IOApp:
       )
       db <-
         if conf.isFull then DoobieDatabase.init[F](conf.db)
-        else Resource.pure(DoobieDatabase.fast(conf.db))
+        else Resource.eval(DoobieDatabase.fast(conf.db))
       logsTopic <- Resource.eval(Topic[F, LogEntryInputs])
       adminsTopic <- Resource.eval(Topic[F, LogSources])
       connecteds <- Resource.eval(Ref[F].of(LogSources(Nil)))
@@ -107,7 +107,7 @@ object Server extends IOApp:
   private def orNotFound[F[_]: Async](
     rs: HttpRoutes[F]
   ): Kleisli[F, Request[F], Response[F]] =
-    Kleisli(req => rs.run(req).getOrElseF(BasicService[F].notFound(req)))
+    Kleisli(req => rs.run(req).getOrElseF(LogsService[F].notFound(req)))
 
   override def run(args: List[String]): IO[ExitCode] =
     for

@@ -25,7 +25,7 @@ trait QueryParsers:
           .toEither
           .left
           .map: failures =>
-            Errors(failures.map(pf => SingleError(pf.sanitized, "input")))
+            Errors(failures.map(pf => SingleError.input(pf.sanitized)))
 
   def parseOptE[T: QueryParamDecoder](q: Query, key: String): Either[Errors, Option[T]] =
     parseOpt(q, key).map(e => e.map(t => Option(t))).getOrElse(Right(None))

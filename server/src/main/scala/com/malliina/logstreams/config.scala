@@ -70,7 +70,7 @@ object LogstreamsConf:
   )
 
   private def devDatabaseConf(password: Password) = Conf(
-    "jdbc:mysql://localhost:3307/logstreams",
+    "jdbc:mysql://localhost:3306/logstreams",
     "logstreams",
     password.pass,
     Conf.MySQLDriver,

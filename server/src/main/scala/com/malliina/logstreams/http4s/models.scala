@@ -1,12 +1,13 @@
 package com.malliina.logstreams.http4s
 
 import com.malliina.values.Username
+import io.circe.Codec
 import org.http4s.Headers
 import org.typelevel.ci.CIStringSyntax
 
 import java.time.OffsetDateTime
 
-case class UserFeedback(message: String, isError: Boolean)
+case class UserFeedback(message: String, isError: Boolean) derives Codec.AsObject
 
 object UserFeedback:
   val Feedback = "feedback"

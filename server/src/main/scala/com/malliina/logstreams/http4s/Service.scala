@@ -7,7 +7,7 @@ import cats.syntax.all.{catsSyntaxApplicativeError, toFlatMapOps, toFunctorOps}
 import com.malliina.app.AppMeta
 import com.malliina.database.DoobieDatabase
 import com.malliina.http.{Errors, SingleError}
-import com.malliina.http4s.{FormDecoders, FormReadable, FormReadableT}
+import com.malliina.http4s.{CSRFSupport, FormDecoders, FormReadable, FormReadableT}
 import com.malliina.logstreams.auth.*
 import com.malliina.logstreams.auth.AuthProvider.{Google, PromptKey, SelectAccount}
 import com.malliina.logstreams.db.StreamsQuery
@@ -24,6 +24,7 @@ import com.malliina.web.Utils.randomString
 import io.circe.syntax.EncoderOps
 import org.http4s.circe.CirceEntityEncoder.circeEntityEncoder
 import org.http4s.headers.{Location, `WWW-Authenticate`}
+import org.http4s.server.middleware.CSRF
 import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.{BasicCredentials as _, Callback as _, *}
 
@@ -38,9 +39,11 @@ class Service[F[_]: Async](
   htmls: Htmls,
   auths: Auther[F],
   sockets: LogSockets[F],
-  google: GoogleAuthFlow[F]
+  google: GoogleAuthFlow[F],
+  val csrf: CSRF[F, F]
 ) extends LogsService[F]
-  with FormDecoders[F]:
+  with FormDecoders[F]
+  with CSRFSupport[F]:
   val reverse = LogRoutes
   val F = Sync[F]
 
@@ -68,7 +71,10 @@ class Service[F[_]: Async](
         val feedback = req.feedbackAs[UserFeedback]
         users
           .all()
-          .flatMap(us => ok(htmls.users(us, feedback)).clearFeedback)
+          .flatMap: us =>
+            csrfOk: token =>
+              htmls.users(us, feedback, token)
+          .clearFeedback
     case req @ POST -> Root / "users" =>
       webAuth(req): user =>
         req

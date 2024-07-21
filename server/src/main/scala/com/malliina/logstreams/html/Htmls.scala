@@ -2,7 +2,7 @@ package com.malliina.logstreams.html
 
 import com.malliina.html.HtmlImplicits.given
 import com.malliina.html.{Bootstrap, HtmlTags}
-import com.malliina.http.FullUrl
+import com.malliina.http.{CSRFConf, CSRFToken, FullUrl}
 import com.malliina.live.LiveReload
 import com.malliina.logstreams.{FileAssets, HashedAssets}
 import com.malliina.logstreams.html.Htmls.{*, given}
@@ -20,8 +20,11 @@ object Htmls:
 
   case class PageConf(titleText: String, bodyClasses: Seq[String])
 
-  given AttrValue[Uri] = (t: Builder, a: Attr, v: Uri) =>
-    t.setAttr(a.name, Builder.GenericAttrValueSource(v.renderString))
+  given AttrValue[Uri] = makeStringAttr(_.renderString)
+  given AttrValue[CSRFToken] = makeStringAttr(_.value)
+
+  private def makeStringAttr[T](write: T => String): AttrValue[T] =
+    (t: Builder, a: Attr, v: T) => t.setAttr(a.name, Builder.GenericAttrValueSource(write(v)))
 
   /** @param appName
     *   typically the name of the Scala.js module
@@ -30,19 +33,26 @@ object Htmls:
     * @return
     *   HTML templates with either prod or dev javascripts
     */
-  def forApp(appName: String, isProd: Boolean, assets: AssetsSource): Htmls =
+  def forApp(appName: String, isProd: Boolean, assets: AssetsSource, csrfConf: CSRFConf): Htmls =
     val externalScripts = if isProd then Nil else FullUrl.build(LiveReload.script).toSeq
 
     val appScripts =
       if isProd then Seq(FileAssets.frontend_js)
       else Seq(FileAssets.frontend_js, "frontend-loader.js", "main.js")
-    Htmls(appScripts, externalScripts, Seq(FileAssets.frontend_css, FileAssets.styles_css), assets)
+    Htmls(
+      appScripts,
+      externalScripts,
+      Seq(FileAssets.frontend_css, FileAssets.styles_css),
+      assets,
+      csrfConf
+    )
 
 class Htmls(
   scripts: Seq[String],
   externalScripts: Seq[FullUrl],
   cssFiles: Seq[String],
-  assets: AssetsSource
+  assets: AssetsSource,
+  csrfConf: CSRFConf
 ) extends Bootstrap(HtmlTags)
   with FrontStrings:
 
@@ -178,8 +188,8 @@ class Htmls(
     )
   )
 
-  def users(us: Seq[Username], feedback: Option[UserFeedback]) =
-//    val csrfInput = input(tpe := "hidden", name := csrf.name, value := raw(csrf.value).render)
+  def users(us: Seq[Username], feedback: Option[UserFeedback], csrf: CSRFToken) =
+    val csrfInput = input(tpe := "hidden", name := csrfConf.tokenName, value := csrf)
     baseIndex("users")(
       headerRow("Users"),
       fullRow(feedback.fold(empty)(feedbackDiv)),
@@ -193,6 +203,7 @@ class Htmls(
                   td(user.name),
                   td(cls := "table-button")(
                     postableForm(reverse.removeUser(user), cls := "table-form")(
+                      csrfInput,
                       button(cls := s"${btn.danger} ${btn.sm}")(" Delete")
                     )
                   )
@@ -201,6 +212,7 @@ class Htmls(
         ),
         div6(
           form(action := reverse.addUser, method := Post)(
+            csrfInput,
             div(cls := "mb-3")(
               label(`for` := UsernameKey, cls := "form-label")("Username"),
               input(tpe := "text", cls := "form-control", id := UsernameKey, name := UsernameKey)

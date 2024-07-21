@@ -7,7 +7,9 @@ import cats.effect.{Async, ExitCode, IO, IOApp, Resource}
 import com.comcast.ip4s.{Port, host, port}
 import com.malliina.app.{AppMeta, BuildInfo}
 import com.malliina.database.DoobieDatabase
+import com.malliina.http.CSRFConf
 import com.malliina.http.io.HttpClientIO
+import com.malliina.http4s.CSRFUtils
 import com.malliina.logstreams.auth.{AuthBuilder, Auther, Auths, JWT}
 import com.malliina.logstreams.client.LogstreamsUtils
 import com.malliina.logstreams.db.{DoobieDatabaseAuth, DoobieLogsDatabase}
@@ -18,7 +20,7 @@ import com.malliina.util.AppLogger
 import com.malliina.web.GoogleAuthFlow
 import fs2.concurrent.Topic
 import org.http4s.ember.server.EmberServerBuilder
-import org.http4s.server.middleware.{GZip, HSTS}
+import org.http4s.server.middleware.{CSRF, GZip, HSTS}
 import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.server.{Router, Server}
 import org.http4s.{HttpRoutes, Request, Response}
@@ -43,8 +45,11 @@ object Server extends IOApp:
     authBuilder: AuthBuilder,
     port: Port = serverPort
   ): Resource[F, ServerComponents[F]] =
+    val csrfConf = CSRFConf.default
+    val csrfUtils = CSRFUtils(csrfConf)
     for
-      service <- appService[F](conf, authBuilder)
+      csrf <- Resource.eval(csrfUtils.default[F])
+      service <- appService[F](conf, authBuilder, csrf, csrfConf)
       _ <- Resource.eval(
         Async[F].delay(
           log.info(s"Binding on port $port using app version ${AppMeta.ThisApp.git}...")
@@ -55,7 +60,9 @@ object Server extends IOApp:
         .withIdleTimeout(30.days)
         .withHost(host"0.0.0.0")
         .withPort(serverPort)
-        .withHttpWebSocketApp(socketBuilder => makeHandler(service, socketBuilder))
+        .withHttpWebSocketApp(socketBuilder =>
+          makeHandler(service, socketBuilder, csrfUtils.middleware(csrf))
+        )
         .withErrorHandler(ErrorHandler[F].partial)
         .withShutdownTimeout(1.millis)
         .build
@@ -63,7 +70,9 @@ object Server extends IOApp:
 
   private def appService[F[_]: Async](
     conf: LogstreamsConf,
-    authBuilder: AuthBuilder
+    authBuilder: AuthBuilder,
+    csrf: CSRF[F, F],
+    csrfConf: CSRFConf
   ): Resource[F, Service[F]] =
     for
       http <- HttpClientIO.resource[F]
@@ -89,20 +98,26 @@ object Server extends IOApp:
       Service(
         db,
         users,
-        Htmls.forApp("frontend", isProd, AssetsSource(isProd)),
+        Htmls.forApp("frontend", isProd, AssetsSource(isProd), csrfConf),
         auths,
         sockets,
-        google
+        google,
+        csrf
       )
 
-  private def makeHandler[F[_]: Async](service: Service[F], socketBuilder: WebSocketBuilder2[F]) =
-    GZip:
-      HSTS:
-        orNotFound:
-          Router(
-            "/" -> service.routes(socketBuilder),
-            "/assets" -> StaticService[F].routes
-          )
+  private def makeHandler[F[_]: Async](
+    service: Service[F],
+    socketBuilder: WebSocketBuilder2[F],
+    csrf: CSRFUtils.CSRFChecker[F]
+  ) =
+    csrf:
+      GZip:
+        HSTS:
+          orNotFound:
+            Router(
+              "/" -> service.routes(socketBuilder),
+              "/assets" -> StaticService[F].routes
+            )
 
   private def orNotFound[F[_]: Async](
     rs: HttpRoutes[F]

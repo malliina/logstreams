@@ -1,15 +1,8 @@
 package com.malliina.logstreams.client
 
-import cats.effect.IO
 import cats.effect.kernel.Async
-import cats.effect.std.Dispatcher
-import ch.qos.logback.classic.spi.ILoggingEvent
 import com.malliina.http.FullUrl
-import com.malliina.logback.fs2.{DefaultFS2IOAppender, FS2AppenderComps}
-import fs2.concurrent.{SignallingRef, Topic}
-import com.malliina.logback.fs2.LoggingComps
-
-import java.io.Closeable
+import com.malliina.logback.fs2.{DefaultFS2IOAppender, LoggingComps}
 
 class SocketAppender[F[_]: Async, T](comps: LoggingComps[F]) extends DefaultFS2IOAppender[F](comps):
   var endpoint: Option[FullUrl] = None

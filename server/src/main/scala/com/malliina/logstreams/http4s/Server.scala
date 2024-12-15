@@ -48,7 +48,7 @@ object Server extends IOApp:
     val csrfConf = CSRFConf.default
     val csrfUtils = CSRFUtils(csrfConf)
     for
-      csrf <- Resource.eval(csrfUtils.default[F])
+      csrf <- Resource.eval(csrfUtils.default[F](onFailure = CSRFUtils.defaultFailure[F]))
       service <- appService[F](conf, authBuilder, csrf, csrfConf)
       _ <- Resource.eval(
         Async[F].delay(

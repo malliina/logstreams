@@ -4,9 +4,9 @@ import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 
 val malliinaGroup = "com.malliina"
-val webAuthVersion = "6.9.3"
-val primitivesVersion = "3.7.1"
-val munitVersion = "1.0.0"
+val webAuthVersion = "6.9.5"
+val primitivesVersion = "3.7.4"
+val munitVersion = "1.0.3"
 val munitCatsEffectVersion = "2.0.0"
 val webAuthDep = malliinaGroup %% "web-auth" % webAuthVersion
 
@@ -21,7 +21,6 @@ inThisBuild(
     libraryDependencies ++= Seq(
       "org.scalameta" %% "munit" % munitVersion % Test
     ),
-    testFrameworks += new TestFramework("munit.Framework"),
     assemblyMergeStrategy := {
       case PathList("META-INF", "versions", xs @ _*)  => MergeStrategy.first
       case PathList("META-INF", "okio.kotlin_module") => MergeStrategy.first
@@ -38,11 +37,10 @@ val fs2 = project
   .in(file("fs2"))
   .enablePlugins(MavenCentralPlugin)
   .settings(
-    libraryDependencies ++= Seq("classic", "core").map { m =>
-      "ch.qos.logback" % s"logback-$m" % "1.5.6"
-    } ++ Seq(
+    libraryDependencies ++= Seq(
+      "ch.qos.logback" % "logback-classic" % "1.5.12",
       "com.malliina" %%% "primitives" % primitivesVersion,
-      "co.fs2" %% "fs2-core" % "3.10.2",
+      "co.fs2" %% "fs2-core" % "3.11.0",
       "org.typelevel" %% "munit-cats-effect" % munitCatsEffectVersion % Test
     ),
     moduleName := "logback-fs2",
@@ -75,7 +73,7 @@ val cross = crossProject(JSPlatform, JVMPlatform)
   .in(file("shared"))
   .settings(
     libraryDependencies ++= Seq("generic", "parser").map { m =>
-      "io.circe" %%% s"circe-$m" % "0.14.9"
+      "io.circe" %%% s"circe-$m" % "0.14.10"
     } ++ Seq(
       "com.malliina" %%% "primitives" % primitivesVersion,
       "com.malliina" %%% "util-html" % webAuthVersion,

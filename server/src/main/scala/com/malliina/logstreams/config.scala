@@ -4,6 +4,7 @@ import cats.effect.kernel.Sync
 import com.malliina.app.BuildInfo
 import com.malliina.config.{ConfigError, ConfigNode, Env}
 import com.malliina.database.Conf
+import com.malliina.http.UrlSyntax.url
 import com.malliina.logstreams.auth.SecretKey
 import com.malliina.values.{Password, Readable}
 import com.malliina.web.{AuthConf, ClientId, ClientSecret}
@@ -61,18 +62,18 @@ object LogstreamsConf:
     )
 
   private def prodDatabaseConf(password: Password, maxPoolSize: Int) = Conf(
-    "jdbc:mysql://localhost:3306/logstreams",
+    url"jdbc:mysql://localhost:3306/logstreams",
     "logstreams",
-    password.pass,
+    password,
     Conf.MySQLDriver,
     maxPoolSize,
     autoMigrate = true
   )
 
   private def devDatabaseConf(password: Password) = Conf(
-    "jdbc:mysql://localhost:3306/logstreams",
+    url"jdbc:mysql://localhost:3306/logstreams",
     "logstreams",
-    password.pass,
+    password,
     Conf.MySQLDriver,
     maxPoolSize = 2,
     autoMigrate = false

@@ -8,6 +8,8 @@ import com.dimafeng.testcontainers.MySQLContainer
 import com.malliina.app.AppConf
 import com.malliina.config.ConfigError
 import com.malliina.database.{Conf, DoobieDatabase}
+import com.malliina.http.FullUrl
+import com.malliina.http.UrlSyntax.url
 import com.malliina.http.io.HttpClientIO
 import com.malliina.logstreams.auth.*
 import com.malliina.logstreams.http4s.{Http4sAuth, Server, ServerComponents}
@@ -30,9 +32,9 @@ object DatabaseUtils:
       c.start()
       TestDatabase(
         Conf(
-          c.jdbcUrl,
+          FullUrl.build(c.jdbcUrl).toOption.get,
           c.username,
-          c.password,
+          Password(c.password),
           c.driverClassName,
           maxPoolSize = 2,
           autoMigrate = true
@@ -49,9 +51,9 @@ object DatabaseUtils:
       .parse[Password]("logstreams.testdb.pass")
       .map: pass =>
         Conf(
-          "jdbc:mysql://localhost:3306/testlogstreams",
+          url"jdbc:mysql://localhost:3306/testlogstreams",
           "testlogstreams",
-          pass.pass,
+          pass,
           Conf.MySQLDriver,
           maxPoolSize = 2,
           autoMigrate = true

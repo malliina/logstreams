@@ -4,9 +4,9 @@ import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 
 val malliinaGroup = "com.malliina"
-val webAuthVersion = "6.9.5"
+val webAuthVersion = "6.9.6"
 val primitivesVersion = "3.7.5"
-val munitVersion = "1.0.3"
+val munitVersion = "1.0.4"
 val munitCatsEffectVersion = "2.0.0"
 val webAuthDep = malliinaGroup %% "web-auth" % webAuthVersion
 
@@ -38,7 +38,7 @@ val fs2 = project
   .enablePlugins(MavenCentralPlugin)
   .settings(
     libraryDependencies ++= Seq(
-      "ch.qos.logback" % "logback-classic" % "1.5.12",
+      "ch.qos.logback" % "logback-classic" % "1.5.16",
       "com.malliina" %%% "primitives" % primitivesVersion,
       "co.fs2" %% "fs2-core" % "3.11.0",
       "org.typelevel" %% "munit-cats-effect" % munitCatsEffectVersion % Test

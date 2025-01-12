@@ -5,7 +5,7 @@ import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 
 val malliinaGroup = "com.malliina"
 val webAuthVersion = "6.9.5"
-val primitivesVersion = "3.7.4"
+val primitivesVersion = "3.7.5"
 val munitVersion = "1.0.3"
 val munitCatsEffectVersion = "2.0.0"
 val webAuthDep = malliinaGroup %% "web-auth" % webAuthVersion
@@ -122,7 +122,7 @@ val server = project
         "mysql" % "mysql-connector-java" % "8.0.33",
         webAuthDep,
         webAuthDep % Test classifier "tests",
-        "com.dimafeng" %% "testcontainers-scala-mysql" % "0.41.4" % Test,
+        "com.dimafeng" %% "testcontainers-scala-mysql" % "0.41.5" % Test,
         "org.typelevel" %% "munit-cats-effect" % munitCatsEffectVersion % Test
       ),
     Compile / packageDoc / publishArtifact := false,

@@ -14,6 +14,7 @@ import com.malliina.logstreams.auth.{AuthBuilder, Auther, Auths, JWT}
 import com.malliina.logstreams.client.LogstreamsUtils
 import com.malliina.logstreams.db.{DoobieDatabaseAuth, DoobieLogsDatabase}
 import com.malliina.logstreams.html.{AssetsSource, Htmls}
+import com.malliina.logstreams.http4s.Server.getClass
 import com.malliina.logstreams.models.{AppLogEvents, LogEntryInputs, LogSources}
 import com.malliina.logstreams.{LogConf, LogstreamsConf}
 import com.malliina.util.AppLogger
@@ -32,19 +33,29 @@ case class ServerComponents[F[_]: Async](
   server: Server
 )
 
-object Server extends IOApp:
+object Server extends IOApp with AppResources:
   override def runtimeConfig =
     super.runtimeConfig.copy(cpuStarvationCheckInitialDelay = Duration.Inf)
   LogConf.init()
   private val log = AppLogger(getClass)
+
+  override def run(args: List[String]): IO[ExitCode] =
+    for
+      conf <- LogstreamsConf.parseIO[IO]
+      app <- server[IO](conf, Auths).use(_ => IO.never).as(ExitCode.Success)
+    yield app
+
+trait AppResources:
+  private val log = AppLogger(getClass)
+
   private val serverPort: Port =
     sys.env.get("SERVER_PORT").flatMap(s => Port.fromString(s)).getOrElse(port"9001")
 
-  def server[F[_]: Async](
-    conf: LogstreamsConf,
-    authBuilder: AuthBuilder,
-    port: Port = serverPort
-  ): Resource[F, ServerComponents[F]] =
+  def server[F[_] : Async](
+                            conf: LogstreamsConf,
+                            authBuilder: AuthBuilder,
+                            port: Port = serverPort
+                          ): Resource[F, ServerComponents[F]] =
     val csrfConf = CSRFConf.default
     val csrfUtils = CSRFUtils(csrfConf)
     for
@@ -68,12 +79,12 @@ object Server extends IOApp:
         .build
     yield ServerComponents(service, server)
 
-  private def appService[F[_]: Async](
-    conf: LogstreamsConf,
-    authBuilder: AuthBuilder,
-    csrf: CSRF[F, F],
-    csrfConf: CSRFConf
-  ): Resource[F, Service[F]] =
+  private def appService[F[_] : Async](
+                                        conf: LogstreamsConf,
+                                        authBuilder: AuthBuilder,
+                                        csrf: CSRF[F, F],
+                                        csrfConf: CSRFConf
+                                      ): Resource[F, Service[F]] =
     for
       http <- HttpClientIO.resource[F]
       dispatcher <- Dispatcher.parallel[F]
@@ -105,11 +116,11 @@ object Server extends IOApp:
         csrf
       )
 
-  private def makeHandler[F[_]: Async](
-    service: Service[F],
-    socketBuilder: WebSocketBuilder2[F],
-    csrf: CSRFUtils.CSRFChecker[F]
-  ) =
+  private def makeHandler[F[_] : Async](
+                                         service: Service[F],
+                                         socketBuilder: WebSocketBuilder2[F],
+                                         csrf: CSRFUtils.CSRFChecker[F]
+                                       ) =
     csrf:
       GZip:
         HSTS:
@@ -119,13 +130,7 @@ object Server extends IOApp:
               "/assets" -> StaticService[F].routes
             )
 
-  private def orNotFound[F[_]: Async](
-    rs: HttpRoutes[F]
-  ): Kleisli[F, Request[F], Response[F]] =
+  private def orNotFound[F[_] : Async](
+                                        rs: HttpRoutes[F]
+                                      ): Kleisli[F, Request[F], Response[F]] =
     Kleisli(req => rs.run(req).getOrElseF(LogsService[F].notFound(req)))
-
-  override def run(args: List[String]): IO[ExitCode] =
-    for
-      conf <- LogstreamsConf.parseIO[IO]
-      app <- server[IO](conf, Auths).use(_ => IO.never).as(ExitCode.Success)
-    yield app

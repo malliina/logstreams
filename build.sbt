@@ -122,7 +122,6 @@ val server = project
         "mysql" % "mysql-connector-java" % "8.0.33",
         webAuthDep,
         webAuthDep % Test classifier "tests",
-        "com.dimafeng" %% "testcontainers-scala-mysql" % "0.41.5" % Test,
         "org.typelevel" %% "munit-cats-effect" % munitCatsEffectVersion % Test
       ),
     Compile / packageDoc / publishArtifact := false,

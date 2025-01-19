@@ -14,10 +14,10 @@ import java.nio.file.Paths
 object LocalConf:
   private val homeDir = Paths.get(sys.props("user.home"))
   private val appDir = LocalConf.homeDir.resolve(".logstreams")
-  private val localConfFile = appDir.resolve("logstreams.conf")
+  def local(file: String) = ConfigNode.default(appDir.resolve(file))
   val conf: ConfigNode =
     if BuildInfo.isProd then ConfigNode.load("application-prod.conf")
-    else ConfigNode.default(localConfFile)
+    else local("logstreams.conf")
 
 case class LogstreamsConf(
   isTest: Boolean,
@@ -35,16 +35,28 @@ object LogstreamsConf:
 
   private def logsNode = LocalConf.conf.parse[ConfigNode]("logstreams")
 
-  def parseIO[F[_]: Sync] = Sync[F].fromEither(parseConf)
+  def parseIO[F[_]: Sync]: F[LogstreamsConf] = Sync[F].fromEither(parseConf)
 
-  private def parseConf = for
-    node <- logsNode
-    parsed <- parse(node)
-  yield parsed
-
-  private def parse(c: ConfigNode): Either[ConfigError, LogstreamsConf] =
+  private def parseConf =
     val env = Env.read[String]("ENV_NAME")
     val isStaging = env.contains("staging")
+    for
+      node <- logsNode
+      parsed <- parse(
+        node,
+        dbPass =>
+          if BuildInfo.isProd then prodDatabaseConf(dbPass, if isStaging then 2 else 5)
+          else devDatabaseConf(dbPass),
+        isTest = false
+      )
+    yield parsed
+
+  def parse(
+    c: ConfigNode,
+    dbConf: Password => Conf,
+    isTest: Boolean
+  ): Either[ConfigError, LogstreamsConf] =
+    val env = Env.read[String]("ENV_NAME")
     val isProd = env.contains("prod")
     for
       secret <-
@@ -53,11 +65,10 @@ object LogstreamsConf:
       dbPass <- c.parse[Password]("db.pass")
       googleSecret <- c.parse[ClientSecret]("google.client-secret")
     yield LogstreamsConf(
-      isTest = false,
+      isTest,
       isProdBuild = BuildInfo.isProd,
       secret,
-      if BuildInfo.isProd then prodDatabaseConf(dbPass, if isStaging then 2 else 5)
-      else devDatabaseConf(dbPass),
+      dbConf(dbPass),
       AuthConf(googleClientId, googleSecret)
     )
 

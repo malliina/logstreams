@@ -3,61 +3,45 @@ package it
 import cats.effect.kernel.Sync
 import cats.effect.{IO, Resource}
 import cats.syntax.flatMap.*
+import ch.qos.logback.classic.Level
 import com.comcast.ip4s.port
-import com.dimafeng.testcontainers.MySQLContainer
 import com.malliina.app.AppConf
-import com.malliina.config.ConfigError
+import com.malliina.config.{ConfigError, ConfigNode}
 import com.malliina.database.{Conf, DoobieDatabase}
 import com.malliina.http.FullUrl
 import com.malliina.http.UrlSyntax.url
 import com.malliina.http.io.HttpClientIO
+import com.malliina.logback.LogbackUtils
 import com.malliina.logstreams.auth.*
-import com.malliina.logstreams.http4s.{Http4sAuth, Server, ServerComponents}
+import com.malliina.logstreams.http4s.{AppResources, Http4sAuth, Server, ServerComponents}
 import com.malliina.logstreams.{LocalConf, LogstreamsConf}
 import com.malliina.values.{Password, Username}
 import munit.AnyFixture
-import org.testcontainers.utility.DockerImageName
 
 class LogsAppConf(override val database: Conf) extends AppConf:
   override def close(): Unit = ()
 
-case class TestDatabase(conf: Conf, container: Option[MySQLContainer])
-
 object DatabaseUtils:
-  private def acquire = IO.delay:
-    val localTestDb = testConf().map(conf => TestDatabase(conf, None))
-    localTestDb.getOrElse:
-      val image = DockerImageName.parse("mysql:8.0.33")
-      val c = MySQLContainer(mysqlImageVersion = image)
-      c.start()
-      TestDatabase(
-        Conf(
-          FullUrl.build(c.jdbcUrl).toOption.get,
-          c.username,
-          Password(c.password),
-          c.driverClassName,
-          maxPoolSize = 2,
-          autoMigrate = true
-        ),
-        Option(c)
-      )
-  val testDatabase: Resource[IO, TestDatabase] = Resource.make(acquire): cont =>
-    truncateTestData(cont.conf) >>
-      IO.delay:
-        cont.container.foreach(_.stop())
+  val testConf = LocalConf.local("test-logstreams.conf")
 
-  private def testConf(): Either[ConfigError, Conf] =
-    LocalConf.conf
-      .parse[Password]("logstreams.testdb.pass")
+  private def acquire = IO.delay:
+    val either = testConf
+      .parse[Password]("logstreams.db.pass")
       .map: pass =>
-        Conf(
-          url"jdbc:mysql://localhost:3306/testlogstreams",
-          "testlogstreams",
-          pass,
-          Conf.MySQLDriver,
-          maxPoolSize = 2,
-          autoMigrate = true
-        )
+        testDatabaseConf(pass)
+    either.fold(err => throw err, identity)
+  val testDatabase: Resource[IO, Conf] = Resource.make(acquire): conf =>
+    truncateTestData(conf).void
+
+  private def testDatabaseConf(password: Password): Conf =
+    Conf(
+      url"jdbc:mysql://127.0.0.1:3306/testlogstreams",
+      "testlogstreams",
+      password,
+      Conf.MySQLDriver,
+      maxPoolSize = 2,
+      autoMigrate = true
+    )
 
   private def truncateTestData(conf: Conf): IO[Int] =
     import doobie.implicits.*
@@ -76,12 +60,18 @@ trait MUnitDatabaseSuite:
 
 trait ServerSuite extends MUnitDatabaseSuite:
   self: munit.CatsEffectSuite =>
+  object TestServer extends AppResources:
+    LogbackUtils.init(rootLevel = Level.OFF)
   val http = ResourceFunFixture(HttpClientIO.resource[IO])
-  val conf = LogstreamsConf.parseIO[IO].map(_.copy(isTest = true, db = db().conf))
+  val conf = for
+    database <- IO(db())
+    node <- IO.fromEither(DatabaseUtils.testConf.parse[ConfigNode]("logstreams"))
+    conf <- IO.fromEither(LogstreamsConf.parse(node, pass => database, isTest = true))
+  yield conf
   val testResource = Resource
     .eval(conf)
     .flatMap: conf =>
-      Server.server(conf, testAuths, port"12345")
+      TestServer.server(conf, testAuths, port"12345")
   val server = ResourceSuiteLocalFixture("server", testResource)
 
   def testAuths: AuthBuilder = new AuthBuilder:

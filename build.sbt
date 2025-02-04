@@ -4,22 +4,23 @@ import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 
 val malliinaGroup = "com.malliina"
-val webAuthVersion = "6.9.6"
-val primitivesVersion = "3.7.5"
-val munitVersion = "1.0.4"
-val munitCatsEffectVersion = "2.0.0"
-val webAuthDep = malliinaGroup %% "web-auth" % webAuthVersion
 
-val serverVersion = "0.7.0"
-
-val scala3 = "3.4.0"
+val versions = new {
+  val server = "0.7.0"
+  val scala3 = "3.4.0"
+  val webAuth = "6.9.8"
+  val primitives = "3.7.7"
+  val munit = "1.1.0"
+  val munitCatsEffect = "2.0.0"
+}
+val webAuthDep = malliinaGroup %% "web-auth" % versions.webAuth
 
 inThisBuild(
   Seq(
     organization := malliinaGroup,
-    scalaVersion := scala3,
+    scalaVersion := versions.scala3,
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "munit" % munitVersion % Test
+      "org.scalameta" %% "munit" % versions.munit % Test
     ),
     assemblyMergeStrategy := {
       case PathList("META-INF", "versions", xs @ _*)  => MergeStrategy.first
@@ -39,13 +40,13 @@ val fs2 = project
   .settings(
     libraryDependencies ++= Seq(
       "ch.qos.logback" % "logback-classic" % "1.5.16",
-      "com.malliina" %%% "primitives" % primitivesVersion,
+      "com.malliina" %%% "primitives" % versions.primitives,
       "co.fs2" %% "fs2-core" % "3.11.0",
-      "org.typelevel" %% "munit-cats-effect" % munitCatsEffectVersion % Test
+      "org.typelevel" %% "munit-cats-effect" % versions.munitCatsEffect % Test
     ),
     moduleName := "logback-fs2",
     releaseProcess := tagReleaseProcess.value,
-    scalaVersion := scala3,
+    scalaVersion := versions.scala3,
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
     releaseCrossBuild := true
@@ -62,8 +63,8 @@ val client = project
     gitUserName := "malliina",
     developerName := "Michael Skogberg",
     libraryDependencies ++= Seq(
-      "com.malliina" %% "okclient-io" % primitivesVersion,
-      "org.typelevel" %% "munit-cats-effect" % munitCatsEffectVersion % Test
+      "com.malliina" %% "okclient-io" % versions.primitives,
+      "org.typelevel" %% "munit-cats-effect" % versions.munitCatsEffect % Test
     ),
     releaseProcess := tagReleaseProcess.value
   )
@@ -75,8 +76,8 @@ val cross = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies ++= Seq("generic", "parser").map { m =>
       "io.circe" %%% s"circe-$m" % "0.14.10"
     } ++ Seq(
-      "com.malliina" %%% "primitives" % primitivesVersion,
-      "com.malliina" %%% "util-html" % webAuthVersion,
+      "com.malliina" %%% "primitives" % versions.primitives,
+      "com.malliina" %%% "util-html" % versions.webAuth,
       "com.lihaoyi" %%% "scalatags" % "0.13.1"
     )
   )
@@ -107,7 +108,7 @@ val server = project
   )
   .dependsOn(crossJvm, client)
   .settings(
-    version := serverVersion,
+    version := versions.server,
     clientProject := frontend,
     hashPackage := "com.malliina.logstreams",
     buildInfoPackage := "com.malliina.app",
@@ -116,13 +117,13 @@ val server = project
     ),
     libraryDependencies ++=
       Seq("util-html", "database", "util-http4s").map { m =>
-        "com.malliina" %% m % webAuthVersion
+        "com.malliina" %% m % versions.webAuth
       } ++ Seq(
-        "com.malliina" %% "config" % primitivesVersion,
+        "com.malliina" %% "config" % versions.primitives,
         "mysql" % "mysql-connector-java" % "8.0.33",
         webAuthDep,
         webAuthDep % Test classifier "tests",
-        "org.typelevel" %% "munit-cats-effect" % munitCatsEffectVersion % Test
+        "org.typelevel" %% "munit-cats-effect" % versions.munitCatsEffect % Test
       ),
     Compile / packageDoc / publishArtifact := false,
     packageDoc / publishArtifact := false,
@@ -137,7 +138,7 @@ val server = project
 val it = Project("logstreams-test", file("logstreams-test"))
   .dependsOn(server % "test->test", client)
   .settings(
-    libraryDependencies += "com.malliina" %% "okclient-io" % primitivesVersion,
+    libraryDependencies += "com.malliina" %% "okclient-io" % versions.primitives,
     publish / skip := true,
     publishLocal := {}
   )

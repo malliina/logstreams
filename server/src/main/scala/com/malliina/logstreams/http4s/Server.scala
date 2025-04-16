@@ -51,11 +51,11 @@ trait AppResources:
   private val serverPort: Port =
     sys.env.get("SERVER_PORT").flatMap(s => Port.fromString(s)).getOrElse(port"9001")
 
-  def server[F[_] : Async](
-                            conf: LogstreamsConf,
-                            authBuilder: AuthBuilder,
-                            port: Port = serverPort
-                          ): Resource[F, ServerComponents[F]] =
+  def server[F[_]: Async](
+    conf: LogstreamsConf,
+    authBuilder: AuthBuilder,
+    port: Port = serverPort
+  ): Resource[F, ServerComponents[F]] =
     val csrfConf = CSRFConf.default
     val csrfUtils = CSRFUtils(csrfConf)
     for
@@ -79,12 +79,12 @@ trait AppResources:
         .build
     yield ServerComponents(service, server)
 
-  private def appService[F[_] : Async](
-                                        conf: LogstreamsConf,
-                                        authBuilder: AuthBuilder,
-                                        csrf: CSRF[F, F],
-                                        csrfConf: CSRFConf
-                                      ): Resource[F, Service[F]] =
+  private def appService[F[_]: Async](
+    conf: LogstreamsConf,
+    authBuilder: AuthBuilder,
+    csrf: CSRF[F, F],
+    csrfConf: CSRFConf
+  ): Resource[F, Service[F]] =
     for
       http <- HttpClientIO.resource[F]
       dispatcher <- Dispatcher.parallel[F]
@@ -116,11 +116,11 @@ trait AppResources:
         csrf
       )
 
-  private def makeHandler[F[_] : Async](
-                                         service: Service[F],
-                                         socketBuilder: WebSocketBuilder2[F],
-                                         csrf: CSRFUtils.CSRFChecker[F]
-                                       ) =
+  private def makeHandler[F[_]: Async](
+    service: Service[F],
+    socketBuilder: WebSocketBuilder2[F],
+    csrf: CSRFUtils.CSRFChecker[F]
+  ) =
     csrf:
       GZip:
         HSTS:
@@ -130,7 +130,7 @@ trait AppResources:
               "/assets" -> StaticService[F].routes
             )
 
-  private def orNotFound[F[_] : Async](
-                                        rs: HttpRoutes[F]
-                                      ): Kleisli[F, Request[F], Response[F]] =
+  private def orNotFound[F[_]: Async](
+    rs: HttpRoutes[F]
+  ): Kleisli[F, Request[F], Response[F]] =
     Kleisli(req => rs.run(req).getOrElseF(LogsService[F].notFound(req)))

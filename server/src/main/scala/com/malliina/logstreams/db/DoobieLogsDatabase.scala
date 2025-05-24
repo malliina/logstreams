@@ -14,6 +14,7 @@ object DoobieLogsDatabase:
 class DoobieLogsDatabase[F[_]](db: DoobieDatabase[F]) extends LogsDatabase[F]:
   def insert(events: List[LogEntryInput]): F[EntriesWritten] = db.run:
     val insertions = events.traverse: e =>
+      log.info(s"Inserting $e")
       sql"""insert into LOGS(APP, ADDRESS, MESSAGE, LOGGER, THREAD, LEVEL, STACKTRACE, TIMESTAMP) 
             values(${e.appName}, ${e.remoteAddress}, ${e.message}, ${e.loggerName}, ${e.threadName}, ${e.level}, ${e.stackTrace}, ${e.timestamp})""".update
         .withUniqueGeneratedKeys[LogEntryId]("ID")
@@ -22,11 +23,12 @@ class DoobieLogsDatabase[F[_]](db: DoobieDatabase[F]) extends LogsDatabase[F]:
         .map: ids =>
           val inClause = Fragments.in(fr"ID", ids)
           sql"""select ID, APP, ADDRESS, TIMESTAMP, MESSAGE, LOGGER, THREAD, LEVEL, STACKTRACE, ADDED
-              from LOGS 
-              where $inClause""".query[LogEntryRow].to[List]
+                from LOGS
+                where $inClause""".query[LogEntryRow].to[List]
         .getOrElse:
           List.empty[LogEntryRow].pure[ConnectionIO]
         .map: list =>
+          log.info(s"Inserted $list")
           EntriesWritten(events, list)
 
   def events(query: StreamsQuery = StreamsQuery.default): F[AppLogEvents] = db.run:

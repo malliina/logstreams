@@ -10,11 +10,11 @@ val versions = new {
   val logback = "1.5.18"
   val munit = "1.1.1"
   val munitCatsEffect = "2.1.0"
-  val primitives = "3.7.9"
+  val primitives = "3.7.10"
   val scala3 = "3.4.0"
   val scalatags = "0.13.1"
   val server = "0.7.0"
-  val webAuth = "6.9.8"
+  val webAuth = "6.9.9"
 }
 val webAuthDep = malliinaGroup %% "web-auth" % versions.webAuth
 

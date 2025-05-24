@@ -72,20 +72,22 @@ object LogstreamsConf:
       AuthConf(googleClientId, googleSecret)
     )
 
+  private val mariaDbDriver = "org.mariadb.jdbc.Driver"
+
   private def prodDatabaseConf(password: Password, maxPoolSize: Int) = Conf(
-    url"jdbc:mysql://localhost:3306/logstreams",
+    url"jdbc:mariadb://localhost:3306/logstreams",
     "logstreams",
     password,
-    Conf.MySQLDriver,
+    mariaDbDriver,
     maxPoolSize,
     autoMigrate = true
   )
 
   private def devDatabaseConf(password: Password) = Conf(
-    url"jdbc:mysql://localhost:3306/logstreams",
+    url"jdbc:mariadb://localhost:3306/logstreams",
     "logstreams",
     password,
-    Conf.MySQLDriver,
+    mariaDbDriver,
     maxPoolSize = 2,
     autoMigrate = false
   )

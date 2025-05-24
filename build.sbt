@@ -123,7 +123,7 @@ val server = project
         "com.malliina" %% m % versions.webAuth
       } ++ Seq(
         "com.malliina" %% "config" % versions.primitives,
-        "mysql" % "mysql-connector-java" % "8.0.33",
+        "org.mariadb.jdbc" % "mariadb-java-client" % "3.5.3",
         webAuthDep,
         webAuthDep % Test classifier "tests",
         "org.typelevel" %% "munit-cats-effect" % versions.munitCatsEffect % Test

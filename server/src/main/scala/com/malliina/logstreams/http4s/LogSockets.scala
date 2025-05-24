@@ -94,14 +94,14 @@ class LogSockets[F[_]: Async](
   def source(user: UserRequest, socketBuilder: WebSocketBuilder2[F]): F[Response[F]] =
     val publishEvents: Pipe[F, WebSocketFrame, Unit] = _.evalMap:
       case Text(message, _) =>
-        log.debug(s"Received '$message' from ${user.user}.")
+        log.info(s"Received '$message' from ${user.user}.")
         val event = decode[LogEvents](message).fold(
           err =>
             log.warn(s"Failed to decode '$message' from ${user.user}.")
             F.raiseError(JsonException(err, message))
           ,
           es =>
-            val inputs = LogEntryInputs(es.events.map: event =>
+            val events = es.events.map: event =>
               LogEntryInput(
                 user.user,
                 user.address,
@@ -111,8 +111,9 @@ class LogSockets[F[_]: Async](
                 event.threadName,
                 event.level,
                 event.stackTrace
-              ))
-            F.pure(inputs)
+              )
+            log.info(s"Inputs $events.")
+            F.pure(LogEntryInputs(events))
         )
         event.flatMap: e =>
           publishLogged(e, logs)

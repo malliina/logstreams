@@ -6,15 +6,17 @@ import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 val malliinaGroup = "com.malliina"
 
 val versions = new {
+  val circe = "0.14.10"
   val fs2 = "3.11.0"
   val logback = "1.5.18"
+  val mariadbClient = "3.5.3"
   val munit = "1.1.1"
   val munitCatsEffect = "2.1.0"
   val primitives = "3.7.10"
   val scala3 = "3.4.0"
   val scalatags = "0.13.1"
   val server = "0.7.0"
-  val webAuth = "6.9.9"
+  val webAuth = "6.9.10"
 }
 val webAuthDep = malliinaGroup %% "web-auth" % versions.webAuth
 
@@ -77,11 +79,11 @@ val cross = crossProject(JSPlatform, JVMPlatform)
   .in(file("shared"))
   .settings(
     libraryDependencies ++= Seq("generic", "parser").map { m =>
-      "io.circe" %%% s"circe-$m" % "0.14.10"
+      "io.circe" %%% s"circe-$m" % versions.circe
     } ++ Seq(
       "com.malliina" %%% "primitives" % versions.primitives,
       "com.malliina" %%% "util-html" % versions.webAuth,
-      "com.lihaoyi" %%% "scalatags" % "0.13.1"
+      "com.lihaoyi" %%% "scalatags" % versions.scalatags
     )
   )
 val crossJvm = cross.jvm
@@ -123,7 +125,7 @@ val server = project
         "com.malliina" %% m % versions.webAuth
       } ++ Seq(
         "com.malliina" %% "config" % versions.primitives,
-        "org.mariadb.jdbc" % "mariadb-java-client" % "3.5.3",
+        "org.mariadb.jdbc" % "mariadb-java-client" % versions.mariadbClient,
         webAuthDep,
         webAuthDep % Test classifier "tests",
         "org.typelevel" %% "munit-cats-effect" % versions.munitCatsEffect % Test

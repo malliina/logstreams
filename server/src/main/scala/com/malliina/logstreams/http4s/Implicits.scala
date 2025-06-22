@@ -25,3 +25,7 @@ trait MyScalatagsInstances:
       .stringEncoder[F]
       .contramap[C](content => content.render)
       .withContentType(`Content-Type`(mediaType, charset))
+
+extension [L, R](e: Either[L, R])
+  def recover[RR >: R](recover: L => RR): RR =
+    e.fold(recover, identity)

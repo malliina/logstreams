@@ -3,10 +3,10 @@ package com.malliina.logstreams.http4s
 import cats.data.NonEmptyList
 import cats.effect.Sync
 import cats.effect.kernel.Async
-import cats.syntax.all.{catsSyntaxApplicativeError, toFlatMapOps, toFunctorOps}
+import cats.syntax.all.{toFlatMapOps, toFunctorOps}
 import com.malliina.app.AppMeta
 import com.malliina.database.DoobieDatabase
-import com.malliina.http.{Errors, SingleError}
+import com.malliina.http.Errors
 import com.malliina.http4s.{CSRFSupport, FormDecoders, FormReadable, FormReadableT}
 import com.malliina.logstreams.auth.*
 import com.malliina.logstreams.auth.AuthProvider.{Google, PromptKey, SelectAccount}
@@ -28,7 +28,7 @@ import org.http4s.server.middleware.CSRF
 import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.{BasicCredentials as _, Callback as _, *}
 
-import java.time.OffsetDateTime
+import java.time.{Instant, OffsetDateTime}
 
 object Service:
   private val log = AppLogger(getClass)
@@ -61,8 +61,14 @@ class Service[F[_]: Async](
     case GET -> Root / "health" => ok(AppMeta.ThisApp)
     case GET -> Root / "ping"   => ok(AppMeta.ThisApp)
     case req @ GET -> Root =>
-      webAuth(req): user =>
-        users.all().flatMap(us => ok(htmls.logs(us.map(u => AppName(u.name)))))
+      logsRequest(req): (query, user) =>
+        seeOther(reverse.toLogs(StreamsQuery.toQuery(query)))
+    case req @ GET -> Root / "logs" =>
+      logsRequest(req): (query, user) =>
+        users
+          .all()
+          .flatMap: us =>
+            ok(htmls.logs(us.map(u => AppName(u.name)), query))
     case req @ GET -> Root / "sources" =>
       webAuth(req): src =>
         ok(htmls.sources)
@@ -129,19 +135,18 @@ class Service[F[_]: Async](
               UserFeedback.success(s"Deleted user '$targetUser'.")
             )
     case req @ GET -> Root / "ws" / "logs" =>
-      webAuth(req): principal =>
-        val user = principal.user
-        StreamsQuery
-          .fromQuery(req.uri.query)
-          .fold(
-            err =>
-              log.warn(s"Invalid log stream request by '$user'. $err")
-              badRequest(err)
-            ,
-            query =>
-              log.info(s"Opening log stream at level ${query.level} for '$user'...")
-              sockets.listener(query, socketBuilder)
-          )
+      logsRequest(req): (query, user) =>
+        log.info(s"Opening log stream with ${query.describe} for '$user'...")
+        sockets.listener(query, socketBuilder)
+    case req @ GET -> Root / "logs" / "history" =>
+      logsRequest(req): (query, user) =>
+        log.info(
+          s"Searching for logs with ${query.describe} for '$user'..."
+        )
+        sockets.db
+          .events(query)
+          .flatMap: events =>
+            ok(events)
     case req @ GET -> Root / "ws" / "admins" =>
       webAuth(req): principal =>
         sockets.admin(principal, socketBuilder)
@@ -161,6 +166,20 @@ class Service[F[_]: Async](
         cb => google.validateCallback(cb).map(e => e.flatMap(google.parse))
       )
   }
+
+  private def logsRequest(req: Request[F])(q: (StreamsQuery, Username) => F[Response[F]]) =
+    webAuth(req): principal =>
+      val user = principal.user
+      StreamsQuery
+        .fromQuery(req.uri.query, principal.now.toInstant)
+        .fold(
+          err =>
+            log.warn(s"Invalid log stream request by '$user'. $err")
+            badRequest(err)
+          ,
+          query => q(query, user)
+        )
+
   val cookieNames = auths.web.cookieNames
 
   private def startHinted(

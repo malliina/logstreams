@@ -30,7 +30,7 @@ class LogSockets[F[_]: Async](
   admins: Topic[F, LogSources],
   connectedSources: Ref[F, LogSources],
   logUpdates: Topic[F, AppLogEvents],
-  db: LogsDatabase[F]
+  val db: LogsDatabase[F]
 ):
   val F = Async[F]
   private val savedEvents: Stream[F, AppLogEvents] = logs
@@ -53,7 +53,8 @@ class LogSockets[F[_]: Async](
       .map: es =>
         es.filter(_.event.level.int >= query.level.int)
     val filteredEvents =
-      if query.query.isDefined then Stream.empty
+      if query.offset.value > 0 then Stream.empty
+      else if query.query.isDefined then Stream.empty
       else if query.apps.isEmpty then subscription
       else
         subscription.map: es =>

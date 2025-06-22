@@ -6,6 +6,7 @@ object FrontStrings extends FrontStrings
 
 trait FrontStrings:
   private val bs = Bootstrap(Tags(scalatags.Text))
+  val ActiveClass = "active"
   val AppsDropdown = "apps-dropdown"
   val AppsFiltered = "apps-filtered"
   val AppsDropdownMenuId = "apps-dropdown-menu"

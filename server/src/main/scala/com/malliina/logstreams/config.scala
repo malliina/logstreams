@@ -72,7 +72,7 @@ object LogstreamsConf:
       AuthConf(googleClientId, googleSecret)
     )
 
-  private val mariaDbDriver = "org.mariadb.jdbc.Driver"
+  val mariaDbDriver = "org.mariadb.jdbc.Driver"
 
   private def prodDatabaseConf(password: Password, maxPoolSize: Int) = Conf(
     url"jdbc:mariadb://localhost:3306/logstreams",
@@ -84,7 +84,7 @@ object LogstreamsConf:
   )
 
   private def devDatabaseConf(password: Password) = Conf(
-    url"jdbc:mariadb://localhost:3306/logstreams",
+    url"jdbc:mariadb://localhost:3307/logstreams",
     "logstreams",
     password,
     mariaDbDriver,

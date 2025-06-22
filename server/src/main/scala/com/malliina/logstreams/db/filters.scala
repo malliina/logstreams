@@ -1,11 +1,14 @@
 package com.malliina.logstreams.db
 
+import cats.data.NonEmptyList
 import com.malliina.http.Errors
 import com.malliina.http4s.QueryParsers
 import com.malliina.logback.TimeFormatter
+import com.malliina.logstreams.Limits
 import com.malliina.logstreams.models.{AppName, LogLevel, Queries}
+import com.malliina.values.Literals.nonNeg
 import com.malliina.values.{StringEnumCompanion, Username}
-import org.http4s.{Query, QueryParamDecoder}
+import org.http4s.{Query, QueryParamDecoder, QueryParamEncoder}
 
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -27,6 +30,8 @@ object TimeRange:
   val none = TimeRange(None, None)
   private val instantDecoder =
     QueryParamDecoder.instantQueryParamDecoder(DateTimeFormatter.ISO_INSTANT)
+
+  val instantEncoder = QueryParamEncoder.instantQueryParamEncoder(DateTimeFormatter.ISO_INSTANT)
   private val localDateEncoder =
     QueryParamDecoder.localDate(DateTimeFormatter.ISO_LOCAL_DATE)
   private val offsetDateTimeEncoder =
@@ -38,11 +43,11 @@ object TimeRange:
   def since(from: Instant): TimeRange =
     TimeRange(Option(from), None)
 
-  def apply(q: Query): Either[Errors, TimeRange] =
+  def apply(q: Query, now: Instant): Either[Errors, TimeRange] =
     for
       from <- bindInstant(From, q)
       to <- bindInstant(To, q)
-    yield TimeRange(from, to)
+    yield TimeRange(from.orElse(Option(now.minus(48, ChronoUnit.HOURS))), to)
 
   private def bindInstant(key: String, q: Query): Either[Errors, Option[Instant]] =
     QueryParsers
@@ -62,12 +67,17 @@ case class StreamsQuery(
   apps: Seq[Username],
   level: LogLevel,
   timeRange: TimeRange,
-  limit: Int,
-  offset: Int,
+  limits: Limits,
   order: SortOrder,
   query: Option[String]
 ):
+  def limit = limits.limit
+  def offset = limits.offset
   def queryStar = query.map(q => s"$q*")
+  def describe: String =
+    val appsList = if apps.nonEmpty then s"apps ${apps.mkString(", ")} " else ""
+    val queryStr = query.map(q => s"query '$q' ").getOrElse("")
+    s"$queryStr${appsList}level $level limit $limit offset $offset time ${timeRange.describe} order $order"
 
 object StreamsQuery:
   val AppKey = AppName.Key
@@ -79,25 +89,39 @@ object StreamsQuery:
     Nil,
     LogLevel.Info,
     TimeRange.recent(Instant.now().minus(48, ChronoUnit.HOURS)),
-    1000,
-    0,
+    Limits(1000.nonNeg, 0.nonNeg),
     SortOrder.default,
     None
   )
 
-  def fromQuery(q: Query): Either[Errors, StreamsQuery] = for
+  def fromQuery(q: Query, now: Instant): Either[Errors, StreamsQuery] = for
     apps <- Right(q.multiParams.getOrElse(AppKey, Nil).map(s => Username(s)))
     level <-
       LogLevel
         .build(q.params.getOrElse(LogLevel.Key, LogLevel.Info.name))
         .left
         .map(msg => Errors(msg))
-    timeRange <- TimeRange(q)
-    limit <- QueryParsers.parseOrDefault[Int](q, Limit, 500)
-    offset <- QueryParsers.parseOrDefault[Int](q, Offset, 0)
+    timeRange <- TimeRange(q, now)
+    limits <- Limits(q)
     sort <- SortOrder.fromQuery(q)
     query <- QueryParsers.parseOpt[String](q, Query).map(_.map(Option.apply)).getOrElse(Right(None))
-  yield StreamsQuery(apps, level, timeRange, limit, offset, sort, query.filter(_.length >= 3))
+  yield StreamsQuery(apps, level, timeRange, limits, sort, query.filter(_.length >= 3))
+
+  def toQuery(q: StreamsQuery): Map[String, NonEmptyList[String]] =
+    Map(
+      Query -> q.query.toList,
+      AppKey -> q.apps.map(_.name),
+      LogLevel.Key -> Seq(q.level.name),
+      Queries.From -> q.timeRange.from.map(i => TimeRange.instantEncoder.encode(i).value).toList,
+      Queries.To -> q.timeRange.to.map(i => TimeRange.instantEncoder.encode(i).value).toList,
+      Limits.Limit -> Seq(s"${q.limits.limit}"),
+      Limits.Offset -> Seq(s"${q.limits.offset}"),
+      SortOrder.Order -> Seq(q.order.name)
+    ).flatMap: (k, vs) =>
+      NonEmptyList
+        .fromList(vs.toList)
+        .map: list =>
+          k -> list
 
 sealed abstract class SortOrder(val name: String):
   override def toString: String = name

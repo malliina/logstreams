@@ -83,7 +83,7 @@ h1, h2 {
 #apps-filtered {
   display: inline-block;
 
-  > button {
+  > a {
     margin-right: 4px;
 
     &:last-child {

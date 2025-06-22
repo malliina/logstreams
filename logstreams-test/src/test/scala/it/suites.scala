@@ -35,10 +35,10 @@ object DatabaseUtils:
 
   private def testDatabaseConf(password: Password): Conf =
     Conf(
-      url"jdbc:mysql://127.0.0.1:3306/testlogstreams",
+      url"jdbc:mariadb://127.0.0.1:3306/testlogstreams",
       "testlogstreams",
       password,
-      Conf.MySQLDriver,
+      LogstreamsConf.mariaDbDriver,
       maxPoolSize = 2,
       autoMigrate = true
     )

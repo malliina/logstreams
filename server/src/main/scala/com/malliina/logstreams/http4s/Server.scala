@@ -63,7 +63,9 @@ trait AppResources:
       service <- appService[F](conf, authBuilder, csrf, csrfConf)
       _ <- Resource.eval(
         Async[F].delay(
-          log.info(s"Binding on port $port using app version ${AppMeta.ThisApp.git}...")
+          log.info(
+            s"Binding on port $port using app version ${AppMeta.ThisApp.git} Google client ID '${conf.google.clientId}'..."
+          )
         )
       )
       server <- EmberServerBuilder

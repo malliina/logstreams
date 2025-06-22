@@ -5,6 +5,11 @@ import org.scalajs.dom.{URLSearchParams, window}
 object QueryString:
   def parse = QueryString(URLSearchParams(window.location.search))
 
+  def modify(code: QueryString => Unit): QueryString =
+    val old = parse
+    code(old)
+    old
+
 class QueryString(val inner: URLSearchParams):
   def get(name: String) = Option(inner.get(name))
   def getAll(name: String) = Option(inner.getAll(name)).map(_.toList).getOrElse(Nil)
@@ -15,6 +20,7 @@ class QueryString(val inner: URLSearchParams):
   def setOrDelete(name: String, value: Option[String]): Unit =
     value.map(v => set(name, v)).getOrElse(delete(name))
   def render = inner.toString
+  def withPath = s"${window.location.pathname}?$render"
   def isEmpty = inner.isEmpty
   override def toString: String = render
-  def commit(): Unit = window.history.replaceState("", "", s"${window.location.pathname}?$render")
+  def commit(): Unit = window.history.replaceState("", "", withPath)

@@ -1,13 +1,15 @@
 package com.malliina.logstreams.html
 
+import cats.data.NonEmptyList
 import com.malliina.html.HtmlImplicits.given
 import com.malliina.html.{Bootstrap, HtmlTags}
 import com.malliina.http.{CSRFConf, CSRFToken, FullUrl}
 import com.malliina.live.LiveReload
-import com.malliina.logstreams.{FileAssets, HashedAssets}
+import com.malliina.logstreams.db.StreamsQuery
 import com.malliina.logstreams.html.Htmls.{*, given}
 import com.malliina.logstreams.http4s.{LogRoutes, UserFeedback}
 import com.malliina.logstreams.models.{AppName, FrontStrings, LogLevel}
+import com.malliina.logstreams.{FileAssets, HashedAssets, Limits}
 import com.malliina.values.Username
 import org.http4s.Uri
 import scalatags.Text.TypedTag
@@ -22,6 +24,9 @@ object Htmls:
 
   given AttrValue[Uri] = makeStringAttr(_.renderString)
   given AttrValue[CSRFToken] = makeStringAttr(_.value)
+
+  given Conversion[AppName, Modifier] = (a: AppName) => a.name
+  given Conversion[LogLevel, Modifier] = (l: LogLevel) => l.name
 
   private def makeStringAttr[T](write: T => String): AttrValue[T] =
     (t: Builder, a: Attr, v: T) => t.setAttr(a.name, Builder.GenericAttrValueSource(write(v)))
@@ -65,97 +70,131 @@ class Htmls(
   private def inlineOrUri(name: String) =
     HashedAssets.dataUris.getOrElse(name, asset(name).renderString)
 
-  def logs(apps: Seq[AppName]) = baseIndex("logs", bodyClasses = Seq(classes.Socket))(
-    headerRow("Logs"),
-    row(
-      div(cls := s"col-sm-2 col-md-3 mt-1 mt-sm-0 d-none d-md-block")(
-        div(
-          cls := "btn-group",
-          role := "group",
-          aria.label := "Verbose or compact"
-        )(
-          input(
-            cls := "btn-check",
-            tpe := "radio",
-            name := "options",
-            id := OptionVerbose,
-            autocomplete := "off"
+  def logs(apps: Seq[AppName], query: StreamsQuery) =
+    baseIndex("logs", bodyClasses = Seq(classes.Socket))(
+      headerRow("Logs"),
+      row(
+        div(cls := s"col-sm-2 col-md-3 mt-1 mt-sm-0 d-none d-md-block")(
+          div(
+            cls := "btn-group",
+            role := "group",
+            aria.label := "Verbose or compact"
+          )(
+            input(
+              cls := "btn-check",
+              tpe := "radio",
+              name := "options",
+              id := OptionVerbose,
+              autocomplete := "off"
+            ),
+            label(
+              cls := "btn btn-sm btn-outline-primary",
+              `for` := OptionVerbose
+            )("Verbose"),
+            input(
+              cls := "btn-check",
+              tpe := "radio",
+              name := "options",
+              id := OptionCompact,
+              autocomplete := "off"
+            ),
+            label(
+              cls := "btn btn-sm btn-outline-primary",
+              `for` := OptionCompact
+            )("Compact")
+          )
+        ),
+        divClass("col-sm-2 col-md-2 col-lg-1")(
+          div(id := LogLevelDropdown, cls := "dropdown")(
+            button(
+              id := LogLevelDropdownButton,
+              cls := s"btn btn-info btn-sm $DropdownToggle",
+              tpe := "button",
+              data("bs-toggle") := "dropdown",
+              aria.haspopup := "true",
+              aria.expanded := "false"
+            )(query.level),
+            div(cls := DropdownMenu, id := LogLevelDropdownMenuId)(
+              LogLevel.all.map: l =>
+                a(
+                  cls := names(DropdownItem, if l == query.level then ActiveClass else ""),
+                  href := move(query.copy(level = l))
+                )(l)
+            )
+          )
+        ),
+        divClass("col-sm-6 col-md-7 mt-2 mb-2 mt-sm-0")(
+          div(id := AppsDropdown, cls := "dropdown")(
+            button(
+              cls := s"btn btn-primary btn-sm $DropdownToggle",
+              tpe := "button",
+              data("bs-toggle") := "dropdown",
+              aria.haspopup := "true",
+              aria.expanded := "false"
+            )("Apps"),
+            div(cls := DropdownMenu, id := AppsDropdownMenuId)(
+              apps.map: app =>
+                val included =
+                  query.copy(apps = (query.apps.toSet + Username(app.name)).toList)
+                a(cls := DropdownItem, href := move(included))(app)
+            )
           ),
-          label(
-            cls := "btn btn-sm btn-outline-primary",
-            `for` := OptionVerbose
-          )("Verbose"),
-          input(
-            cls := "btn-check",
-            tpe := "radio",
-            name := "options",
-            id := OptionCompact,
-            autocomplete := "off"
-          ),
-          label(
-            cls := "btn btn-sm btn-outline-primary",
-            `for` := OptionCompact
-          )("Compact")
-        )
-      ),
-      divClass("col-sm-2 col-md-2 col-lg-1")(
-        div(id := LogLevelDropdown, cls := "dropdown")(
-          button(
-            id := LogLevelDropdownButton,
-            cls := s"btn btn-info btn-sm $DropdownToggle",
-            tpe := "button",
-            data("bs-toggle") := "dropdown",
-            aria.haspopup := "true",
-            aria.expanded := "false"
-          )("Level"),
-          div(cls := DropdownMenu, id := LogLevelDropdownMenuId)(
-            LogLevel.all.map(l => a(cls := DropdownItem, href := "#")(l.name))
+          div(id := AppsFiltered)(
+            query.apps.map: app =>
+              val excluded =
+                query.copy(apps = (query.apps.toSet - Username(app.name)).toList)
+              a(role := "button", cls := "btn btn-info btn-sm", href := move(excluded))(app)
           )
         )
       ),
-      divClass("col-sm-6 col-md-7 mt-2 mb-2 mt-sm-0")(
-        div(id := AppsDropdown, cls := "dropdown")(
-          button(
-            cls := s"btn btn-primary btn-sm $DropdownToggle",
-            tpe := "button",
-            data("bs-toggle") := "dropdown",
-            aria.haspopup := "true",
-            aria.expanded := "false"
-          )("Apps"),
-          div(cls := DropdownMenu, id := AppsDropdownMenuId)(
-            apps.map(app => a(cls := DropdownItem, href := "#")(app.name))
+      divClass(s"$Row form-row")(
+        timePicker("From", FromTimePickerId),
+        timePicker("To", ToTimePickerId)
+      ),
+      divClass(s"$Row form-row")(
+        div(cls := "input-group my-3")(
+          input(
+            tpe := "text",
+            cls := "form-control search-control",
+            aria.label := "Search input",
+            id := SearchInput,
+            placeholder := "Message, stacktrace, thread, ..."
+          ),
+          button(tpe := "button", cls := "btn btn-outline-primary", id := SearchButton)(
+            "Search"
           )
-        ),
-        div(id := AppsFiltered)
-      )
-    ),
-    divClass(s"$Row form-row")(
-      timePicker("From", FromTimePickerId),
-      timePicker("To", ToTimePickerId)
-    ),
-    divClass(s"$Row form-row")(
-      div(cls := "input-group my-3")(
-        input(
-          tpe := "text",
-          cls := "form-control search-control",
-          aria.label := "Search input",
-          id := SearchInput,
-          placeholder := "Message, stacktrace, thread, ..."
-        ),
-        button(tpe := "button", cls := "btn btn-outline-primary", id := SearchButton)(
-          "Search"
         )
+      ),
+      row(id := LoadingSpinner, cls := "loader mx-auto my-3"),
+      row(id := SearchFeedbackRowId, cls := DisplayNone)(
+        p(id := SearchFeedbackId)
+      ),
+      row(cls := classes.MobileList)(
+        div(id := MobileContentId)
+      ),
+      logEntriesTable(LogTableId)(thead(id := TableHeadId), tbody(id := TableBodyId)),
+      pageNav(query)
+    )
+
+  private def names(ns: String*): String = ns.map(_.trim).filter(_.nonEmpty).mkString(" ")
+
+  private def pageNav(query: StreamsQuery) =
+    val prev = query.limits.prev.map(p => move(query.copy(limits = p)))
+    val next = move(query.copy(limits = query.limits.next))
+    val prevExtra = if prev.isRight then "" else " disabled"
+    nav(aria.label := "Navigation", `class` := "d-flex justify-content-center py-3")(
+      ul(`class` := "pagination")(
+        li(`class` := s"page-item $prevExtra")(
+          a(`class` := "page-link", prev.map(p => href := p).getOrElse(href := "#"))("Previous")
+        ),
+        li(`class` := "page-item")(a(`class` := "page-link", href := next)("Next"))
       )
-    ),
-    row(id := LoadingSpinner, cls := "loader mx-auto my-3"),
-    row(id := SearchFeedbackRowId, cls := DisplayNone)(
-      p(id := SearchFeedbackId)
-    ),
-    row(cls := classes.MobileList)(
-      div(id := MobileContentId)
-    ),
-    logEntriesTable(LogTableId)(thead(id := TableHeadId), tbody(id := TableBodyId))
-  )
+    )
+
+  private def move(query: StreamsQuery): Uri = toUri(StreamsQuery.toQuery(query))
+
+  private def toUri(qs: Map[String, NonEmptyList[String]]): Uri =
+    reverse.logs.withMultiValueQueryParams(qs.map((k, v) => k -> v.toList))
 
   private def timePicker(labelText: String, divId: String) =
     val inputId = s"$divId-input"

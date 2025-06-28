@@ -4,8 +4,8 @@ import cats.data.NonEmptyList
 import com.malliina.http.Errors
 import com.malliina.http4s.QueryParsers
 import com.malliina.logback.TimeFormatter
-import com.malliina.logstreams.Limits
-import com.malliina.logstreams.models.{AppName, LogLevel, Queries}
+import com.malliina.logstreams.LimitsParser
+import com.malliina.logstreams.models.{AppName, FormattedTimeRange, Limits, LogLevel, Queries, QueryInfo, SearchInfo}
 import com.malliina.values.Literals.nonNeg
 import com.malliina.values.{StringEnumCompanion, Username}
 import org.http4s.{Query, QueryParamDecoder, QueryParamEncoder}
@@ -18,10 +18,15 @@ import scala.concurrent.duration.DurationInt
 case class TimeRange(from: Option[Instant], to: Option[Instant]):
   def isEmpty = from.isEmpty && to.isEmpty
   def describe = (from, to) match
-    case (Some(f), Some(t)) => s"[f - $t]"
+    case (Some(f), Some(t)) => s"[$f - $t]"
     case (None, Some(t))    => s"(- $t]"
     case (Some(f), None)    => s"[$f -)"
     case other              => ""
+
+  def formatted(dtf: DateTimeFormatter) = FormattedTimeRange(
+    from.map(dtf.format),
+    to.map(dtf.format)
+  )
 
 object TimeRange:
   private val From = Queries.From
@@ -70,14 +75,12 @@ case class StreamsQuery(
   limits: Limits,
   order: SortOrder,
   query: Option[String]
-):
-  def limit = limits.limit
-  def offset = limits.offset
+) extends QueryInfo:
   def queryStar = query.map(q => s"$q*")
-  def describe: String =
-    val appsList = if apps.nonEmpty then s"apps ${apps.mkString(", ")} " else ""
-    val queryStr = query.map(q => s"query '$q' ").getOrElse("")
-    s"$queryStr${appsList}level $level limit $limit offset $offset time ${timeRange.describe} order $order"
+  def describe: String = s"$summary time ${timeRange.describe} order $order"
+
+  def toJs(dtf: DateTimeFormatter) =
+    SearchInfo(apps, level, timeRange.formatted(dtf), limits, query)
 
 object StreamsQuery:
   val AppKey = AppName.Key
@@ -102,7 +105,7 @@ object StreamsQuery:
         .left
         .map(msg => Errors(msg))
     timeRange <- TimeRange(q, now)
-    limits <- Limits(q)
+    limits <- LimitsParser(q)
     sort <- SortOrder.fromQuery(q)
     query <- QueryParsers.parseOpt[String](q, Query).map(_.map(Option.apply)).getOrElse(Right(None))
   yield StreamsQuery(apps, level, timeRange, limits, sort, query.filter(_.length >= 3))

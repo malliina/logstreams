@@ -75,9 +75,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
           loadingSpinner.hide()
           searchFeedbackRow.show()
           table.hideFull()
-          val msg = meta.query
-            .map(q => s"No results for '$q'.")
-            .getOrElse("No results for the current query.")
+          val msg = s"No results for ${meta.describe}."
           searchFeedback.innerText = msg
         else if e == MetaEvent.Loading then
           table.hideFull()

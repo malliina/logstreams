@@ -8,8 +8,8 @@ import com.malliina.live.LiveReload
 import com.malliina.logstreams.db.StreamsQuery
 import com.malliina.logstreams.html.Htmls.{*, given}
 import com.malliina.logstreams.http4s.{LogRoutes, UserFeedback}
-import com.malliina.logstreams.models.{AppName, FrontStrings, LogLevel}
-import com.malliina.logstreams.{FileAssets, HashedAssets, Limits}
+import com.malliina.logstreams.models.{AppName, FrontStrings, Limits, LogLevel}
+import com.malliina.logstreams.{FileAssets, HashedAssets}
 import com.malliina.values.Username
 import org.http4s.Uri
 import scalatags.Text.TypedTag
@@ -178,11 +178,11 @@ class Htmls(
 
   private def names(ns: String*): String = ns.map(_.trim).filter(_.nonEmpty).mkString(" ")
 
-  private def pageNav(query: StreamsQuery) =
+  private def pageNav(query: StreamsQuery, divClass: String = "justify-content-center") =
     val prev = query.limits.prev.map(p => move(query.copy(limits = p)))
     val next = move(query.copy(limits = query.limits.next))
     val prevExtra = if prev.isRight then "" else " disabled"
-    nav(aria.label := "Navigation", `class` := "d-flex justify-content-center py-3")(
+    nav(aria.label := "Navigation", `class` := s"d-flex py-3 $divClass")(
       ul(`class` := "pagination")(
         li(`class` := s"page-item $prevExtra")(
           a(`class` := "page-link", prev.map(p => href := p).getOrElse(href := "#"))("Previous")

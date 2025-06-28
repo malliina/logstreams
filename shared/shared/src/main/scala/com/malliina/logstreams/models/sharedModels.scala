@@ -1,8 +1,10 @@
 package com.malliina.logstreams.models
 
 import com.malliina.logstreams.models
+import com.malliina.logstreams.models.Limits.DefaultLimit
 import com.malliina.logstreams.models.LogsJson.evented
-import com.malliina.values.{EnumCompanion, ErrorMessage, WrappedString}
+import com.malliina.values.Literals.nonNeg
+import com.malliina.values.*
 import io.circe.*
 import io.circe.generic.semiauto.*
 import io.circe.syntax.*
@@ -137,8 +139,51 @@ case class AppLogEvents(events: Seq[AppLogEvent]) extends FrontEvent:
 object AppLogEvents:
   given Codec[AppLogEvents] = evented("events", deriveCodec[AppLogEvents])
 
-case class SearchInfo(query: Option[String], from: Option[String], to: Option[String])
-  derives Codec.AsObject
+trait LimitsLike:
+  def limit: NonNeg
+  def offset: NonNeg
+
+case class Limits(limit: NonNeg, offset: NonNeg) derives Codec.AsObject:
+  def prev = offset.minus(DefaultLimit.value).map(newOffset => Limits(limit, newOffset))
+  def next = Limits(limit, offset + DefaultLimit)
+
+object Limits:
+  val Limit = "limit"
+  val Offset = "offset"
+
+  val DefaultLimit: NonNeg = 500.nonNeg
+  val DefaultOffset: NonNeg = 0.nonNeg
+
+  val default = Limits(DefaultLimit, DefaultOffset)
+
+case class FormattedTimeRange(from: Option[String], to: Option[String]) derives Codec.AsObject:
+  def describe = (from, to) match
+    case (Some(f), Some(t)) => s" between $f - $t"
+    case (None, Some(t))    => s" until $t"
+    case (Some(f), None)    => s" starting $f"
+    case other              => ""
+
+trait QueryInfo:
+  def apps: Seq[Username]
+  def level: LogLevel
+  def limits: Limits
+  def query: Option[String]
+  def limit = limits.limit
+  def offset = limits.offset
+
+  def summary: String =
+    val appsList = if apps.nonEmpty then s"apps ${apps.mkString(", ")} " else ""
+    val queryStr = query.map(q => s"query '$q' ").getOrElse("")
+    s"$queryStr${appsList}level $level limit $limit offset $offset"
+
+case class SearchInfo(
+  apps: Seq[Username],
+  level: LogLevel,
+  timeRange: FormattedTimeRange,
+  limits: Limits,
+  query: Option[String]
+) extends QueryInfo derives Codec.AsObject:
+  def describe = s"$summary${timeRange.describe}"
 
 case class MetaEvent(event: String, meta: SearchInfo) extends FrontEvent derives Codec.AsObject
 object MetaEvent:
@@ -153,11 +198,10 @@ object FrontEvent:
     Decoder[AppLogEvents]
       .or(Decoder[MetaEvent].map[FrontEvent](identity))
       .or(Decoder[SimpleEvent].map[FrontEvent](identity))
-  given Encoder[FrontEvent] = {
+  given Encoder[FrontEvent] =
     case ale @ AppLogEvents(_) => ale.asJson
     case me @ MetaEvent(_, _)  => me.asJson
     case se @ SimpleEvent(_)   => se.asJson
-  }
 
 abstract class Companion[Raw, T](using d: Decoder[Raw], e: Encoder[Raw], o: Ordering[Raw]):
   def apply(raw: Raw): T

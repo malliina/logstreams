@@ -150,7 +150,7 @@ val it = Project("logstreams-test", file("logstreams-test"))
 
 val root = project
   .in(file("."))
-  .aggregate(frontend, server, client, it, fs2)
+  .aggregate(frontend, server, client, it, fs2, crossJvm, crossJs)
   .settings(
     start := (server / start).value,
     publishTo := Some(Resolver.file("Unused transient repository", file("target/unusedrepo"))),

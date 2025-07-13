@@ -40,14 +40,10 @@ object Htmls:
     */
   def forApp(appName: String, isProd: Boolean, assets: AssetsSource, csrfConf: CSRFConf): Htmls =
     val externalScripts = if isProd then Nil else FullUrl.build(LiveReload.script).toSeq
-
-    val appScripts =
-      if isProd then Seq(FileAssets.frontend_js)
-      else Seq(FileAssets.frontend_js, "frontend-loader.js", "main.js")
     Htmls(
-      appScripts,
+      Seq(FileAssets.main_js),
       externalScripts,
-      Seq(FileAssets.frontend_css, FileAssets.styles_css),
+      Seq(FileAssets.main_css),
       assets,
       csrfConf
     )

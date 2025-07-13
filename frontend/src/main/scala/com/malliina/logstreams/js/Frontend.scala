@@ -11,6 +11,7 @@ object Frontend:
   private val b = Bootstrap
   private val bootstrapCss = BootstrapCss
   private val tempusDominusCss = TempusDominusCss
+  private val appCss = AppCss
 
   def main(args: Array[String]): Unit =
     val log: BaseLogger = BaseLogger.printer
@@ -34,3 +35,7 @@ object BootstrapCss extends js.Object
 @js.native
 @JSImport("@eonasdan/tempus-dominus/dist/css/tempus-dominus.css", JSImport.Namespace)
 object TempusDominusCss extends js.Object
+
+@js.native
+@JSImport("./css/logstreams.css", JSImport.Namespace)
+object AppCss extends js.Object

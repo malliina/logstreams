@@ -6,10 +6,10 @@ import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 val malliinaGroup = "com.malliina"
 
 val versions = new {
-  val circe = "0.14.10"
+  val circe = "0.14.14"
   val fs2 = "3.11.0"
   val logback = "1.5.18"
-  val mariadbClient = "3.5.3"
+  val mariadbClient = "3.5.4"
   val munit = "1.1.1"
   val munitCatsEffect = "2.1.0"
   val primitives = "3.7.10"
@@ -93,14 +93,9 @@ val installDeps = taskKey[Unit]("Runs npm install")
 
 val frontend = project
   .in(file("frontend"))
-  .enablePlugins(NodeJsPlugin, RollupPlugin)
+  .enablePlugins(NodeJsPlugin, EsbuildPlugin)
   .disablePlugins(RevolverPlugin)
   .dependsOn(crossJs)
-  .settings(
-    version := "1.0.0",
-    cwd := target.value,
-    installDeps := RollupPlugin.npmInstall(npmRoot.value, streams.value.log)
-  )
 
 val server = project
   .in(file("server"))

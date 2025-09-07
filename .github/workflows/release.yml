@@ -37,5 +37,4 @@ jobs:
           SONATYPE_PASSWORD: ${{ secrets.SonatypePassword }}
           PGP_PASSPHRASE: ${{ secrets.PgpPassphrase }}
         run: |
-          sbt "project fs2" releaseArtifacts
-          sbt "project client" releaseArtifacts
+          sbt "project root" releaseArtifacts

@@ -143,6 +143,8 @@ val it = Project("logstreams-test", file("logstreams-test"))
     publishLocal := {}
   )
 
+val releasable = project.in(file("releasable")).aggregate(fs2, client)
+
 val root = project
   .in(file("."))
   .aggregate(frontend, server, client, it, fs2, crossJvm, crossJs)

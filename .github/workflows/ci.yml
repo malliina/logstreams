@@ -9,6 +9,11 @@ on:
     branches:
       - master
 
+env:
+  db_name: testlogstreams
+  db_user: testlogstreams
+  db_pass: testlogstreams123
+
 jobs:
   build:
     name: Build
@@ -18,10 +23,10 @@ jobs:
       mysql:
         image: mariadb:10.11.6
         env:
-          MYSQL_DATABASE: testlogstreams
-          MYSQL_USER: testlogstreams
-          MYSQL_PASSWORD: testlogstreams123
-          MYSQL_ROOT_PASSWORD: testlogstreams123
+          MYSQL_DATABASE: ${{ env.db_name }}
+          MYSQL_USER: ${{ env.db_user }}
+          MYSQL_PASSWORD: ${{ env.db_pass }}
+          MYSQL_ROOT_PASSWORD: ${{ env.db_pass }}
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
@@ -36,5 +41,5 @@ jobs:
       - uses: sbt/setup-sbt@v1
       - name: Run tests
         env:
-          DB_PASS: testlogstreams123
+          DB_PASS: ${{ env.db_pass }}
         run: sbt +test

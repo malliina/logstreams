@@ -5,7 +5,8 @@ import cats.effect.kernel.{Async, Resource, Sync}
 import cats.effect.std.Dispatcher
 import cats.effect.unsafe.{IORuntime, IORuntimeConfig, Scheduler}
 import cats.syntax.all.{catsSyntaxFlatMapOps, toFunctorOps}
-import com.malliina.http.io.{HttpClientF2, HttpClientIO, WebSocketF}
+import com.malliina.http.{ReconnectingSocket, WebSocket}
+import com.malliina.http.io.{HttpClientF2, HttpClientIO, OkSocket, WebSocketF}
 import com.malliina.logback.fs2.{FS2AppenderComps, LoggingComps}
 import com.malliina.logstreams.client.FS2Appender.ResourceParts
 
@@ -63,7 +64,7 @@ class FS2Appender(
 class FS2AppenderF[F[_]: Async](
   res: ResourceParts[F],
   extraHeaders: Map[String, String]
-) extends SocketAppender[F, WebSocketF[F]](res.comps):
+) extends SocketAppender[F, ReconnectingSocket[F, OkSocket[F]]](res.comps):
   val F = Sync[F]
   private var socketClosable: F[Unit] = F.unit
   override def start(): Unit =
@@ -75,9 +76,9 @@ class FS2AppenderF[F[_]: Async](
       yield
         val headers: List[KeyValue] = List(HttpUtil.basicAuth(user, pass))
         addInfo(s"Connecting to logstreams URL '$url' for Logback...")
-        val socketIo: Resource[F, WebSocketF[F]] =
+        val socketIo: Resource[F, ReconnectingSocket[F, OkSocket[F]]] =
           res.http.socket(url, headers.map(kv => kv.key -> kv.value).toMap ++ extraHeaders)
-        val (socket, closer) = d.unsafeRunSync(socketIo.allocated[WebSocketF[F]])
+        val (socket, closer) = d.unsafeRunSync(socketIo.allocated)
         client = Option(socket)
         socketClosable = closer
         d.unsafeRunAndForget(socket.events.compile.drain)

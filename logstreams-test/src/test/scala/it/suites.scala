@@ -2,18 +2,17 @@ package it
 
 import cats.effect.kernel.Sync
 import cats.effect.{IO, Resource}
-import cats.syntax.flatMap.*
 import ch.qos.logback.classic.Level
 import com.comcast.ip4s.port
 import com.malliina.app.AppConf
-import com.malliina.config.{ConfigError, ConfigNode}
+import com.malliina.config.ConfigNode
 import com.malliina.database.{Conf, DoobieDatabase}
 import com.malliina.http.FullUrl
 import com.malliina.http.UrlSyntax.url
 import com.malliina.http.io.HttpClientIO
 import com.malliina.logback.LogbackUtils
 import com.malliina.logstreams.auth.*
-import com.malliina.logstreams.http4s.{AppResources, Http4sAuth, Server, ServerComponents}
+import com.malliina.logstreams.http4s.{AppResources, Http4sAuth, ServerComponents}
 import com.malliina.logstreams.{LocalConf, LogstreamsConf}
 import com.malliina.values.{Password, Username}
 import munit.AnyFixture

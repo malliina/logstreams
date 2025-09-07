@@ -22,7 +22,7 @@ class SocketTests extends munit.CatsEffectSuite:
     yield socket
     val resource = Dispatcher.parallel[IO]
     val (d, dc) = resource.allocated[Dispatcher[IO]].unsafeRunSync()
-    val (socket, closer) = d.unsafeRunSync(s.allocated[WebSocketF[IO]])
+    val (socket, closer) = d.unsafeRunSync(s.allocated)
     d.unsafeRunAndForget(socket.events.compile.drain)
     Thread.sleep(2000)
     (1 to 10).map: i =>

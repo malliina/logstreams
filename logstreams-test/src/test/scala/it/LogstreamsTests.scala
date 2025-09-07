@@ -1,9 +1,9 @@
 package it
 
 import cats.effect.{Deferred, IO}
-import com.malliina.http.FullUrl
-import com.malliina.http.io.SocketEvent.Open
-import com.malliina.http.io.{HttpClientF2, SocketEvent, WebSocketF}
+import com.malliina.http.{FullUrl, ReconnectingSocket}
+import com.malliina.http.SocketEvent.Open
+import com.malliina.http.io.{HttpClientF2, WebSocketF, OkSocket}
 import com.malliina.logstreams.auth.BasicCredentials
 import com.malliina.logstreams.client.{HttpUtil, KeyValue}
 import com.malliina.logstreams.http4s.LogRoutes
@@ -19,6 +19,7 @@ object LogstreamsTests:
   val testUsername = Username("u")
 
 class LogstreamsTests extends TestServerSuite:
+  type TestSocket = ReconnectingSocket[IO, OkSocket[IO]]
   val log = AppLogger(getClass)
 
   val testUser = testUsername.name
@@ -103,6 +104,7 @@ class LogstreamsTests extends TestServerSuite:
                 val listen = jsons
                   .take(3)
                   .evalMap: json =>
+                    println(s"GOT $json")
                     for
                       wasStatusEmpty <- status.complete(json)
                       wasUpdateEmpty <-
@@ -132,6 +134,7 @@ class LogstreamsTests extends TestServerSuite:
                           assert(statusUpdate.sources.nonEmpty)
                     for
                       _ <- task
+                      _ = println("Awaiting disconnection...")
                       disconnected <- disconnectedPromise.get
                     yield
                       val disconnectUpdate = disconnected.as[LogSources]
@@ -139,16 +142,18 @@ class LogstreamsTests extends TestServerSuite:
                       assert(disconnectUpdate.toOption.get.sources.isEmpty)
                 listen.concurrently(Stream.eval(check)).compile.drain
 
-  def withAdmin[T](httpClient: HttpClientF2[IO])(code: WebSocketF[IO] => IO[T]) =
+  def withAdmin[T](httpClient: HttpClientF2[IO])(
+    code: ReconnectingSocket[IO, OkSocket[IO]] => IO[T]
+  ) =
     openAuthedSocket(testUser, LogRoutes.sockets.admins, httpClient)(code)
 
   def withAdminEvents[T](httpClient: HttpClientF2[IO])(code: Stream[IO, Json] => IO[T]) =
     openAuthedSocketEvents(testUser, LogRoutes.sockets.admins, httpClient)(code)
 
-  def withListener[T](httpClient: HttpClientF2[IO])(code: WebSocketF[IO] => IO[T]) =
+  def withListener[T](httpClient: HttpClientF2[IO])(code: TestSocket => IO[T]) =
     openAuthedSocket(testUser, LogRoutes.sockets.logs, httpClient)(code)
 
-  def withSource[T](username: String, httpClient: HttpClientF2[IO])(code: WebSocketF[IO] => IO[T]) =
+  def withSource[T](username: String, httpClient: HttpClientF2[IO])(code: TestSocket => IO[T]) =
     openAuthedSocket(username, LogRoutes.sockets.sources, httpClient)(code)
 
   def openAuthedSocket[T](
@@ -156,7 +161,7 @@ class LogstreamsTests extends TestServerSuite:
     uri: Uri,
     httpClient: HttpClientF2[IO]
   )(
-    code: WebSocketF[IO] => IO[T]
+    code: TestSocket => IO[T]
   ): IO[T] =
     val wsUrl = FullUrl("ws", s"localhost:$port", uri.renderString)
     val kvs: List[KeyValue] = List(
@@ -178,13 +183,13 @@ class LogstreamsTests extends TestServerSuite:
     openSocket2(wsUrl, kvs, httpClient)(code)
 
   def openSocket[T](url: FullUrl, headers: List[KeyValue], httpClient: HttpClientF2[IO])(
-    code: WebSocketF[IO] => IO[T]
+    code: TestSocket => IO[T]
   ): IO[T] =
     httpClient
       .socket(url, headers.map(kv => kv.key -> kv.value).toMap)
       .use: socket =>
         val openEvents = socket.events.collect:
-          case o @ Open(_, _) => o
+          case o @ Open(_) => o
         openEvents.take(1).compile.toList >> IO(log.info(s"Opened $url.")) >> code(socket)
 
   def openSocket2[T](url: FullUrl, headers: List[KeyValue], httpClient: HttpClientF2[IO])(

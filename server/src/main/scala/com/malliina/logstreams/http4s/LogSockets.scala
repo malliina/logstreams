@@ -147,6 +147,7 @@ class LogSockets[F[_]: Async](
     connectedSources
       .updateAndGet(olds => LogSources(olds.sources.filterNot(_.id == src.id)))
       .flatMap: connecteds =>
+        log.info(s"Disconnection, now connected $connecteds")
         publishLogged(connecteds, admins)
 
   private def jsonTransform[T: Encoder](src: Stream[F, T]): Stream[F, Text] = src.map: t =>

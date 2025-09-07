@@ -143,7 +143,17 @@ val it = Project("logstreams-test", file("logstreams-test"))
     publishLocal := {}
   )
 
-val releasable = project.in(file("releasable")).aggregate(fs2, client)
+val releasable = project
+  .in(file("releasable"))
+  .aggregate(fs2, client)
+  .settings(
+    publishTo := Some(Resolver.file("Unused transient repository", file("target/unusedrepo"))),
+    publish / skip := true,
+    publishArtifact := false,
+    packagedArtifacts := Map.empty,
+    publish := {},
+    publishLocal := {}
+  )
 
 val root = project
   .in(file("."))

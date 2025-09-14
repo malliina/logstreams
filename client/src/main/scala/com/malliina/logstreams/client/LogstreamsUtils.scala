@@ -1,14 +1,12 @@
 package com.malliina.logstreams.client
 
-import cats.effect.{Resource, Sync}
 import cats.effect.kernel.Async
 import cats.effect.std.Dispatcher
+import cats.effect.{Resource, Sync}
 import cats.syntax.all.{toFlatMapOps, toFunctorOps}
-import ch.qos.logback.classic.LoggerContext
-import com.malliina.http.io.HttpClientF2
+import com.malliina.http.HttpClient
 import com.malliina.logback.LogbackUtils
 import com.malliina.values.ErrorMessage
-import org.slf4j.LoggerFactory
 
 case class LogstreamsConf(enabled: Boolean, user: String, pass: String, userAgent: String)
 
@@ -28,7 +26,7 @@ object LogstreamsUtils:
   def resource[F[_]: Async](
     conf: LogstreamsConf,
     d: Dispatcher[F],
-    http: HttpClientF2[F]
+    http: HttpClient[F]
   ): Resource[F, Unit] =
     Resource.make(install(conf, d, http))(_ => Sync[F].delay(LogbackUtils.loggerContext.stop()))
 
@@ -36,7 +34,7 @@ object LogstreamsUtils:
     defaultUser: String,
     userAgent: String,
     d: Dispatcher[F],
-    http: HttpClientF2[F]
+    http: HttpClient[F]
   ) =
     if LogstreamsConf.isEnabled then
       LogstreamsConf
@@ -51,7 +49,7 @@ object LogstreamsUtils:
   def install[F[_]: Async](
     conf: LogstreamsConf,
     d: Dispatcher[F],
-    http: HttpClientF2[F]
+    http: HttpClient[F]
   ): F[Unit] =
     val lc = LogbackUtils.loggerContext
     FS2Appender

@@ -9,14 +9,14 @@ val versions = new {
   val circe = "0.14.14"
   val fs2 = "3.11.0"
   val logback = "1.5.18"
-  val mariadbClient = "3.5.5"
-  val munit = "1.1.1"
+  val mariadbClient = "3.5.6"
+  val munit = "1.2.0"
   val munitCatsEffect = "2.1.0"
-  val primitives = "3.7.18"
+  val primitives = "3.8.0"
   val scala3 = "3.4.0"
   val scalatags = "0.13.1"
   val server = "0.7.0"
-  val webAuth = "6.9.13"
+  val webAuth = "6.9.14"
 }
 val webAuthDep = malliinaGroup %% "web-auth" % versions.webAuth
 

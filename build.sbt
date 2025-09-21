@@ -12,13 +12,12 @@ val versions = new {
   val mariadbClient = "3.5.6"
   val munit = "1.2.0"
   val munitCatsEffect = "2.1.0"
-  val primitives = "3.8.4"
   val scala3 = "3.4.0"
   val scalatags = "0.13.1"
   val server = "0.7.0"
-  val webAuth = "6.9.16"
+  val util = "6.10.1"
 }
-val webAuthDep = malliinaGroup %% "web-auth" % versions.webAuth
+val webAuthDep = malliinaGroup %% "web-auth" % versions.util
 
 inThisBuild(
   Seq(
@@ -39,41 +38,6 @@ inThisBuild(
   )
 )
 
-val fs2 = project
-  .in(file("fs2"))
-  .enablePlugins(MavenCentralPlugin)
-  .settings(
-    libraryDependencies ++= Seq(
-      "ch.qos.logback" % "logback-classic" % versions.logback,
-      "com.malliina" %%% "primitives" % versions.primitives,
-      "co.fs2" %% "fs2-core" % versions.fs2,
-      "org.typelevel" %% "munit-cats-effect" % versions.munitCatsEffect % Test
-    ),
-    moduleName := "logback-fs2",
-    releaseProcess := tagReleaseProcess.value,
-    scalaVersion := versions.scala3,
-    gitUserName := "malliina",
-    developerName := "Michael Skogberg",
-    releaseCrossBuild := true
-  )
-
-val client = project
-  .in(file("client"))
-  .enablePlugins(MavenCentralPlugin)
-  .disablePlugins(RevolverPlugin)
-  .dependsOn(fs2)
-  .settings(
-    moduleName := "logstreams-client",
-    releaseCrossBuild := true,
-    gitUserName := "malliina",
-    developerName := "Michael Skogberg",
-    libraryDependencies ++= Seq(
-      "com.malliina" %% "okclient-io" % versions.primitives,
-      "org.typelevel" %% "munit-cats-effect" % versions.munitCatsEffect % Test
-    ),
-    releaseProcess := tagReleaseProcess.value
-  )
-
 val cross = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Full)
   .in(file("shared"))
@@ -81,8 +45,8 @@ val cross = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies ++= Seq("generic", "parser").map { m =>
       "io.circe" %%% s"circe-$m" % versions.circe
     } ++ Seq(
-      "com.malliina" %%% "primitives" % versions.primitives,
-      "com.malliina" %%% "util-html" % versions.webAuth,
+      "com.malliina" %%% "primitives" % versions.util,
+      "com.malliina" %%% "util-html" % versions.util,
       "com.lihaoyi" %%% "scalatags" % versions.scalatags
     )
   )
@@ -106,7 +70,7 @@ val server = project
     LiveRevolverPlugin,
     DebPlugin
   )
-  .dependsOn(crossJvm, client)
+  .dependsOn(crossJvm)
   .settings(
     version := versions.server,
     clientProject := frontend,
@@ -116,17 +80,14 @@ val server = project
       "frontName" -> (frontend / name).value
     ),
     libraryDependencies ++=
-      Seq("util-html", "database", "util-http4s").map { m =>
-        "com.malliina" %% m % versions.webAuth
+      Seq("config", "logstreams-client", "util-html", "database", "util-http4s", "web-auth").map {
+        m =>
+          "com.malliina" %% m % versions.util
       } ++ Seq(
-        "com.malliina" %% "config" % versions.primitives,
         "org.mariadb.jdbc" % "mariadb-java-client" % versions.mariadbClient,
-        webAuthDep,
         webAuthDep % Test classifier "tests",
         "org.typelevel" %% "munit-cats-effect" % versions.munitCatsEffect % Test
       ),
-    Compile / packageDoc / publishArtifact := false,
-    packageDoc / publishArtifact := false,
     Compile / doc / sources := Seq.empty,
     assembly / assemblyJarName := "app.jar",
     liveReloadPort := port"10103",
@@ -136,37 +97,18 @@ val server = project
   )
 
 val it = Project("logstreams-test", file("logstreams-test"))
-  .dependsOn(server % "test->test", client)
+  .dependsOn(server % "test->test")
   .settings(
-    libraryDependencies += "com.malliina" %% "okclient-io" % versions.primitives,
-    publish / skip := true,
-    publishLocal := {}
-  )
-
-val releasable = project
-  .in(file("releasable"))
-  .aggregate(fs2, client)
-  .settings(
-    publishTo := Some(Resolver.file("Unused transient repository", file("target/unusedrepo"))),
-    publish / skip := true,
-    publishArtifact := false,
-    packagedArtifacts := Map.empty,
-    publish := {},
-    publishLocal := {}
+    libraryDependencies ++= Seq("logstreams-client", "okclient-io").map { m =>
+      "com.malliina" %% m % versions.util
+    }
   )
 
 val root = project
   .in(file("."))
-  .aggregate(frontend, server, client, it, fs2, crossJvm, crossJs)
+  .aggregate(frontend, server, it, crossJvm, crossJs)
   .settings(
-    start := (server / start).value,
-    publishTo := Some(Resolver.file("Unused transient repository", file("target/unusedrepo"))),
-    publish / skip := true,
-    publishArtifact := false,
-    packagedArtifacts := Map.empty,
-    publish := {},
-    publishLocal := {},
-    releaseProcess := (client / tagReleaseProcess).value
+    start := (server / start).value
   )
 
 Global / onChangedBuildSource := ReloadOnSourceChanges

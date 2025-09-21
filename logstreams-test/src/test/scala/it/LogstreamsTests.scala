@@ -104,7 +104,6 @@ class LogstreamsTests extends TestServerSuite:
                 val listen = jsons
                   .take(3)
                   .evalMap: json =>
-                    println(s"GOT $json")
                     for
                       wasStatusEmpty <- status.complete(json)
                       wasUpdateEmpty <-
@@ -134,7 +133,6 @@ class LogstreamsTests extends TestServerSuite:
                           assert(statusUpdate.sources.nonEmpty)
                     for
                       _ <- task
-                      _ = println("Awaiting disconnection...")
                       disconnected <- disconnectedPromise.get
                     yield
                       val disconnectUpdate = disconnected.as[LogSources]

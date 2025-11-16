@@ -11,6 +11,6 @@ object LogConf:
   def init(): Unit =
     val customLevels = Map(
       "org.http4s.ember.server.EmberServerBuilderCompanionPlatform" -> Level.OFF,
-      "com.malliina.logstreams.http4s.LogSockets" -> Level.DEBUG
+      "com.malliina.logstreams.http4s.LogSockets" -> Level.INFO
     )
     LogbackUtils.init(levelsByLogger = customLevels)

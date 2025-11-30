@@ -74,7 +74,7 @@ class LogstreamsTests extends TestServerSuite:
             val events = jsonResult.events
             assertEquals(events.size, 1)
             val event = events.head
-            assertEquals(event.source.name, AppName(user))
+            assertEquals(event.source.name, AppName.fromUsername(Username(user)))
             assertEquals(event.event.message, message)
     for
       _ <- users.add(creds(user))

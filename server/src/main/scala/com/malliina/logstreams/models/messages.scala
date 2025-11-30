@@ -36,7 +36,7 @@ case class LogEntryRow(
 ):
   def toEvent = AppLogEvent(
     id,
-    SimpleLogSource(AppName(app.name), address),
+    SimpleLogSource(AppName.fromUsername(app), address),
     LogEvent(
       timestamp.toEpochMilli,
       LogEntryRow.format(timestamp),

@@ -1,10 +1,10 @@
 package com.malliina.logstreams
 
 import java.time.Instant
-
 import ch.qos.logback.classic.Level
 import com.malliina.logback.LogEvent
 import com.malliina.logstreams.models.*
+import com.malliina.values.Username
 
 object TestData:
   // Dev purposes
@@ -30,8 +30,8 @@ object TestData:
   )
 
   def testEvent(e: models.LogEvent) = AppLogEvent(
-    LogEntryId(0),
-    SimpleLogSource(AppName("test"), "localhost"),
+    LogEntryId.build(0).toOption.get,
+    SimpleLogSource(AppName.fromUsername(Username("test")), "localhost"),
     e,
     Instant.now().toEpochMilli,
     LogEntryRow.format(Instant.now())

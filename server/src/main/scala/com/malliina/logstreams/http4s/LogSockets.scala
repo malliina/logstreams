@@ -122,7 +122,7 @@ class LogSockets[F[_]: Async](
     val date = LogSockets.dateTimeFormatter.format(now)
     val logSource =
       LogSource(
-        AppName(user.user.name),
+        AppName.fromUsername(user.user),
         user.address,
         user.userAgent,
         id,

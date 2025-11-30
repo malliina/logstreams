@@ -7,14 +7,14 @@ import cats.syntax.all.{toFlatMapOps, toFunctorOps}
 import com.malliina.app.AppMeta
 import com.malliina.database.DoobieDatabase
 import com.malliina.http.Errors
+import com.malliina.http4s.BasicService.noCache
 import com.malliina.http4s.{CSRFSupport, FormDecoders, FormReadable, FormReadableT}
 import com.malliina.logstreams.auth.*
 import com.malliina.logstreams.auth.AuthProvider.{Google, PromptKey, SelectAccount}
 import com.malliina.logstreams.db.StreamsQuery
 import com.malliina.logstreams.html.Htmls
 import com.malliina.logstreams.html.Htmls.{PasswordKey, UsernameKey}
-import com.malliina.http4s.BasicService.noCache
-import com.malliina.logstreams.http4s.Service.log
+import com.malliina.logstreams.http4s.Service.{log, given}
 import com.malliina.logstreams.models.AppName
 import com.malliina.util.AppLogger
 import com.malliina.values.{Email, Password, Username}
@@ -23,15 +23,25 @@ import com.malliina.web.OAuthKeys.{Nonce, State}
 import com.malliina.web.Utils.randomString
 import io.circe.syntax.EncoderOps
 import org.http4s.circe.CirceEntityEncoder.circeEntityEncoder
-import org.http4s.headers.{Location, `WWW-Authenticate`}
+import org.http4s.headers.`WWW-Authenticate`
 import org.http4s.server.middleware.CSRF
 import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.{BasicCredentials as _, Callback as _, *}
 
-import java.time.{Instant, OffsetDateTime}
+import java.time.OffsetDateTime
 
 object Service:
   private val log = AppLogger(getClass)
+
+  given FormReadableT[BasicCredentials] = FormReadableT.reader.emap: form =>
+    for
+      username <- form
+        .read[Username](UsernameKey)
+        .filterOrElse(_.name.nonEmpty, Errors("Username was empty."))
+      password <- form
+        .read[Password](PasswordKey)
+        .filterOrElse(_.pass.nonEmpty, Errors("Password was empty."))
+    yield BasicCredentials(username, password)
 
 class Service[F[_]: Async](
   val db: DoobieDatabase[F],
@@ -47,20 +57,10 @@ class Service[F[_]: Async](
   val reverse = LogRoutes
   val F = Sync[F]
 
-  given FormReadableT[BasicCredentials] = FormReadableT.reader.emap: form =>
-    for
-      username <- form
-        .read[Username](UsernameKey)
-        .filterOrElse(_.name.nonEmpty, Errors("Username was empty."))
-      password <- form
-        .read[Password](PasswordKey)
-        .filterOrElse(_.pass.nonEmpty, Errors("Password was empty."))
-    yield BasicCredentials(username, password)
-
   def routes(socketBuilder: WebSocketBuilder2[F]): HttpRoutes[F] = HttpRoutes.of[F] {
     case GET -> Root / "health" => ok(AppMeta.ThisApp)
     case GET -> Root / "ping"   => ok(AppMeta.ThisApp)
-    case req @ GET -> Root =>
+    case req @ GET -> Root      =>
       logsRequest(req): (query, user) =>
         seeOther(reverse.toLogs(StreamsQuery.toQuery(query)))
     case req @ GET -> Root / "logs" =>
@@ -68,7 +68,7 @@ class Service[F[_]: Async](
         users
           .all()
           .flatMap: us =>
-            ok(htmls.logs(us.map(u => AppName(u.name)), query))
+            ok(htmls.logs(us.map(u => AppName.fromUsername(u)), query))
     case req @ GET -> Root / "sources" =>
       webAuth(req): src =>
         ok(htmls.sources)

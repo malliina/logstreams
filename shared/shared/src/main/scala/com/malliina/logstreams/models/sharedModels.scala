@@ -1,9 +1,10 @@
 package com.malliina.logstreams.models
 
+import cats.syntax.all.toFunctorOps
 import com.malliina.logstreams.models
 import com.malliina.logstreams.models.Limits.DefaultLimit
 import com.malliina.logstreams.models.LogsJson.evented
-import com.malliina.values.Literals.nonNeg
+import com.malliina.values.Literals.{err, nonNeg}
 import com.malliina.values.*
 import io.circe.*
 import io.circe.generic.semiauto.*
@@ -14,20 +15,20 @@ object Queries:
   val To = "to"
   val Q = "q"
 
-sealed abstract class LogLevel(val name: String, val int: Int) extends WrappedString:
+enum LogLevel(val name: String, val int: Int) extends WrappedString:
   override def value = name
+
+  case Trace extends LogLevel("trace", 10)
+  case Debug extends LogLevel("debug", 20)
+  case Info extends LogLevel("info", 30)
+  case Warn extends LogLevel("warn", 40)
+  case Error extends LogLevel("error", 50)
+  case Other extends LogLevel("other", 60)
 
 object LogLevel extends EnumCompanion[String, LogLevel]:
   val Key = "level"
   override val all: Seq[LogLevel] = Seq(Trace, Debug, Info, Warn, Error, Other)
   override def write(t: LogLevel): String = t.name
-
-  case object Trace extends LogLevel("trace", 10)
-  case object Debug extends LogLevel("debug", 20)
-  case object Info extends LogLevel("info", 30)
-  case object Warn extends LogLevel("warn", 40)
-  case object Error extends LogLevel("error", 50)
-  case object Other extends LogLevel("other", 60)
 
   override def build(input: String): Either[ErrorMessage, LogLevel] =
     all
@@ -43,18 +44,37 @@ object LogLevel extends EnumCompanion[String, LogLevel]:
 
   override implicit val ordering: Ordering[LogLevel] = Ordering.by[LogLevel, Int](_.int)
 
-case class AppName(name: String) extends AnyVal:
-  override def toString: String = name
+opaque type AppName = String
 
-object AppName extends Companion[String, AppName]:
+object AppName extends ValidatingCompanion[String, AppName]:
   val Key = "app"
-  override def raw(t: AppName): String = t.name
 
-case class LogEntryId(id: Long) extends AnyVal:
-  override def toString: String = s"$id"
+  override def build(input: String): Either[ErrorMessage, AppName] =
+    if input.isBlank then Left(err"App name must not be blank.")
+    else Right(input.trim)
+  override def write(t: AppName): String = t
+  def fromUsername(user: Username): AppName = user.name
+  extension (an: AppName) def name: String = an
 
-object LogEntryId extends Companion[Long, LogEntryId]:
-  override def raw(t: LogEntryId): Long = t.id
+opaque type LogClientId = String
+
+object LogClientId extends ValidatingCompanion[String, LogClientId]:
+  override def build(input: String): Either[ErrorMessage, LogClientId] =
+    if input.isBlank then Left(err"Client ID must not be blank.")
+    else Right(input.trim)
+  override def write(t: LogClientId): String = t
+  extension (lci: LogClientId) def id: String = lci
+
+opaque type LogEntryId = Long
+
+object LogEntryId extends ValidatingCompanion[Long, LogEntryId]:
+  def unsafe(long: Long): LogEntryId =
+    build(long).fold(err => throw IllegalArgumentException(err.message), identity)
+  override def build(input: Long): Either[ErrorMessage, LogEntryId] =
+    if input < 0 then Left(err"Log entry ID must be non-negative.")
+    else Right(input)
+  override def write(t: LogEntryId): Long = t
+  extension (lei: LogEntryId) def id: Long = lei
 
 case class SimpleLogSource(name: AppName, remoteAddress: String) derives Codec.AsObject
 
@@ -193,11 +213,11 @@ object MetaEvent:
   def loading(meta: SearchInfo) = MetaEvent(Loading, meta)
 
 object FrontEvent:
-  // using .widen fails, some dep issue, todo fix, workaround is to .map[Frontend](identity)
-  given Decoder[FrontEvent] =
-    Decoder[AppLogEvents]
-      .or(Decoder[MetaEvent].map[FrontEvent](identity))
-      .or(Decoder[SimpleEvent].map[FrontEvent](identity))
+  given Decoder[FrontEvent] = List[Decoder[FrontEvent]](
+    Decoder[AppLogEvents].widen,
+    Decoder[MetaEvent].widen,
+    Decoder[SimpleEvent].widen
+  ).reduce(_ or _)
   given Encoder[FrontEvent] =
     case ale @ AppLogEvents(_) => ale.asJson
     case me @ MetaEvent(_, _)  => me.asJson

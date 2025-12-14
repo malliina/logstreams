@@ -65,6 +65,15 @@ object LogClientId extends ValidatingCompanion[String, LogClientId]:
   override def write(t: LogClientId): String = t
   extension (lci: LogClientId) def id: String = lci
 
+opaque type UserAgent = String
+
+object UserAgent extends ValidatingCompanion[String, UserAgent]:
+  override def build(input: String): Either[ErrorMessage, UserAgent] =
+    if input.isBlank then Left(err"User agent must not be blank.")
+    else Right(input.trim)
+  override def write(ua: UserAgent): String = ua
+  extension (ua: UserAgent) def string: String = ua
+
 opaque type LogEntryId = Long
 
 object LogEntryId extends ValidatingCompanion[Long, LogEntryId]:
@@ -76,12 +85,17 @@ object LogEntryId extends ValidatingCompanion[Long, LogEntryId]:
   override def write(t: LogEntryId): Long = t
   extension (lei: LogEntryId) def id: Long = lei
 
-case class SimpleLogSource(name: AppName, remoteAddress: String) derives Codec.AsObject
+case class SimpleLogSource(
+  name: AppName,
+  remoteAddress: String,
+  clientId: Option[LogClientId],
+  userAgent: Option[UserAgent]
+) derives Codec.AsObject
 
 case class LogSource(
   name: AppName,
   remoteAddress: String,
-  userAgent: Option[String],
+  userAgent: Option[UserAgent],
   id: String,
   joined: Long,
   joinedFormatted: String,

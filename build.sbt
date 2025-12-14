@@ -6,13 +6,13 @@ import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 val malliinaGroup = "com.malliina"
 
 val versions = new {
-  val circe = "0.14.14"
+  val circe = "0.14.15"
   val fs2 = "3.11.0"
   val logback = "1.5.18"
   val mariadbClient = "3.5.6"
   val munit = "1.2.1"
   val munitCatsEffect = "2.1.0"
-  val scala3 = "3.4.0"
+  val scala3 = "3.7.4"
   val scalatags = "0.13.1"
   val server = "0.7.0"
   val util = "6.10.1"
@@ -34,7 +34,8 @@ inThisBuild(
       case x                                          =>
         val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
         oldStrategy(x)
-    }
+    },
+    dependencyOverrides += "org.scala-lang" %% "scala3-library" % scalaVersion.value
   )
 )
 

@@ -14,16 +14,14 @@ object DoobieLogsDatabase:
 class DoobieLogsDatabase[F[_]](db: DoobieDatabase[F]) extends LogsDatabase[F]:
   def insert(events: List[LogEntryInput]): F[EntriesWritten] = db.run:
     val insertions = events.traverse: e =>
-      sql"""insert into LOGS(APP, ADDRESS, MESSAGE, LOGGER, THREAD, LEVEL, STACKTRACE, TIMESTAMP)
-            values(${e.appName}, ${e.remoteAddress}, ${e.message}, ${e.loggerName}, ${e.threadName}, ${e.level}, ${e.stackTrace}, ${e.timestamp})""".update
+      sql"""insert into LOGS(APP, ADDRESS, MESSAGE, LOGGER, THREAD, LEVEL, CLIENT, USER_AGENT, STACKTRACE, TIMESTAMP)
+            values(${e.appName}, ${e.remoteAddress}, ${e.message}, ${e.loggerName}, ${e.threadName}, ${e.level}, ${e.clientId}, ${e.userAgent}, ${e.stackTrace}, ${e.timestamp})""".update
         .withUniqueGeneratedKeys[LogEntryId]("ID")
     insertions.flatMap: idList =>
       idList.toNel
         .map: ids =>
           val inClause = Fragments.in(fr"ID", ids)
-          sql"""select ID, APP, ADDRESS, TIMESTAMP, MESSAGE, LOGGER, THREAD, LEVEL, STACKTRACE, ADDED
-                from LOGS
-                where $inClause""".query[LogEntryRow].to[List]
+          logsQuery(inClause)
         .getOrElse:
           List.empty[LogEntryRow].pure[ConnectionIO]
         .map: list =>
@@ -36,21 +34,26 @@ class DoobieLogsDatabase[F[_]](db: DoobieDatabase[F]) extends LogsDatabase[F]:
       .map(_.int)
       .toNel
     log.debug(s"Query with $query using levels $levels")
-    val whereClause = Fragments.whereAndOpt(
-      query.apps.toList.toNel.map(apps => Fragments.in(fr"APP", apps)),
-      levels.map(ls => Fragments.in(fr"LEVEL", ls)),
-      query.queryStar.map(q =>
-        fr"MATCH(APP, ADDRESS, MESSAGE, LOGGER, THREAD, STACKTRACE) AGAINST($q)"
-      ),
-      query.timeRange.from.map(f => fr"ADDED >= $f"),
-      query.timeRange.to.map(t => fr"ADDED <= $t")
-    )
+    val whereClause = Fragments
+      .andOpt(
+        query.apps.toList.toNel.map(apps => Fragments.in(fr"APP", apps)),
+        levels.map(ls => Fragments.in(fr"LEVEL", ls)),
+        query.queryStar
+          .map(q => fr"MATCH(APP, ADDRESS, MESSAGE, LOGGER, THREAD, STACKTRACE) AGAINST($q)"),
+        query.timeRange.from.map(f => fr"ADDED >= $f"),
+        query.timeRange.to.map(t => fr"ADDED <= $t")
+      )
+      .getOrElse(fr"true")
     val order = if query.order == SortOrder.asc then fr0"asc" else fr0"desc"
-    sql"""select ID, APP, ADDRESS, TIMESTAMP, MESSAGE, LOGGER, THREAD, LEVEL, STACKTRACE, ADDED
-          from LOGS $whereClause 
-          order by ADDED $order, ID $order
-          limit ${query.limit} offset ${query.offset}"""
-      .query[LogEntryRow]
-      .to[List]
+    val where =
+      fr"$whereClause order by ADDED $order, ID $order limit ${query.limit} offset ${query.offset}"
+    logsQuery(where)
       .map: rows =>
         AppLogEvents(rows.map(_.toEvent))
+
+  private def logsQuery(where: Fragment) =
+    sql"""select ID, APP, ADDRESS, TIMESTAMP, MESSAGE, LOGGER, THREAD, LEVEL, CLIENT, USER_AGENT, STACKTRACE, ADDED
+          from LOGS
+          where $where"""
+      .query[LogEntryRow]
+      .to[List]

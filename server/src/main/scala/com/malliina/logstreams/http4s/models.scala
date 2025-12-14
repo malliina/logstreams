@@ -1,5 +1,6 @@
 package com.malliina.logstreams.http4s
 
+import com.malliina.logstreams.models.{LogClientId, UserAgent}
 import com.malliina.values.Username
 import io.circe.Codec
 import org.http4s.Headers
@@ -19,4 +20,7 @@ object UserFeedback:
   def error(message: String) = UserFeedback(message, isError = true)
 
 case class UserRequest(user: Username, headers: Headers, address: String, now: OffsetDateTime):
-  val userAgent = headers.get(ci"User-Agent").map(_.head.value)
+  val userAgent =
+    headers.get(ci"User-Agent").map(_.head.value).flatMap(str => UserAgent.build(str).toOption)
+  val clientId =
+    headers.get(ci"X-Client-Id").map(_.head.value).flatMap(str => LogClientId.build(str).toOption)

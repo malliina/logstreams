@@ -19,7 +19,7 @@ class SourcesPage(log: BaseLogger) extends BaseSocket("/ws/admins?f=json", log):
     tr(
       td(source.name.name),
       td(source.remoteAddress),
-      td(source.userAgent.getOrElse("Unknown")),
+      td(source.userAgent.map(_.string).getOrElse("Unknown")),
       td(source.id),
       td(source.timeJoined)
     )

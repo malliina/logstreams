@@ -89,5 +89,5 @@ object LogstreamsConf:
     password,
     mariaDbDriver,
     maxPoolSize = 2,
-    autoMigrate = false
+    autoMigrate = true
   )

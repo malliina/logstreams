@@ -2,23 +2,28 @@ package com.malliina.logstreams.js
 
 import com.malliina.logstreams.js.ScriptHelpers.{elem, elemOptAs, getElem}
 import com.malliina.logstreams.models.FrontStrings.*
-import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents, FrontEvent, LogLevel, MetaEvent, SimpleEvent}
+import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents, FrontEvent, LogClientId, LogLevel, MetaEvent, SimpleEvent, UserAgent}
 import io.circe.Json
 import org.scalajs.dom
 import org.scalajs.dom.{Event, HTMLElement, HTMLInputElement, HTMLParagraphElement, HTMLTableElement, document}
 import scalatags.JsDom.all.*
+import ListenerSocket.given
 
 case class RowContent(content: Frag, cellId: String, linkId: String, moreId: String)
+
+object ListenerSocket:
+  given Conversion[LogClientId, Modifier] = (ci: LogClientId) => ci.id
+  given Conversion[UserAgent, Modifier] = (ua: UserAgent) => ua.string
 
 class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean)
   extends BaseSocket(wsPath):
   private val CellContent = "cell-content"
   private val CellWide = "cell-wide"
-  private val ColumnCount = 6
+  private val ColumnCount = 9
   private val Danger = "danger"
   private val Hidden = "hidden"
   private val Warning = "warning"
-  val Info = "info"
+  private val Info = "info"
 
   private val Off = "off"
 
@@ -45,6 +50,8 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
         th("Message"),
         th(cls := verboseClass)("Logger"),
         th(cls := verboseClass)("Thread"),
+        th(cls := verboseClass)("Client"),
+        th(cls := verboseClass)("User Agent"),
         th(div(cls := "cell-more-content")),
         th("Level")
       ).render
@@ -97,13 +104,13 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
     val stackId = s"stack-${row.linkId}"
     entry.stackTrace.foreach: stackTrace =>
       val errorRow = tr(cls := Hidden, id := stackId)(
-        td(colspan := s"$ColumnCount")(pre(stackTrace))
+        td(colspan := s"$ColumnCount")(pre(cls := "stacktrace")(stackTrace))
       )
       tableBody.insertBefore(errorRow.render, tableBody.firstChild)
     tableBody.insertBefore(row.content.render, tableBody.firstChild)
     // Toggles text wrapping for long texts when clicked
     val cell = getElem[HTMLElement](row.cellId)
-//    cell.onclick = _ => cell.toggleClass(CellContent)
+//    cell.onclick = _ => cell.toggleClass(ellContent)
     // Shows stacktrace if present
     elemOptAs[HTMLElement](row.linkId).foreach: e =>
       e.onclick = _ => elem(stackId).asInstanceOf[HTMLElement].toggleClass(Hidden)
@@ -114,6 +121,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
 
   // "App", "Time", "Message", "Logger", "Thread", "More", "Level"
   def toRow(event: AppLogEvent): RowContent =
+    val source = event.source
     val entry = event.event
     val rowClass = entry.level match
       case LogLevel.Error => Danger
@@ -134,6 +142,8 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
       wideCell(entry.message, msgCellId),
       cell(entry.loggerName, hideable = true, responsive = false),
       cell(entry.threadName, hideable = true, responsive = false),
+      cell(source.clientId, hideable = true, responsive = false),
+      cell(source.userAgent, hideable = true, responsive = false),
       td(cls := "cell-more", id := moreId)(a(href := "#")),
       td(cls := responsiveClass)(levelCell)
     )
@@ -164,7 +174,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
         chars.charAt(math.floor(math.random() * chars.length).toInt)
       .mkString
 
-  private def cell(content: String, hideable: Boolean = false, responsive: Boolean = true) =
+  private def cell(content: Modifier, hideable: Boolean = false, responsive: Boolean = true) =
     toCell(
       content,
       names(
@@ -177,7 +187,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
   private def wideCell(content: String, cellId: String) =
     td(cls := s"$CellContent $CellWide", id := cellId)(content)
 
-  private def toCell(content: String, clazz: String) =
+  private def toCell(content: Modifier, clazz: String) =
     td(cls := clazz)(content)
 
   private def names(ns: String*): String = ns.map(_.trim).filter(_.nonEmpty).mkString(" ")

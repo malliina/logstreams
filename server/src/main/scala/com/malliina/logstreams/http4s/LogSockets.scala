@@ -109,6 +109,8 @@ class LogSockets[F[_]: Async](
                 event.loggerName,
                 event.threadName,
                 event.level,
+                user.clientId,
+                user.userAgent,
                 event.stackTrace
               )
             F.pure(LogEntryInputs(events))

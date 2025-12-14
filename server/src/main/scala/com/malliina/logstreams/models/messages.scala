@@ -17,6 +17,8 @@ case class LogEntryInput(
   loggerName: String,
   threadName: String,
   level: LogLevel,
+  clientId: Option[LogClientId],
+  userAgent: Option[UserAgent],
   stackTrace: Option[String]
 )
 
@@ -31,12 +33,14 @@ case class LogEntryRow(
   logger: String,
   thread: String,
   level: LogLevel,
+  clientId: Option[LogClientId],
+  userAgent: Option[UserAgent],
   stacktrace: Option[String],
   added: Instant
 ):
   def toEvent = AppLogEvent(
     id,
-    SimpleLogSource(AppName.fromUsername(app), address),
+    SimpleLogSource(AppName.fromUsername(app), address, clientId, userAgent),
     LogEvent(
       timestamp.toEpochMilli,
       LogEntryRow.format(timestamp),

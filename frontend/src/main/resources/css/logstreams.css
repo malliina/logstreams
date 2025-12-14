@@ -220,3 +220,7 @@ h1, h2 {
 .form-row {
   max-width: 700px;
 }
+
+.stacktrace {
+  white-space: pre-wrap;
+}

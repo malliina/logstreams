@@ -17,7 +17,7 @@ object BaseSocket:
 
 class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.printer):
   private val statusElem = Option(elem("status"))
-  val socket: dom.WebSocket = openSocket(wsPath)
+  private val socket: dom.WebSocket = openSocket(wsPath)
 
   def handlePayload(payload: Json): Unit = ()
 
@@ -35,16 +35,12 @@ class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.printer):
     socket.send(asString)
 
   private def onMessage(msg: MessageEvent): Unit =
-//    if msg.`type` == "text" then
     parse(msg.data.toString).fold(
       fail => onJsonException(fail),
       json =>
         val isPing = json.hcursor.downField(EventKey).as[String].exists(_ == Ping)
-        if !isPing then
-          //          log.info(s"Handling json '$json'...")
-          handlePayload(json)
+        if !isPing then handlePayload(json)
     )
-//    else log.error(Exception(s"Unsupported WebSocket message of type '${msg.`type`}'."))
 
   private def onConnected(e: Event): Unit = showConnected()
 

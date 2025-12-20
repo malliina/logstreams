@@ -84,7 +84,7 @@ object LogstreamsConf:
   )
 
   private def devDatabaseConf(password: Password) = Conf(
-    url"jdbc:mariadb://localhost:3307/logstreams",
+    url"jdbc:mariadb://localhost:3306/logstreams",
     "logstreams",
     password,
     mariaDbDriver,

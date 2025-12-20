@@ -7,7 +7,7 @@ import io.circe.parser.parse
 import io.circe.syntax.EncoderOps
 import io.circe.{Decoder, DecodingFailure, Encoder, Json, ParsingFailure}
 import org.scalajs.dom
-import org.scalajs.dom.{CloseEvent, Event, MessageEvent}
+import org.scalajs.dom.{CloseEvent, Event, MessageEvent, WebSocket}
 
 import scala.util.Try
 
@@ -17,7 +17,10 @@ object BaseSocket:
 
 class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.printer):
   private val statusElem = Option(elem("status"))
-  private val socket: dom.WebSocket = openSocket(wsPath)
+  private var socket: dom.WebSocket = openSocket(wsPath)
+  dom.window.onfocus = e =>
+    if !Seq(WebSocket.OPEN, WebSocket.CONNECTING).contains(socket.readyState) then
+      socket = openSocket(wsPath)
 
   def handlePayload(payload: Json): Unit = ()
 

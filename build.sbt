@@ -15,7 +15,7 @@ val versions = new {
   val scala3 = "3.7.4"
   val scalatags = "0.13.1"
   val server = "0.7.0"
-  val util = "6.10.1"
+  val util = "6.10.3"
 }
 val webAuthDep = malliinaGroup %% "web-auth" % versions.util
 

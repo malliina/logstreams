@@ -24,6 +24,7 @@ import org.http4s.server.middleware.{CORS, CSRF, GZip, HSTS}
 import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.server.{Router, Server}
 import org.http4s.{HttpRoutes, Request, Response}
+import org.typelevel.ci.CIString
 
 import scala.concurrent.duration.{Duration, DurationInt}
 
@@ -117,13 +118,24 @@ trait AppResources:
         csrf
       )
 
+  private def corsAllowOrigin(origin: CIString): Boolean =
+    if BuildInfo.isProd then
+      val domains = Seq(
+        "logs.malliina.com",
+        "pics.malliina.com",
+        "api.malliina.com",
+        "www.boat-tracker.com",
+        "www.car-map.com"
+      )
+      domains.exists(d => origin.toString == s"https://$d")
+    else true
   private def makeHandler[F[_]: Async](
     service: Service[F],
     socketBuilder: WebSocketBuilder2[F],
     csrf: CSRFUtils.CSRFChecker[F]
   ) =
     csrf:
-      CORS.policy.withAllowOriginHost(_ => true):
+      CORS.policy.withAllowOriginHostCi(corsAllowOrigin):
         GZip:
           HSTS:
             orNotFound:

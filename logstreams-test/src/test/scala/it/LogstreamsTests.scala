@@ -43,7 +43,7 @@ class LogstreamsTests extends TestServerSuite:
     val message = "hello, world"
     val testEvent = LogEvent(
       System.currentTimeMillis(),
-      "now",
+      Option("now"),
       message,
       getClass.getName.stripSuffix("$"),
       "this thread",

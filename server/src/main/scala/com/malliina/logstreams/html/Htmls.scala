@@ -36,7 +36,7 @@ object Htmls:
     * @param isProd
     *   true if the app runs in production, false otherwise
     * @return
-    *   HTML templates with either prod or dev javascripts
+    *   HTML templates with either prod or dev JS
     */
   def forApp(appName: String, isProd: Boolean, assets: AssetsSource, csrfConf: CSRFConf): Htmls =
     val externalScripts = if isProd then Nil else FullUrl.build(LiveReload.script).toSeq

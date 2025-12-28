@@ -43,7 +43,7 @@ case class LogEntryRow(
     SimpleLogSource(AppName.fromUsername(app), address, clientId, userAgent),
     LogEvent(
       timestamp.toEpochMilli,
-      LogEntryRow.format(timestamp),
+      Option(LogEntryRow.format(timestamp)),
       message,
       logger,
       thread,

@@ -3,10 +3,11 @@ package com.malliina.logstreams.auth
 import cats.Applicative
 import cats.effect.kernel.Sync
 import cats.syntax.all.toFunctorOps
-import com.malliina.logstreams.http4s.{Http4sAuth, IdentityError, JWTError, MissingCredentials}
-import com.malliina.values.{Email, ErrorMessage, Password, Username}
+import com.malliina.http4s.QueryParsers
+import com.malliina.logstreams.http4s.{Http4sAuth, IdentityError, JWTError, MissingCredentials, SocketInfo}
+import com.malliina.values.{Email, ErrorMessage, IdToken, Password, Username}
 import com.malliina.web.PermissionError
-import org.http4s.Headers
+import org.http4s.{Headers, ParseFailure, QueryParamDecoder, Request}
 import org.http4s.headers.Authorization
 
 trait AuthBuilder:
@@ -14,11 +15,13 @@ trait AuthBuilder:
 
 trait Auther[F[_]]:
   def web: Http4sAuth[F]
-  def sources: Http4sAuthenticator[F, Username]
-  def viewers: Http4sAuthenticator[F, Username]
+  def sources: HeaderAuthenticator[F, Username]
+  def viewers: HeaderAuthenticator[F, Username]
+  def public: RequestAuthenticator[F, SocketInfo]
 
 class Auths[F[_]: Sync](
-  val sources: Http4sAuthenticator[F, Username],
+  val public: RequestAuthenticator[F, SocketInfo],
+  val sources: HeaderAuthenticator[F, Username],
   val web: Http4sAuth[F]
 ) extends Auther[F]:
   val viewers = Auths.viewers(web)
@@ -26,10 +29,37 @@ class Auths[F[_]: Sync](
 object Auths extends AuthBuilder:
   private val authorizedEmail = Email("malliina123@gmail.com")
 
-  def apply[F[_]: Sync](users: UserService[F], web: Http4sAuth[F]): Auther[F] =
-    new Auths(sources(users), web)
+  val tokenQueryName = "token"
 
-  def sources[F[_]: Sync](users: UserService[F]): Http4sAuthenticator[F, Username] =
+  given QueryParamDecoder[IdToken] = QueryParamDecoder.stringQueryParamDecoder.emap: str =>
+    IdToken.build(str).left.map(err => ParseFailure(err.message, err.message))
+
+  def apply[F[_]: Sync](users: UserService[F], web: Http4sAuth[F]): Auther[F] =
+    new Auths(public(users, web), sources(users), web)
+
+  def public[F[_]: Sync](
+    users: UserService[F],
+    web: Http4sAuth[F]
+  ): RequestAuthenticator[F, SocketInfo] =
+    (req: Request[F]) =>
+      val F = Sync[F]
+      val result: Either[IdentityError, SocketInfo] = for
+        token <- QueryParsers
+          .parse[IdToken](req.uri.query, tokenQueryName)
+          .left
+          .map(err => MissingCredentials(err.message.message, req.headers))
+        verified <- web.jwt.verify[SocketInfo](token).left.map(err => JWTError(err, req.headers))
+      yield verified
+      result
+        .map: socket =>
+          users
+            .exists(socket.app)
+            .map: exists =>
+              if exists then Right(socket)
+              else fail(req.headers)
+        .fold(err => F.pure(Left(err: IdentityError)), identity)
+
+  def sources[F[_]: Sync](users: UserService[F]): HeaderAuthenticator[F, Username] =
     (hs: Headers) =>
       val F = Sync[F]
       basic(hs)
@@ -44,7 +74,7 @@ object Auths extends AuthBuilder:
           identity
         )
 
-  def viewers[F[_]: Sync](auth: Http4sAuth[F]): Http4sAuthenticator[F, Username] =
+  def viewers[F[_]: Sync](auth: Http4sAuth[F]): HeaderAuthenticator[F, Username] =
     (hs: Headers) =>
       Applicative[F].pure(
         auth
@@ -68,5 +98,11 @@ object Auths extends AuthBuilder:
     MissingCredentials("Invalid credentials.", headers)
   )
 
-trait Http4sAuthenticator[F[_], U]:
+trait HeaderAuthenticator[F[_], U] extends RequestAuthenticator[F, U]:
   def authenticate(req: Headers): F[Either[IdentityError, U]]
+
+  override def authenticate(req: Request[F]): F[Either[IdentityError, U]] =
+    authenticate(req.headers)
+
+trait RequestAuthenticator[F[_], U]:
+  def authenticate(req: Request[F]): F[Either[IdentityError, U]]

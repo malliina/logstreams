@@ -93,10 +93,10 @@ class LogSockets[F[_]: Async](
   def source(user: UserRequest, socketBuilder: WebSocketBuilder2[F]): F[Response[F]] =
     val publishEvents: Pipe[F, WebSocketFrame, Unit] = _.evalMap:
       case Text(message, _) =>
-        log.debug(s"Received '$message' from ${user.user}.")
+        log.debug(s"Received '$message' from ${user.describe}.")
         val event = decode[LogEvents](message).fold(
           err =>
-            log.warn(s"Failed to decode '$message' from ${user.user}.")
+            log.warn(s"Failed to decode '$message' from ${user.describe}.")
             F.raiseError(JsonException(err, message))
           ,
           es =>
@@ -118,10 +118,9 @@ class LogSockets[F[_]: Async](
         event.flatMap: e =>
           publishLogged(e, logs)
       case f => F.delay(log.debug(s"Unknown WebSocket frame: $f"))
-    log.info(s"Server ${user.user} with agent ${user.userAgent.getOrElse("unknown")} joined.")
+    log.info(s"Source ${user.describe} with agent ${user.userAgent.getOrElse("unknown")} joined.")
     val id = com.malliina.web.Utils.randomString().take(7)
     val now = user.now
-    val date = LogSockets.dateTimeFormatter.format(now)
     val logSource =
       LogSource(
         AppName.fromUsername(user.user),
@@ -129,7 +128,7 @@ class LogSockets[F[_]: Async](
         user.userAgent,
         id,
         now.toInstant.toEpochMilli,
-        date,
+        LogSockets.dateTimeFormatter.format(now),
         LogEntryRow.format(now.toInstant)
       )
     socketBuilder
@@ -149,7 +148,8 @@ class LogSockets[F[_]: Async](
     connectedSources
       .updateAndGet(olds => LogSources(olds.sources.filterNot(_.id == src.id)))
       .flatMap: connecteds =>
-        log.info(s"Disconnection, now connected $connecteds")
+        val remaining = connecteds.sources.map(_.describe).mkString(", ")
+        log.info(s"Source ${src.describe} disconnected, now connected $remaining.")
         publishLogged(connecteds, admins)
 
   private def jsonTransform[T: Encoder](src: Stream[F, T]): Stream[F, Text] = src.map: t =>

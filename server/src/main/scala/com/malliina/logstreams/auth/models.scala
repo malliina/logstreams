@@ -38,7 +38,8 @@ case class UserPayload(username: Username) derives Codec.AsObject
 object UserPayload:
   def email(email: Email): UserPayload = apply(Username(email.value))
 
-sealed abstract class AuthProvider(val name: String)
+enum AuthProvider(val name: String):
+  case Google extends AuthProvider("google")
 
 object AuthProvider:
   val PromptKey = "prompt"
@@ -51,5 +52,3 @@ object AuthProvider:
 
   def unapply(str: String): Option[AuthProvider] =
     forString(str).toOption
-
-  case object Google extends AuthProvider("google")

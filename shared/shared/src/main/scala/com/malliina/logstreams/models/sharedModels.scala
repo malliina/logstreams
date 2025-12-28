@@ -55,6 +55,7 @@ object AppName extends ValidatingCompanion[String, AppName]:
   override def write(t: AppName): String = t
   def fromUsername(user: Username): AppName = user.name
   extension (an: AppName) def name: String = an
+  def unsafe(s: String): AppName = s
 
 opaque type LogClientId = String
 
@@ -64,7 +65,7 @@ object LogClientId extends ValidatingCompanion[String, LogClientId]:
     else Right(input.trim)
   override def write(t: LogClientId): String = t
   extension (lci: LogClientId) def id: String = lci
-
+  def random(): LogClientId = Randoms.randomString(7)
 opaque type UserAgent = String
 
 object UserAgent extends ValidatingCompanion[String, UserAgent]:
@@ -100,7 +101,8 @@ case class LogSource(
   joined: Long,
   joinedFormatted: String,
   timeJoined: String
-) derives Codec.AsObject
+) derives Codec.AsObject:
+  def describe = s"$name ($id)"
 
 sealed trait GenericEvent
 sealed trait FrontEvent extends GenericEvent
@@ -134,7 +136,7 @@ case class LogEventOld(
   def toEvent =
     LogEvent(
       timeStamp,
-      timeFormatted,
+      Option(timeFormatted),
       message,
       loggerName,
       threadName,
@@ -142,9 +144,12 @@ case class LogEventOld(
       stackTrace
     )
 
+/** @param timestamp
+  *   in millis
+  */
 case class LogEvent(
   timestamp: Long,
-  timeFormatted: String,
+  timeFormatted: Option[String],
   message: String,
   loggerName: String,
   threadName: String,

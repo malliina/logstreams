@@ -15,7 +15,7 @@ import com.malliina.logstreams.db.StreamsQuery
 import com.malliina.logstreams.html.Htmls
 import com.malliina.logstreams.html.Htmls.{PasswordKey, UsernameKey}
 import com.malliina.logstreams.http4s.Service.{log, given}
-import com.malliina.logstreams.models.AppName
+import com.malliina.logstreams.models.{AppName, LogClientId}
 import com.malliina.util.AppLogger
 import com.malliina.values.{Email, Password, Username}
 import com.malliina.web.*
@@ -28,7 +28,7 @@ import org.http4s.server.middleware.CSRF
 import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.{BasicCredentials as _, Callback as _, *}
 
-import java.time.OffsetDateTime
+import scala.concurrent.duration.DurationInt
 
 object Service:
   private val log = AppLogger(getClass)
@@ -72,6 +72,21 @@ class Service[F[_]: Async](
     case req @ GET -> Root / "sources" =>
       webAuth(req): src =>
         ok(htmls.sources)
+    case req @ GET -> Root / "sources" / "token" =>
+      val info = SocketInfo(AppName.unsafe("app"), LogClientId.random())
+      val signed = auths.web.jwt.sign(info, ttl = 1.hour)
+      ok(TokenResponse(signed))
+    case req @ POST -> Root / "sources" / "token" =>
+      req
+        .decodeJson[TokenRequest]
+        .flatMap: body =>
+          val app = body.app
+          val suffixes = Seq("ios", "android", "web")
+          val legalApp = suffixes.exists(s => app.name.endsWith(s))
+          if legalApp then
+            val signed = auths.web.jwt.sign(SocketInfo(app, LogClientId.random()), ttl = 1.hour)
+            ok(TokenResponse(signed))
+          else unauthorized(Errors.single(s"Illegal app: '$app'."))
     case req @ GET -> Root / "users" =>
       webAuth(req): user =>
         val feedback = req.feedbackAs[UserFeedback]
@@ -151,10 +166,14 @@ class Service[F[_]: Async](
       webAuth(req): principal =>
         sockets.admin(principal, socketBuilder)
     case req @ GET -> Root / "ws" / "sources" =>
-      sourceAuth(req.headers): src =>
+      sourceAuth(req): src =>
         log.info(s"Connection authenticated for source '$src'.")
+        sockets.source(UserRequest.req(src, req), socketBuilder)
+    case req @ GET -> Root / "ws" / "sources" / "clients" =>
+      publicAuth(req): src =>
+        log.info(s"Opening connection for app '${src.describe}'.")
         sockets.source(
-          UserRequest(src, req.headers, Urls.address(req), OffsetDateTime.now()),
+          UserRequest.make(Username(src.app.name), req, Option(src.clientId)),
           socketBuilder
         )
     case req @ GET -> Root / "oauth" =>
@@ -266,25 +285,38 @@ class Service[F[_]: Async](
       .authenticate(req.headers)
       .flatMap: e =>
         e.map: user =>
-          code(UserRequest(user, req.headers, Urls.address(req), OffsetDateTime.now()))
+          code(UserRequest.req(user, req))
         .recover: err =>
             log.debug(s"Unauthorized. $err")
             unauthorized(Errors.single(s"Unauthorized."))
 
-  private def sourceAuth(headers: Headers)(code: Username => F[Response[F]]) =
-    auths.sources
-      .authenticate(headers)
+  private def sourceAuth(req: Request[F])(code: Username => F[Response[F]]) =
+    authed(req, auths.sources): user =>
+      code(user)
+
+  private def publicAuth(req: Request[F])(code: SocketInfo => F[Response[F]]) =
+    authed(req, auths.public): socket =>
+      code(socket)
+
+  private def authed[U, R](req: Request[F], auther: RequestAuthenticator[F, U])(
+    code: U => F[Response[F]]
+  ) =
+    auther
+      .authenticate(req)
       .flatMap: e =>
-        e.map: user =>
-          code(user)
+        e.map: socket =>
+          code(socket)
         .recover: err =>
             log.warn(s"Unauthorized. $err")
-            Unauthorized(
-              `WWW-Authenticate`(NonEmptyList.of(Challenge("myscheme", "myrealm"))),
-              Errors.single(s"Unauthorized.")
-            )
+            unauthorizedJson()
 
   private def buildMessage(req: UserRequest, message: String) =
     s"User '${req.user}' from '${req.address}' $message."
 
   private def unauthorized(errors: Errors) = seeOther(LogRoutes.googleStart)
+
+  private def unauthorizedJson(message: String = "Unauthorized."): F[Response[F]] =
+    Unauthorized(
+      `WWW-Authenticate`(NonEmptyList.of(Challenge("myscheme", "myrealm"))),
+      Errors.single(message)
+    ).map(_.putHeaders(noCache))

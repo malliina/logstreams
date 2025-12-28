@@ -138,7 +138,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
       .getOrElse(level.name)
     val frag = tr(cls := rowClass)(
       cell(event.source.name.name),
-      cell(entry.timeFormatted),
+      cell(entry.timeFormatted.getOrElse("-")),
       wideCell(entry.message, msgCellId),
       cell(entry.loggerName, hideable = true, responsive = false),
       cell(entry.threadName, hideable = true, responsive = false),
@@ -154,7 +154,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
     div(
       div(cls := "mobile-header")(
         span(cls := "mobile-app")(event.source.name.name),
-        span(entry.timeFormatted)
+        span(entry.timeFormatted.getOrElse("-"))
       ),
       div(cls := "mobile-message")(event.event.message),
       entry.stackTrace.fold(modifier()): stackTrace =>

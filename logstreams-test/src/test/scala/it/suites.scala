@@ -12,7 +12,8 @@ import com.malliina.http.UrlSyntax.url
 import com.malliina.http.io.HttpClientIO
 import com.malliina.logback.LogbackUtils
 import com.malliina.logstreams.auth.*
-import com.malliina.logstreams.http4s.{AppResources, Http4sAuth, ServerComponents}
+import com.malliina.logstreams.http4s.{AppResources, Http4sAuth, SocketInfo}
+import com.malliina.logstreams.models.{AppName, LogClientId}
 import com.malliina.logstreams.{LocalConf, LogstreamsConf}
 import com.malliina.values.{Password, Username}
 import munit.AnyFixture
@@ -83,5 +84,7 @@ abstract class TestServerSuite extends munit.CatsEffectSuite with ServerSuite
 
 class TestAuther[F[_]: Sync](users: UserService[F], val web: Http4sAuth[F], testUser: Username)
   extends Auther[F]:
-  override def sources: Http4sAuthenticator[F, Username] = Auths.sources(users)
-  override def viewers: Http4sAuthenticator[F, Username] = hs => Sync[F].pure(Right(testUser))
+  override def sources: HeaderAuthenticator[F, Username] = Auths.sources(users)
+  override def viewers: HeaderAuthenticator[F, Username] = hs => Sync[F].pure(Right(testUser))
+  override def public: RequestAuthenticator[F, SocketInfo] = req =>
+    Sync[F].pure(Right(SocketInfo(AppName.fromUsername(testUser), LogClientId.random())))

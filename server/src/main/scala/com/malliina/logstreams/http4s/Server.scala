@@ -14,14 +14,13 @@ import com.malliina.logstreams.auth.{AuthBuilder, Auther, Auths, JWT}
 import com.malliina.logstreams.client.LogstreamsUtils
 import com.malliina.logstreams.db.{DoobieDatabaseAuth, DoobieLogsDatabase}
 import com.malliina.logstreams.html.{AssetsSource, Htmls}
-import com.malliina.logstreams.http4s.Server.getClass
 import com.malliina.logstreams.models.{AppLogEvents, LogEntryInputs, LogSources}
 import com.malliina.logstreams.{LogConf, LogstreamsConf}
 import com.malliina.util.AppLogger
 import com.malliina.web.GoogleAuthFlow
 import fs2.concurrent.Topic
 import org.http4s.ember.server.EmberServerBuilder
-import org.http4s.server.middleware.{CSRF, GZip, HSTS}
+import org.http4s.server.middleware.{CORS, CSRF, GZip, HSTS}
 import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.server.{Router, Server}
 import org.http4s.{HttpRoutes, Request, Response}
@@ -124,13 +123,14 @@ trait AppResources:
     csrf: CSRFUtils.CSRFChecker[F]
   ) =
     csrf:
-      GZip:
-        HSTS:
-          orNotFound:
-            Router(
-              "/" -> service.routes(socketBuilder),
-              "/assets" -> StaticService[F].routes
-            )
+      CORS.policy.withAllowOriginHost(_ => true):
+        GZip:
+          HSTS:
+            orNotFound:
+              Router(
+                "/" -> service.routes(socketBuilder),
+                "/assets" -> StaticService[F].routes
+              )
 
   private def orNotFound[F[_]: Async](
     rs: HttpRoutes[F]

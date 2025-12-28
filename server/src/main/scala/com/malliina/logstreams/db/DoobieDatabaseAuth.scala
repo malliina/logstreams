@@ -6,6 +6,7 @@ import com.malliina.database.DoobieDatabase
 import com.malliina.logstreams.auth.UserError.{AlreadyExists, DoesNotExist}
 import com.malliina.logstreams.auth.{BasicCredentials, UserService}
 import com.malliina.logstreams.db.DoobieDatabaseAuth.log
+import com.malliina.logstreams.models.AppName
 import com.malliina.util.AppLogger
 import com.malliina.values.{Password, Username}
 import doobie.free.connection.ConnectionIO
@@ -44,9 +45,14 @@ class DoobieDatabaseAuth[F[_]](db: DoobieDatabase[F]) extends UserService[F]:
         Right(())
       else Left(DoesNotExist(user))
 
-  def isValid(creds: BasicCredentials) = db.run:
+  def isValid(creds: BasicCredentials): F[Boolean] = db.run:
     val hashed = hash(creds)
     sql"select exists(select USER from USERS where USER = ${creds.username} and PASS_HASH = $hashed)"
+      .query[Boolean]
+      .unique
+
+  def exists(app: AppName): F[Boolean] = db.run:
+    sql"select exists(select USER from USERS where USER = $app)"
       .query[Boolean]
       .unique
 

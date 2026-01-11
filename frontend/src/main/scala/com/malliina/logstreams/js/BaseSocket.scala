@@ -9,8 +9,6 @@ import io.circe.{Decoder, DecodingFailure, Encoder, Json, ParsingFailure}
 import org.scalajs.dom
 import org.scalajs.dom.{CloseEvent, Event, MessageEvent, WebSocket}
 
-import scala.util.Try
-
 object BaseSocket:
   val EventKey = "event"
   val Ping = "ping"

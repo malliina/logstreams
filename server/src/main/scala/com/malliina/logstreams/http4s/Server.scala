@@ -129,6 +129,7 @@ trait AppResources:
       )
       domains.exists(d => origin.toString == s"https://$d")
     else true
+
   private def makeHandler[F[_]: Async](
     service: Service[F],
     socketBuilder: WebSocketBuilder2[F],

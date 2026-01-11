@@ -15,6 +15,7 @@ import com.malliina.logstreams.auth.*
 import com.malliina.logstreams.http4s.{AppResources, Http4sAuth, SocketInfo}
 import com.malliina.logstreams.models.{AppName, LogClientId}
 import com.malliina.logstreams.{LocalConf, LogstreamsConf}
+import com.malliina.values.Literals.user
 import com.malliina.values.{Password, Username}
 import munit.AnyFixture
 
@@ -76,7 +77,7 @@ trait ServerSuite extends MUnitDatabaseSuite:
 
   def testAuths: AuthBuilder = new AuthBuilder:
     override def apply[F[_]: Sync](users: UserService[F], web: Http4sAuth[F]) =
-      TestAuther(users, web, Username("u"))
+      TestAuther(users, web, user"u")
 
   override def munitFixtures: Seq[AnyFixture[?]] = Seq(db, server)
 

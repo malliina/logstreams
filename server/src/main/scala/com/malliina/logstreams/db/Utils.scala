@@ -6,4 +6,4 @@ import org.apache.commons.codec.digest.DigestUtils
 
 object Utils:
   def hash(creds: BasicCredentials): Password =
-    Password(DigestUtils.md5Hex(creds.username.name + ":" + creds.password.pass))
+    Password.unsafe(DigestUtils.md5Hex(creds.username.name + ":" + creds.password.pass))

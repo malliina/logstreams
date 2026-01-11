@@ -131,14 +131,14 @@ class Htmls(
             div(cls := DropdownMenu, id := AppsDropdownMenuId)(
               apps.map: app =>
                 val included =
-                  query.copy(apps = (query.apps.toSet + Username(app.name)).toList)
+                  query.copy(apps = (query.apps.toSet + Username.unsafe(app.name)).toList)
                 a(cls := DropdownItem, href := move(included))(app)
             )
           ),
           div(id := AppsFiltered)(
             query.apps.map: app =>
               val excluded =
-                query.copy(apps = (query.apps.toSet - Username(app.name)).toList)
+                query.copy(apps = (query.apps.toSet - Username.unsafe(app.name)).toList)
               a(role := "button", cls := "btn btn-info btn-sm", href := move(excluded))(app)
           )
         )

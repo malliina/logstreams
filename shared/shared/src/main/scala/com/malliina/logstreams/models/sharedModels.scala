@@ -4,11 +4,11 @@ import cats.syntax.all.toFunctorOps
 import com.malliina.logstreams.models
 import com.malliina.logstreams.models.Limits.DefaultLimit
 import com.malliina.logstreams.models.LogsJson.evented
-import com.malliina.values.Literals.{err, nonNeg}
 import com.malliina.values.*
-import io.circe.*
-import io.circe.generic.semiauto.*
-import io.circe.syntax.*
+import com.malliina.values.Literals.{err, nonNeg}
+import io.circe.generic.semiauto.{deriveCodec, deriveDecoder, deriveEncoder}
+import io.circe.syntax.EncoderOps
+import io.circe.{Codec, Decoder, DecodingFailure, Encoder, JsonObject}
 
 object Queries:
   val From = "from"
@@ -46,40 +46,37 @@ object LogLevel extends EnumCompanion[String, LogLevel]:
 
 opaque type AppName = String
 
-object AppName extends ValidatingCompanion[String, AppName]:
+object AppName extends ValidatedString[AppName]:
   val Key = "app"
-
   override def build(input: String): Either[ErrorMessage, AppName] =
     if input.isBlank then Left(err"App name must not be blank.")
     else Right(input.trim)
   override def write(t: AppName): String = t
   def fromUsername(user: Username): AppName = user.name
   extension (an: AppName) def name: String = an
-  def unsafe(s: String): AppName = s
 
 opaque type LogClientId = String
 
-object LogClientId extends ValidatingCompanion[String, LogClientId]:
+object LogClientId extends ValidatedString[LogClientId]:
   override def build(input: String): Either[ErrorMessage, LogClientId] =
     if input.isBlank then Left(err"Client ID must not be blank.")
     else Right(input.trim)
   override def write(t: LogClientId): String = t
   extension (lci: LogClientId) def id: String = lci
   def random(): LogClientId = Randoms.randomString(7)
+
 opaque type UserAgent = String
 
-object UserAgent extends ValidatingCompanion[String, UserAgent]:
+object UserAgent extends ValidatedString[UserAgent]:
   override def build(input: String): Either[ErrorMessage, UserAgent] =
     if input.isBlank then Left(err"User agent must not be blank.")
-    else Right(input.trim)
+    else Right(input.trim.take(100))
   override def write(ua: UserAgent): String = ua
   extension (ua: UserAgent) def string: String = ua
 
 opaque type LogEntryId = Long
 
-object LogEntryId extends ValidatingCompanion[Long, LogEntryId]:
-  def unsafe(long: Long): LogEntryId =
-    build(long).fold(err => throw IllegalArgumentException(err.message), identity)
+object LogEntryId extends ValidatedLong[LogEntryId]:
   override def build(input: Long): Either[ErrorMessage, LogEntryId] =
     if input < 0 then Left(err"Log entry ID must be non-negative.")
     else Right(input)

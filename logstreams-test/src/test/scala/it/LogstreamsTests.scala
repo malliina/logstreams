@@ -10,33 +10,34 @@ import com.malliina.logstreams.http4s.LogRoutes
 import com.malliina.logstreams.models.*
 import com.malliina.util.AppLogger
 import com.malliina.values.{Password, Username}
+import com.malliina.values.Literals.{pass, user}
 import fs2.Stream
 import io.circe.{Decoder, Json}
 import it.LogstreamsTests.testUsername
 import org.http4s.Uri
 
 object LogstreamsTests:
-  val testUsername = Username("u")
+  val testUsername = user"u"
 
 class LogstreamsTests extends TestServerSuite:
   type TestSocket = ReconnectingSocket[IO, OkSocket[IO]]
   val log = AppLogger(getClass)
 
-  val testUser = testUsername.name
-  val testPass = "p"
+  val testUser = testUsername
+  val testPass = pass"p"
   val testCreds = creds(testUser)
 
-  def creds(u: String) = BasicCredentials(Username(u), Password(testPass))
+  def creds(u: Username) = BasicCredentials(u, testPass)
   def port = server().server.address.getPort
   def components = server().app
   def users = components.users
 
   http.test("can open socket"): client =>
-    val c = creds("u1")
+    val c = creds(user"u1")
     users
       .add(c)
       .flatMap: _ =>
-        withSource(c.username.name, client): socket =>
+        withSource(c.username, client): socket =>
           IO(assertEquals(1, 1))
 
   http.test("sent message is received by listener"): client =>
@@ -51,7 +52,7 @@ class LogstreamsTests extends TestServerSuite:
       None
     )
 
-    val user = "u2"
+    val user = user"u2"
     val task = withSource(user, client): source =>
       Deferred[IO, AppLogEvents].flatMap: p =>
         withListener(client): listener =>
@@ -74,7 +75,7 @@ class LogstreamsTests extends TestServerSuite:
             val events = jsonResult.events
             assertEquals(events.size, 1)
             val event = events.head
-            assertEquals(event.source.name, AppName.fromUsername(Username(user)))
+            assertEquals(event.source.name, AppName.fromUsername(user))
             assertEquals(event.event.message, message)
     for
       _ <- users.add(creds(user))
@@ -93,7 +94,7 @@ class LogstreamsTests extends TestServerSuite:
   http.test(
     "admin receives status on connect and updates when a source connects and disconnects"
   ): client =>
-    val user = "u3"
+    val user = user"u3"
     Deferred[IO, Json].flatMap: status =>
       Deferred[IO, Json].flatMap: update =>
         Deferred[IO, Json].flatMap: disconnectedPromise =>
@@ -123,7 +124,7 @@ class LogstreamsTests extends TestServerSuite:
                         assert(upd.isRight)
                         val sources = upd.toOption.get.sources
                         assertEquals(sources.size, 1)
-                        assertEquals(sources.head.name.name, user)
+                        assertEquals(sources.head.name.name, user.name)
                         val task22 = withAdminEvents(client): jsons =>
                           jsons.take(1).compile.toList.map(_.head)
                         task22.map: adminStatusJson =>
@@ -151,11 +152,11 @@ class LogstreamsTests extends TestServerSuite:
   def withListener[T](httpClient: HttpClientF2[IO])(code: TestSocket => IO[T]) =
     openAuthedSocket(testUser, LogRoutes.sockets.logs, httpClient)(code)
 
-  def withSource[T](username: String, httpClient: HttpClientF2[IO])(code: TestSocket => IO[T]) =
+  def withSource[T](username: Username, httpClient: HttpClientF2[IO])(code: TestSocket => IO[T]) =
     openAuthedSocket(username, LogRoutes.sockets.sources, httpClient)(code)
 
   def openAuthedSocket[T](
-    username: String,
+    username: Username,
     uri: Uri,
     httpClient: HttpClientF2[IO]
   )(
@@ -163,12 +164,12 @@ class LogstreamsTests extends TestServerSuite:
   ): IO[T] =
     val wsUrl = FullUrl("ws", s"localhost:$port", uri.renderString)
     val kvs: List[KeyValue] = List(
-      HttpUtil.Authorization -> HttpUtil.authorizationValue(username, testPass)
+      HttpUtil.Authorization -> HttpUtil.authorizationValue(username.name, testPass.pass)
     )
     openSocket(wsUrl, kvs, httpClient)(code)
 
   def openAuthedSocketEvents[T](
-    username: String,
+    username: Username,
     uri: Uri,
     httpClient: HttpClientF2[IO]
   )(
@@ -176,7 +177,7 @@ class LogstreamsTests extends TestServerSuite:
   ): IO[T] =
     val wsUrl = FullUrl("ws", s"localhost:$port", uri.renderString)
     val kvs: List[KeyValue] = List(
-      HttpUtil.Authorization -> HttpUtil.authorizationValue(username, testPass)
+      HttpUtil.Authorization -> HttpUtil.authorizationValue(username.name, testPass.pass)
     )
     openSocket2(wsUrl, kvs, httpClient)(code)
 

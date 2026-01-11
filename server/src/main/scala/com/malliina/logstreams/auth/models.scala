@@ -36,7 +36,7 @@ object CookieConf:
 case class UserPayload(username: Username) derives Codec.AsObject
 
 object UserPayload:
-  def email(email: Email): UserPayload = apply(Username(email.value))
+  def email(email: Email): UserPayload = apply(Username.unsafe(email.value))
 
 enum AuthProvider(val name: String):
   case Google extends AuthProvider("google")

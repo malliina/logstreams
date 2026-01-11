@@ -24,8 +24,5 @@ trait LogRoutes:
 
   def removeUser(user: Username) = uri"/users" / user.name / "delete"
 
-//  private def toLogs(query: StreamsQuery): Uri =
-//    toLogs(StreamsQuery.toQuery(query))
-
   def toLogs(qs: Map[String, NonEmptyList[String]]): Uri =
     logs.withMultiValueQueryParams(qs.map((k, v) => k -> v.toList))

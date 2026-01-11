@@ -5,6 +5,7 @@ import cats.effect.kernel.Sync
 import cats.syntax.all.toFunctorOps
 import com.malliina.http4s.QueryParsers
 import com.malliina.logstreams.http4s.{Http4sAuth, IdentityError, JWTError, MissingCredentials, SocketInfo}
+import com.malliina.util.AppLogger
 import com.malliina.values.{Email, ErrorMessage, IdToken, Password, Username}
 import com.malliina.web.PermissionError
 import org.http4s.{Headers, ParseFailure, QueryParamDecoder, Request}
@@ -27,9 +28,10 @@ class Auths[F[_]: Sync](
   val viewers = Auths.viewers(web)
 
 object Auths extends AuthBuilder:
-  private val authorizedEmail = Email("malliina123@gmail.com")
+  private val log = AppLogger(getClass)
+  private val authorizedEmail = Email.unsafe("malliina123@gmail.com")
 
-  val tokenQueryName = "token"
+  private val tokenQueryName = "token"
 
   given QueryParamDecoder[IdToken] = QueryParamDecoder.stringQueryParamDecoder.emap: str =>
     IdToken.build(str).left.map(err => ParseFailure(err.message, err.message))
@@ -56,7 +58,13 @@ object Auths extends AuthBuilder:
             .exists(socket.app)
             .map: exists =>
               if exists then Right(socket)
-              else fail(req.headers)
+              else
+                Left(
+                  JWTError(
+                    PermissionError(ErrorMessage(s"App '${socket.app}' is invalid.")),
+                    req.headers
+                  ): IdentityError
+                )
         .fold(err => F.pure(Left(err: IdentityError)), identity)
 
   def sources[F[_]: Sync](users: UserService[F]): HeaderAuthenticator[F, Username] =
@@ -89,7 +97,11 @@ object Auths extends AuthBuilder:
     .map: h =>
       h.credentials match
         case org.http4s.BasicCredentials(user, pass) =>
-          Right(com.malliina.logstreams.auth.BasicCredentials(Username(user), Password(pass)))
+          val result = for
+            username <- Username.build(user)
+            password <- Password.build(pass)
+          yield com.malliina.logstreams.auth.BasicCredentials(username, password)
+          result.left.map(err => MissingCredentials(err.message, hs))
         case _ =>
           Left(MissingCredentials("Basic auth expected.", hs))
     .getOrElse(Left(MissingCredentials("No credentials.", hs)))

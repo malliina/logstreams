@@ -77,7 +77,8 @@ case class StreamsQuery(
   query: Option[String]
 ) extends QueryInfo:
   def queryStar = query.map(q => s"$q*")
-  def describe: String = s"$summary time ${timeRange.describe} order $order"
+  def describe(formatter: DateTimeFormatter): String =
+    s"$summary time ${timeRange.formatted(formatter)} order $order"
 
   def toJs(dtf: DateTimeFormatter) =
     SearchInfo(apps, level, timeRange.formatted(dtf), limits, query)
@@ -87,6 +88,8 @@ object StreamsQuery:
   val Limit = "limit"
   val Offset = "offset"
   val Query = Queries.Q
+
+  given QueryParamDecoder[Username] = QueryParsers.decoder(Username.build)
 
   def default = StreamsQuery(
     Nil,
@@ -98,7 +101,7 @@ object StreamsQuery:
   )
 
   def fromQuery(q: Query, now: Instant): Either[Errors, StreamsQuery] = for
-    apps <- Right(q.multiParams.getOrElse(AppKey, Nil).map(s => Username(s)))
+    apps <- QueryParsers.list[Username](AppKey, q)
     level <-
       LogLevel
         .build(q.params.getOrElse(LogLevel.Key, LogLevel.Info.name))
@@ -126,19 +129,19 @@ object StreamsQuery:
         .map: list =>
           k -> list
 
-sealed abstract class SortOrder(val name: String):
+enum SortOrder(val name: String):
+  case Ascending extends SortOrder("asc")
+  case Descending extends SortOrder("desc")
+
   override def toString: String = name
 
 object SortOrder extends StringEnumCompanion[SortOrder]:
   val Order = "order"
+
   val asc: SortOrder = Ascending
   val desc: SortOrder = Descending
   val default: SortOrder = desc
-
   val all: Seq[SortOrder] = Seq(asc, desc)
-
-  case object Ascending extends SortOrder("asc")
-  case object Descending extends SortOrder("desc")
 
   given QueryParamDecoder[SortOrder] = QueryParsers.decoder[SortOrder](build)
 

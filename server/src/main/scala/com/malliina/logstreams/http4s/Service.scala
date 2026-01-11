@@ -173,7 +173,7 @@ class Service[F[_]: Async](
       publicAuth(req): src =>
         log.info(s"Opening connection for app '${src.describe}'.")
         sockets.source(
-          UserRequest.make(Username(src.app.name), req, Option(src.clientId)),
+          UserRequest.make(Username.unsafe(src.app.name), req, Option(src.clientId)),
           socketBuilder
         )
     case req @ GET -> Root / "oauth" =>
@@ -307,7 +307,7 @@ class Service[F[_]: Async](
         e.map: socket =>
           code(socket)
         .recover: err =>
-            log.warn(s"Unauthorized. $err")
+            log.warn(s"Unauthorized request to ${req.uri}. $err")
             unauthorizedJson()
 
   private def buildMessage(req: UserRequest, message: String) =

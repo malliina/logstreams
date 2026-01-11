@@ -10,7 +10,7 @@ import scalatags.generic.Frag
 trait Extractors:
   object UsernameVar:
     def unapply(str: String): Option[Username] =
-      if str.trim.nonEmpty then Option(Username(str.trim)) else None
+      if str.trim.nonEmpty then Username.build(str.trim).toOption else None
 
 trait MyScalatagsInstances:
   given scalatagsEncoder[F[_], C <: Frag[?, String]](using

@@ -151,7 +151,9 @@ class Service[F[_]: Async](
             )
     case req @ GET -> Root / "ws" / "logs" =>
       logsRequest(req): (query, user) =>
-        log.info(s"Opening log stream with ${query.describe} for '$user'...")
+        log.info(
+          s"Opening log stream with ${query.describe(LogSockets.helsinkiFormatter)} for '$user'..."
+        )
         sockets.listener(query, socketBuilder)
     case req @ GET -> Root / "logs" / "history" =>
       logsRequest(req): (query, user) =>

@@ -4,7 +4,7 @@ import cats.effect.kernel.{Async, Ref}
 import cats.syntax.all.{toFlatMapOps, toFunctorOps}
 import com.malliina.logback.{LogbackFormatting, TimeFormatter}
 import com.malliina.logstreams.db.{LogsDatabase, StreamsQuery}
-import com.malliina.logstreams.http4s.LogSockets.{instantFormatter, log}
+import com.malliina.logstreams.http4s.LogSockets.{helsinkiFormatter, instantFormatter, log}
 import com.malliina.logstreams.models.*
 import com.malliina.util.AppLogger
 import fs2.concurrent.Topic
@@ -25,6 +25,8 @@ object LogSockets:
   private val log = AppLogger(getClass)
   private val dateTimeFormatter = DateTimeFormatter.ISO_DATE_TIME
   private val instantFormatter = DateTimeFormatter.ISO_INSTANT
+  val helsinkiFormatter =
+    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(TimeFormatter.helsinki)
 
 class LogSockets[F[_]: Async](
   logs: Topic[F, LogEntryInputs],
@@ -34,8 +36,6 @@ class LogSockets[F[_]: Async](
   val db: LogsDatabase[F]
 ):
   val F = Async[F]
-  private val formatter =
-    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(TimeFormatter.helsinki)
   private val savedEvents: Stream[F, AppLogEvents] = logs
     .subscribe(100)
     .evalMap: ins =>
@@ -63,7 +63,7 @@ class LogSockets[F[_]: Async](
         subscription.map: es =>
           es.filter(e => query.apps.exists(app => app.name == e.source.name.name))
 
-    val info = query.toJs(formatter)
+    val info = query.toJs(helsinkiFormatter)
     val logEvents = Stream(MetaEvent.loading(info)) ++ Stream
       .eval(db.events(query))
       .flatMap: history =>

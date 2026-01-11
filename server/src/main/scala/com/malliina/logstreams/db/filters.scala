@@ -28,6 +28,8 @@ case class TimeRange(from: Option[Instant], to: Option[Instant]):
     to.map(dtf.format)
   )
 
+  override def toString: String = describe
+
 object TimeRange:
   private val From = Queries.From
   private val To = Queries.To
@@ -78,7 +80,7 @@ case class StreamsQuery(
 ) extends QueryInfo:
   def queryStar = query.map(q => s"$q*")
   def describe(formatter: DateTimeFormatter): String =
-    s"$summary time ${timeRange.formatted(formatter)} order $order"
+    s"$summary${timeRange.formatted(formatter).describe} order $order"
 
   def toJs(dtf: DateTimeFormatter) =
     SearchInfo(apps, level, timeRange.formatted(dtf), limits, query)

@@ -2,9 +2,9 @@ package com.malliina.logstreams.http4s
 
 import cats.effect.kernel.{Async, Ref}
 import cats.syntax.all.{toFlatMapOps, toFunctorOps}
-import com.malliina.logback.{LogbackFormatting, TimeFormatter}
+import com.malliina.logback.TimeFormatter
 import com.malliina.logstreams.db.{LogsDatabase, StreamsQuery}
-import com.malliina.logstreams.http4s.LogSockets.{helsinkiFormatter, instantFormatter, log}
+import com.malliina.logstreams.http4s.LogSockets.{helsinkiFormatter, log}
 import com.malliina.logstreams.models.*
 import com.malliina.util.AppLogger
 import fs2.concurrent.Topic

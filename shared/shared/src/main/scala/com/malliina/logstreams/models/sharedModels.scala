@@ -194,10 +194,12 @@ object Limits:
 
 case class FormattedTimeRange(from: Option[String], to: Option[String]) derives Codec.AsObject:
   def describe = (from, to) match
-    case (Some(f), Some(t)) => s" between $f - $t"
-    case (None, Some(t))    => s" until $t"
-    case (Some(f), None)    => s" starting $f"
+    case (Some(f), Some(t)) => s" time between $f - $t"
+    case (None, Some(t))    => s" time until $t"
+    case (Some(f), None)    => s" time starting $f"
     case other              => ""
+
+  override def toString: String = describe
 
 trait QueryInfo:
   def apps: Seq[Username]

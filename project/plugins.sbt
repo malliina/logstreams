@@ -8,7 +8,7 @@ Seq(
   "com.malliina" % "sbt-filetree" % utilsVersion,
   "com.malliina" % "sbt-nodejs" % utilsVersion,
   "org.portable-scala" % "sbt-scalajs-crossproject" % "1.3.2",
-  "org.scalameta" % "sbt-scalafmt" % "2.5.5",
+  "org.scalameta" % "sbt-scalafmt" % "2.5.6",
   "com.eed3si9n" % "sbt-assembly" % "2.3.1",
-  "com.github.sbt" % "sbt-native-packager" % "1.11.1"
+  "com.github.sbt" % "sbt-native-packager" % "1.11.7"
 ) map addSbtPlugin

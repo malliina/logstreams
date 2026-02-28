@@ -102,14 +102,7 @@ class Htmls(
         ),
         divClass("col-sm-2 col-md-2 col-lg-1")(
           div(id := LogLevelDropdown, cls := "dropdown")(
-            button(
-              id := LogLevelDropdownButton,
-              cls := s"btn btn-info btn-sm $DropdownToggle",
-              tpe := "button",
-              data("bs-toggle") := "dropdown",
-              aria.haspopup := "true",
-              aria.expanded := "false"
-            )(query.level),
+            dropdown(LogLevelDropdownButton, "info")(query.level),
             div(cls := DropdownMenu, id := LogLevelDropdownMenuId)(
               LogLevel.all.map: l =>
                 a(
@@ -121,13 +114,7 @@ class Htmls(
         ),
         divClass("col-sm-6 col-md-7 mt-2 mb-2 mt-sm-0")(
           div(id := AppsDropdown, cls := "dropdown")(
-            button(
-              cls := s"btn btn-primary btn-sm $DropdownToggle",
-              tpe := "button",
-              data("bs-toggle") := "dropdown",
-              aria.haspopup := "true",
-              aria.expanded := "false"
-            )("Apps"),
+            dropdown("dd", "primary")("Apps"),
             div(cls := DropdownMenu, id := AppsDropdownMenuId)(
               apps.map: app =>
                 val included =
@@ -171,6 +158,15 @@ class Htmls(
       logEntriesTable(LogTableId)(thead(id := TableHeadId), tbody(id := TableBodyId)),
       pageNav(query)
     )
+
+  private def dropdown(identifier: String, flavor: String) = button(
+    id := identifier,
+    cls := s"btn btn-$flavor btn-sm $DropdownToggle",
+    tpe := "button",
+    data("bs-toggle") := "dropdown",
+    aria.haspopup := "true",
+    aria.expanded := "false"
+  )
 
   private def names(ns: String*): String = ns.map(_.trim).filter(_.nonEmpty).mkString(" ")
 

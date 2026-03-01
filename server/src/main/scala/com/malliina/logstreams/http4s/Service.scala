@@ -15,7 +15,7 @@ import com.malliina.logstreams.db.StreamsQuery
 import com.malliina.logstreams.html.Htmls
 import com.malliina.logstreams.html.Htmls.{PasswordKey, UsernameKey}
 import com.malliina.logstreams.http4s.Service.{log, given}
-import com.malliina.logstreams.models.{AppName, LogClientId}
+import com.malliina.logstreams.models.{AppName, LogClientId, LogEvents}
 import com.malliina.util.AppLogger
 import com.malliina.values.{Email, Password, Username}
 import com.malliina.web.*
@@ -72,10 +72,6 @@ class Service[F[_]: Async](
     case req @ GET -> Root / "sources" =>
       webAuth(req): src =>
         ok(htmls.sources)
-    case req @ GET -> Root / "sources" / "token" =>
-      val info = SocketInfo(AppName.unsafe("app"), LogClientId.random())
-      val signed = auths.web.jwt.sign(info, ttl = 1.hour)
-      ok(TokenResponse(signed))
     case req @ POST -> Root / "sources" / "token" =>
       req
         .decodeJson[TokenRequest]
@@ -87,6 +83,14 @@ class Service[F[_]: Async](
             val signed = auths.web.jwt.sign(SocketInfo(app, LogClientId.random()), ttl = 1.hour)
             ok(TokenResponse(signed))
           else unauthorized(Errors.single(s"Illegal app: '$app'."))
+    case req @ POST -> Root / "sources" / "logs" =>
+      publicAuth(req): src =>
+        val user = UserRequest.make(Username.unsafe(src.app.name), req, Option(src.clientId))
+        for
+          decoded <- req.decodeJson[LogEvents]
+          published <- sockets.publishLogs(decoded, user)
+          res <- ok(published)
+        yield res
     case req @ GET -> Root / "users" =>
       webAuth(req): user =>
         val feedback = req.feedbackAs[UserFeedback]

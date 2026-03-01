@@ -56,3 +56,5 @@ object SocketInfo:
   def make(app: AppName) = SocketInfo(app, LogClientId.random())
 
 case class TokenResponse(token: IdToken) derives Codec.AsObject
+
+case class Published(eventCount: Int) derives Codec.AsObject

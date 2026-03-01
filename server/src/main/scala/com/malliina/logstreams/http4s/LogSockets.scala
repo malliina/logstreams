@@ -94,29 +94,13 @@ class LogSockets[F[_]: Async](
     val publishEvents: Pipe[F, WebSocketFrame, Unit] = _.evalMap:
       case Text(message, _) =>
         log.debug(s"Received '$message' from ${user.describe}.")
-        val event = decode[LogEvents](message).fold(
+        decode[LogEvents](message).fold(
           err =>
             log.warn(s"Failed to decode '$message' from ${user.describe}.")
             F.raiseError(JsonException(err, message))
           ,
-          es =>
-            val events = es.events.map: event =>
-              LogEntryInput(
-                user.user,
-                user.address,
-                Instant.ofEpochMilli(event.timestamp),
-                event.message,
-                event.loggerName,
-                event.threadName,
-                event.level,
-                user.clientId,
-                user.userAgent,
-                event.stackTrace
-              )
-            F.pure(LogEntryInputs(events))
+          es => publishLogs(es, user).void
         )
-        event.flatMap: e =>
-          publishLogged(e, logs)
       case f => F.delay(log.debug(s"Unknown WebSocket frame: $f"))
     log.info(s"Source ${user.describe} with agent ${user.userAgent.getOrElse("unknown")} joined.")
     val id = com.malliina.web.Utils.randomString().take(7)
@@ -142,7 +126,7 @@ class LogSockets[F[_]: Async](
     connectedSources
       .updateAndGet(olds => LogSources(olds.sources :+ src))
       .flatMap: connecteds =>
-        publishLogged(connecteds, admins)
+        publishLogged(connecteds, admins).void
 
   def disconnected(src: LogSource): F[Unit] =
     connectedSources
@@ -150,15 +134,34 @@ class LogSockets[F[_]: Async](
       .flatMap: connecteds =>
         val remaining = connecteds.sources.map(_.describe).mkString(", ")
         log.info(s"Source ${src.describe} disconnected, now connected $remaining.")
-        publishLogged(connecteds, admins)
+        publishLogged(connecteds, admins).void
 
   private def jsonTransform[T: Encoder](src: Stream[F, T]): Stream[F, Text] = src.map: t =>
     Text(t.asJson.noSpaces)
 
-  private def publishLogged[T](t: T, to: Topic[F, T]): F[Unit] = to
+  def publishLogs(es: LogEvents, user: UserRequest): F[Published] =
+    val events = es.events.map: event =>
+      LogEntryInput(
+        user.user,
+        user.address,
+        Instant.ofEpochMilli(event.timestamp),
+        event.message,
+        event.loggerName,
+        event.threadName,
+        event.level,
+        user.clientId,
+        user.userAgent,
+        event.stackTrace
+      )
+    publishLogged(LogEntryInputs(events), logs).map: ok =>
+      if ok then Published(events.size)
+      else Published(0)
+
+  private def publishLogged[T](t: T, to: Topic[F, T]): F[Boolean] = to
     .publish1(t)
     .map: res =>
       res.fold(
         closed => log.warn(s"Published $t to closed topic."),
         _ => log.debug(s"Published $t to topic.")
       )
+      res.isRight

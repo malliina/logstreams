@@ -15,7 +15,7 @@ import com.malliina.logstreams.db.StreamsQuery
 import com.malliina.logstreams.html.Htmls
 import com.malliina.logstreams.html.Htmls.{PasswordKey, UsernameKey}
 import com.malliina.logstreams.http4s.Service.{log, given}
-import com.malliina.logstreams.models.{AppName, LogClientId, LogEvents}
+import com.malliina.logstreams.models.{AppName, LogClientId, LogEvents, ParsedLogEvents}
 import com.malliina.util.AppLogger
 import com.malliina.values.{Email, Password, Username}
 import com.malliina.web.*
@@ -87,7 +87,7 @@ class Service[F[_]: Async](
       publicAuth(req): src =>
         val user = UserRequest.make(Username.unsafe(src.app.name), req, Option(src.clientId))
         for
-          decoded <- req.decodeJson[LogEvents]
+          decoded <- req.decodeJson[ParsedLogEvents]
           published <- sockets.publishLogs(decoded, user)
           res <- ok(published)
         yield res

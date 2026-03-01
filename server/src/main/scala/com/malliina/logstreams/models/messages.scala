@@ -3,11 +3,38 @@ package com.malliina.logstreams.models
 import ch.qos.logback.classic.Level
 import com.malliina.logback.LogbackFormatting
 import com.malliina.values.Username
-import io.circe.Codec
+import io.circe.{Codec, Decoder, Encoder}
 
 import java.time.Instant
+import java.time.format.DateTimeFormatter
+import scala.util.Try
 
 case class LogEvents(events: List[LogEvent]) derives Codec.AsObject
+
+case class ParsedLogEvent(
+  timestamp: Instant,
+  message: String,
+  loggerName: String,
+  threadName: String,
+  level: LogLevel,
+  stackTrace: Option[String] = None
+) derives Encoder.AsObject
+
+object ParsedLogEvent:
+  private val typedJson = Decoder.derived[ParsedLogEvent]
+  private val indirectJson = Decoder[LogEvent].emap(e => fromPlain(e))
+  given Decoder[ParsedLogEvent] = typedJson.or(indirectJson)
+
+  private def fromPlain(e: LogEvent): Either[String, ParsedLogEvent] =
+    val instant = e.isoTimestamp
+      .map: str =>
+        Try(Instant.parse(str)).toEither.left.map: t =>
+          Option(t.getMessage).getOrElse("Invalid timestamp.")
+      .getOrElse(e.timestamp.map(ms => Instant.ofEpochMilli(ms)).toRight("No timestamp."))
+    instant.map: i =>
+      ParsedLogEvent(i, e.message, e.loggerName, e.threadName, e.level, e.stackTrace)
+
+case class ParsedLogEvents(events: List[ParsedLogEvent]) derives Codec.AsObject
 
 case class LogEntryInput(
   appName: Username,
@@ -42,7 +69,8 @@ case class LogEntryRow(
     id,
     SimpleLogSource(AppName.fromUsername(app), address, clientId, userAgent),
     LogEvent(
-      timestamp.toEpochMilli,
+      Option(DateTimeFormatter.ISO_INSTANT.format(timestamp)),
+      Option(timestamp.toEpochMilli),
       Option(LogEntryRow.format(timestamp)),
       message,
       logger,

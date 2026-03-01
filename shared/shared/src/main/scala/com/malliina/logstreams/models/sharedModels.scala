@@ -132,7 +132,8 @@ case class LogEventOld(
 ) derives Codec.AsObject:
   def toEvent =
     LogEvent(
-      timeStamp,
+      None,
+      Option(timeStamp),
       Option(timeFormatted),
       message,
       loggerName,
@@ -145,7 +146,8 @@ case class LogEventOld(
   *   in millis
   */
 case class LogEvent(
-  timestamp: Long,
+  isoTimestamp: Option[String],
+  timestamp: Option[Long],
   timeFormatted: Option[String],
   message: String,
   loggerName: String,

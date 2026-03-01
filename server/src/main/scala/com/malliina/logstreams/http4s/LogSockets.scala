@@ -20,6 +20,7 @@ import org.http4s.websocket.WebSocketFrame.Text
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import scala.concurrent.duration.DurationInt
+import scala.util.Try
 
 object LogSockets:
   private val log = AppLogger(getClass)
@@ -94,7 +95,7 @@ class LogSockets[F[_]: Async](
     val publishEvents: Pipe[F, WebSocketFrame, Unit] = _.evalMap:
       case Text(message, _) =>
         log.debug(s"Received '$message' from ${user.describe}.")
-        decode[LogEvents](message).fold(
+        decode[ParsedLogEvents](message).fold(
           err =>
             log.warn(s"Failed to decode '$message' from ${user.describe}.")
             F.raiseError(JsonException(err, message))
@@ -139,12 +140,12 @@ class LogSockets[F[_]: Async](
   private def jsonTransform[T: Encoder](src: Stream[F, T]): Stream[F, Text] = src.map: t =>
     Text(t.asJson.noSpaces)
 
-  def publishLogs(es: LogEvents, user: UserRequest): F[Published] =
+  def publishLogs(es: ParsedLogEvents, user: UserRequest): F[Published] =
     val events = es.events.map: event =>
       LogEntryInput(
         user.user,
         user.address,
-        Instant.ofEpochMilli(event.timestamp),
+        event.timestamp,
         event.message,
         event.loggerName,
         event.threadName,

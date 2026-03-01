@@ -15,6 +15,7 @@ import fs2.Stream
 import io.circe.{Decoder, Json}
 import it.LogstreamsTests.testUsername
 import org.http4s.Uri
+import java.time.Instant
 
 object LogstreamsTests:
   val testUsername = user"u"
@@ -43,7 +44,8 @@ class LogstreamsTests extends TestServerSuite:
   http.test("sent message is received by listener"): client =>
     val message = "hello, world"
     val testEvent = LogEvent(
-      System.currentTimeMillis(),
+      None,
+      Option(System.currentTimeMillis()),
       Option("now"),
       message,
       getClass.getName.stripSuffix("$"),

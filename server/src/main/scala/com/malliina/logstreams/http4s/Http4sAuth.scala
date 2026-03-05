@@ -9,6 +9,15 @@ import org.http4s.{Headers, HttpDate, Request, Response, ResponseCookie}
 
 import scala.concurrent.duration.DurationInt
 
+object Http4sAuth:
+  def token(headers: Headers): Either[MissingCredentials, IdToken] = headers
+    .get[Authorization]
+    .toRight(MissingCredentials("Missing Authorization header", headers))
+    .flatMap(_.credentials match
+      case Token(_, token) =>
+        IdToken.build(token).left.map(err => MissingCredentials(err.message, headers))
+      case _ => Left(MissingCredentials("Missing token.", headers)))
+
 class Http4sAuth[F[_]](
   val jwt: JWT,
   val cookieNames: CookieConf = CookieConf.prefixed("logstreams")
@@ -20,14 +29,6 @@ class Http4sAuth[F[_]](
 
   def session[T: Decoder](from: Headers): Either[IdentityError, T] =
     read[T](cookieNames.session, from)
-
-  def token(headers: Headers) = headers
-    .get[Authorization]
-    .toRight(MissingCredentials("Missing Authorization header", headers))
-    .flatMap(_.credentials match
-      case Token(_, token) =>
-        IdToken.build(token).left.map(err => MissingCredentials(err.message, headers))
-      case _ => Left(MissingCredentials("Missing token.", headers)))
 
   def withSession[T: Encoder](t: T, req: Request[F], res: Response[F]): res.Self =
     withJwt(cookieNames.session, t, req, res)

@@ -39,6 +39,12 @@ object Auths extends AuthBuilder:
   def apply[F[_]: Sync](users: UserService[F], web: Http4sAuth[F]): Auther[F] =
     new Auths(public(users, web), sources(users), web)
 
+  private def tokenFromQuery(req: Request[?]): Either[MissingCredentials, IdToken] =
+    QueryParsers
+      .parse[IdToken](req.uri.query, tokenQueryName)
+      .left
+      .map(err => MissingCredentials(err.message.message, req.headers))
+
   def public[F[_]: Sync](
     users: UserService[F],
     web: Http4sAuth[F]
@@ -46,10 +52,7 @@ object Auths extends AuthBuilder:
     (req: Request[F]) =>
       val F = Sync[F]
       val result: Either[IdentityError, SocketInfo] = for
-        token <- QueryParsers
-          .parse[IdToken](req.uri.query, tokenQueryName)
-          .left
-          .map(err => MissingCredentials(err.message.message, req.headers))
+        token <- Http4sAuth.token(req.headers).orElse(tokenFromQuery(req))
         verified <- web.jwt.verify[SocketInfo](token).left.map(err => JWTError(err, req.headers))
       yield verified
       result

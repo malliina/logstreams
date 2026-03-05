@@ -80,7 +80,9 @@ class Service[F[_]: Async](
           val suffixes = Seq("ios", "android", "web")
           val legalApp = suffixes.exists(s => app.name.endsWith(s))
           if legalApp then
-            val signed = auths.web.jwt.sign(SocketInfo(app, LogClientId.random()), ttl = 1.hour)
+            val info = SocketInfo(app, LogClientId.random())
+            val signed = auths.web.jwt.sign(info, ttl = 1.hour)
+            log.info(s"Signed token for ${info.describe}.")
             ok(TokenResponse(signed))
           else unauthorized(Errors.single(s"Illegal app: '$app'."))
     case req @ POST -> Root / "sources" / "logs" =>

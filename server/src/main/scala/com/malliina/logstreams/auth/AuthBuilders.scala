@@ -56,15 +56,15 @@ object Auths extends AuthBuilder:
         verified <- web.jwt.verify[SocketInfo](token).left.map(err => JWTError(err, req.headers))
       yield verified
       result
-        .map: socket =>
+        .map: clientInfo =>
           users
-            .exists(socket.app)
+            .exists(clientInfo.app)
             .map: exists =>
-              if exists then Right(socket)
+              if exists then Right(clientInfo)
               else
                 Left(
                   JWTError(
-                    PermissionError(ErrorMessage(s"App '${socket.app}' is invalid.")),
+                    PermissionError(ErrorMessage(s"App '${clientInfo.app}' is invalid.")),
                     req.headers
                   ): IdentityError
                 )

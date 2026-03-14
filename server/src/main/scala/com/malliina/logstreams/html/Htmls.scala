@@ -66,6 +66,13 @@ class Htmls(
   private def inlineOrUri(name: String) =
     HashedAssets.dataUris.getOrElse(name, asset(name).renderString)
 
+  def profile() = baseIndex("profile")(
+    headerRow("Profile"),
+    div(cls := "language-form")(
+      div(cls := "form-check")
+    )
+  )
+  
   def logs(apps: Seq[AppName], query: StreamsQuery) =
     baseIndex("logs", bodyClasses = Seq(classes.Socket))(
       headerRow("Logs"),

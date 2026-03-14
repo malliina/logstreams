@@ -1,6 +1,8 @@
 package com.malliina.logstreams.js
 
+import com.malliina.logstreams.js.Cookies.readCookie
 import com.malliina.logstreams.models.FrontStrings.*
+import com.malliina.logstreams.models.{Lang, Language}
 import org.scalajs.dom
 
 import scala.scalajs.js
@@ -14,6 +16,7 @@ object Frontend:
   private val appCss = AppCss
 
   def main(args: Array[String]): Unit =
+    val lang = readCookie[Language](Lang.cookieName).getOrElse(Lang.default)
     val log: BaseLogger = BaseLogger.printer
     if has(classes.Socket) then LogsPage(log)
     if has(classes.Sources) then SourcesPage(log)

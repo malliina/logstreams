@@ -1,7 +1,7 @@
 package com.malliina.logstreams.js
 
 import com.malliina.logstreams.js.ScriptHelpers.{SourceTableId, elem}
-import com.malliina.logstreams.models.{LogSource, LogSources}
+import com.malliina.logstreams.models.{Lang, LogSource, LogSources}
 import io.circe.Json
 import scalatags.Text
 import scalatags.Text.all.*
@@ -19,7 +19,7 @@ class SourcesPage(log: BaseLogger) extends BaseSocket("/ws/admins?f=json", log):
     tr(
       td(source.name.name),
       td(source.remoteAddress),
-      td(source.userAgent.map(_.string).getOrElse("Unknown")),
+      td(source.userAgent.map(_.string).getOrElse(Lang.en.servers.unknown)),
       td(source.id),
       td(source.timeJoined)
     )

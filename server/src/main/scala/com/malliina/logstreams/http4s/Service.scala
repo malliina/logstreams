@@ -315,7 +315,7 @@ class Service[F[_]: Async](
         e.map: socket =>
           code(socket)
         .recover: err =>
-            log.warn(s"Unauthorized request to ${req.uri}. $err")
+            log.warn(s"Unauthorized request to ${req.method} ${req.uri}. $err")
             unauthorizedJson()
 
   private def buildMessage(req: UserRequest, message: String) =

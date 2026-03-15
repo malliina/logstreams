@@ -3,7 +3,7 @@ package it
 import cats.effect.{Deferred, IO}
 import com.malliina.http.{FullUrl, ReconnectingSocket}
 import com.malliina.http.SocketEvent.Open
-import com.malliina.http.io.{HttpClientF2, WebSocketF, OkSocket}
+import com.malliina.http.io.{HttpClientF2, OkSocket}
 import com.malliina.logstreams.auth.BasicCredentials
 import com.malliina.logstreams.client.{HttpUtil, KeyValue}
 import com.malliina.logstreams.http4s.LogRoutes
@@ -15,7 +15,6 @@ import fs2.Stream
 import io.circe.{Decoder, Json}
 import it.LogstreamsTests.testUsername
 import org.http4s.Uri
-import java.time.Instant
 
 object LogstreamsTests:
   val testUsername = user"u"

@@ -6,7 +6,7 @@ import cats.effect.kernel.Async
 import cats.syntax.all.{toFlatMapOps, toFunctorOps}
 import com.malliina.app.AppMeta
 import com.malliina.database.DoobieDatabase
-import com.malliina.http.Errors
+import com.malliina.http.{Errors, SingleError}
 import com.malliina.http4s.BasicService.noCache
 import com.malliina.http4s.{CSRFSupport, FormDecoders, FormReadable, FormReadableT}
 import com.malliina.logstreams.auth.*
@@ -14,8 +14,9 @@ import com.malliina.logstreams.auth.AuthProvider.{Google, PromptKey, SelectAccou
 import com.malliina.logstreams.db.StreamsQuery
 import com.malliina.logstreams.html.Htmls
 import com.malliina.logstreams.html.Htmls.{PasswordKey, UsernameKey}
+import com.malliina.logstreams.http4s
 import com.malliina.logstreams.http4s.Service.{log, given}
-import com.malliina.logstreams.models.{AppName, LogClientId, LogEvents, ParsedLogEvents}
+import com.malliina.logstreams.models.{AppName, LogClientId, ParsedLogEvents}
 import com.malliina.util.AppLogger
 import com.malliina.values.{Email, Password, Username}
 import com.malliina.web.*
@@ -80,7 +81,7 @@ class Service[F[_]: Async](
           val suffixes = Seq("ios", "android", "web")
           val legalApp = suffixes.exists(s => app.name.endsWith(s))
           if legalApp then
-            val info = SocketInfo(app, LogClientId.random())
+            val info = SourceInfo(app, LogClientId.random())
             val signed = auths.web.jwt.sign(info, ttl = 1.hour)
             log.info(s"Signed token for ${info.describe}.")
             ok(TokenResponse(signed))
@@ -302,9 +303,9 @@ class Service[F[_]: Async](
     authed(req, auths.sources): user =>
       code(user)
 
-  private def publicAuth(req: Request[F])(code: SocketInfo => F[Response[F]]) =
-    authed(req, auths.public): socket =>
-      code(socket)
+  private def publicAuth(req: Request[F])(code: SourceInfo => F[Response[F]]) =
+    authed(req, auths.public): user =>
+      code(user)
 
   private def authed[U, R](req: Request[F], auther: RequestAuthenticator[F, U])(
     code: U => F[Response[F]]
@@ -312,19 +313,23 @@ class Service[F[_]: Async](
     auther
       .authenticate(req)
       .flatMap: e =>
-        e.map: socket =>
-          code(socket)
-        .recover: err =>
-            log.warn(s"Unauthorized request to ${req.method} ${req.uri}. $err")
-            unauthorizedJson()
+        e
+          .map: socket =>
+            code(socket)
+          .recover: err =>
+            val error = err match
+              case MissingCredentials(message, headers) => SingleError.input(message)
+              case http4s.JWTError(error, headers)      => SingleError(error.message, error.key)
+            log.warn(s"Unauthorized request to ${req.method} ${req.uri}. $error $err")
+            unauthorizedJson(error)
 
   private def buildMessage(req: UserRequest, message: String) =
     s"User '${req.user}' from '${req.address}' $message."
 
   private def unauthorized(errors: Errors) = seeOther(LogRoutes.googleStart)
 
-  private def unauthorizedJson(message: String = "Unauthorized."): F[Response[F]] =
+  private def unauthorizedJson(error: SingleError): F[Response[F]] =
     Unauthorized(
       `WWW-Authenticate`(NonEmptyList.of(Challenge("myscheme", "myrealm"))),
-      Errors.single(message)
+      Errors(error)
     ).map(_.putHeaders(noCache))

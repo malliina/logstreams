@@ -4,7 +4,7 @@ import cats.Applicative
 import cats.effect.kernel.Sync
 import cats.syntax.all.toFunctorOps
 import com.malliina.http4s.QueryParsers
-import com.malliina.logstreams.http4s.{Http4sAuth, IdentityError, JWTError, MissingCredentials, SocketInfo}
+import com.malliina.logstreams.http4s.{Http4sAuth, IdentityError, JWTError, MissingCredentials, SourceInfo}
 import com.malliina.util.AppLogger
 import com.malliina.values.{Email, ErrorMessage, IdToken, Password, Username}
 import com.malliina.web.PermissionError
@@ -18,10 +18,10 @@ trait Auther[F[_]]:
   def web: Http4sAuth[F]
   def sources: HeaderAuthenticator[F, Username]
   def viewers: HeaderAuthenticator[F, Username]
-  def public: RequestAuthenticator[F, SocketInfo]
+  def public: RequestAuthenticator[F, SourceInfo]
 
 class Auths[F[_]: Sync](
-  val public: RequestAuthenticator[F, SocketInfo],
+  val public: RequestAuthenticator[F, SourceInfo],
   val sources: HeaderAuthenticator[F, Username],
   val web: Http4sAuth[F]
 ) extends Auther[F]:
@@ -48,12 +48,12 @@ object Auths extends AuthBuilder:
   def public[F[_]: Sync](
     users: UserService[F],
     web: Http4sAuth[F]
-  ): RequestAuthenticator[F, SocketInfo] =
+  ): RequestAuthenticator[F, SourceInfo] =
     (req: Request[F]) =>
       val F = Sync[F]
-      val result: Either[IdentityError, SocketInfo] = for
+      val result: Either[IdentityError, SourceInfo] = for
         token <- Http4sAuth.token(req.headers).orElse(tokenFromQuery(req))
-        verified <- web.jwt.verify[SocketInfo](token).left.map(err => JWTError(err, req.headers))
+        verified <- web.jwt.verify[SourceInfo](token).left.map(err => JWTError(err, req.headers))
       yield verified
       result
         .map: clientInfo =>

@@ -49,11 +49,11 @@ object UserRequest:
 
 case class TokenRequest(app: AppName) derives Codec.AsObject
 
-case class SocketInfo(app: AppName, clientId: LogClientId) derives Codec.AsObject:
+case class SourceInfo(app: AppName, clientId: LogClientId) derives Codec.AsObject:
   def describe = s"$app ($clientId)"
 
-object SocketInfo:
-  def make(app: AppName) = SocketInfo(app, LogClientId.random())
+object SourceInfo:
+  def make(app: AppName) = SourceInfo(app, LogClientId.random())
 
 case class TokenResponse(token: IdToken) derives Codec.AsObject
 

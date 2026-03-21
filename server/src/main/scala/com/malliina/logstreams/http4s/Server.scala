@@ -72,7 +72,7 @@ trait AppResources:
         .default[F]
         .withIdleTimeout(30.days)
         .withHost(host"0.0.0.0")
-        .withPort(serverPort)
+        .withPort(port)
         .withHttpWebSocketApp(socketBuilder =>
           makeHandler(service, socketBuilder, csrfUtils.middleware(csrf))
         )

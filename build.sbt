@@ -81,9 +81,16 @@ val server = project
       "frontName" -> (frontend / name).value
     ),
     libraryDependencies ++=
-      Seq("config", "logstreams-client", "util-html", "database", "util-http4s", "web-auth").map {
-        m =>
-          "com.malliina" %% m % versions.util
+      Seq(
+        "okclient-io",
+        "config",
+        "logstreams-client",
+        "util-html",
+        "database",
+        "util-http4s",
+        "web-auth"
+      ).map { m =>
+        "com.malliina" %% m % versions.util
       } ++ Seq(
         "org.mariadb.jdbc" % "mariadb-java-client" % versions.mariadbClient,
         webAuthDep % Test classifier "tests",
@@ -97,17 +104,9 @@ val server = project
     Linux / name := "logstreams"
   )
 
-val it = Project("logstreams-test", file("logstreams-test"))
-  .dependsOn(server % "test->test")
-  .settings(
-    libraryDependencies ++= Seq("logstreams-client", "okclient-io").map { m =>
-      "com.malliina" %% m % versions.util
-    }
-  )
-
 val root = project
   .in(file("."))
-  .aggregate(frontend, server, it, crossJvm, crossJs)
+  .aggregate(frontend, server, crossJvm, crossJs)
   .settings(
     start := (server / start).value
   )

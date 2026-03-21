@@ -1,19 +1,18 @@
-package it
+package com.malliina.logstreams.http4s
 
 import cats.effect.{Deferred, IO}
-import com.malliina.http.{FullUrl, ReconnectingSocket}
 import com.malliina.http.SocketEvent.Open
 import com.malliina.http.io.{HttpClientF2, OkSocket}
+import com.malliina.http.{FullUrl, ReconnectingSocket}
 import com.malliina.logstreams.auth.BasicCredentials
 import com.malliina.logstreams.client.{HttpUtil, KeyValue}
 import com.malliina.logstreams.http4s.LogRoutes
 import com.malliina.logstreams.models.*
 import com.malliina.util.AppLogger
-import com.malliina.values.{Password, Username}
 import com.malliina.values.Literals.{pass, user}
+import com.malliina.values.{Password, Username}
 import fs2.Stream
 import io.circe.{Decoder, Json}
-import it.LogstreamsTests.testUsername
 import org.http4s.Uri
 
 object LogstreamsTests:
@@ -23,7 +22,7 @@ class LogstreamsTests extends TestServerSuite:
   type TestSocket = ReconnectingSocket[IO, OkSocket[IO]]
   val log = AppLogger(getClass)
 
-  val testUser = testUsername
+  val testUser = LogstreamsTests.testUsername
   val testPass = pass"p"
   val testCreds = creds(testUser)
 

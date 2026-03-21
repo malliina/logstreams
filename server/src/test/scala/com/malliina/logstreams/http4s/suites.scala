@@ -1,4 +1,4 @@
-package it
+package com.malliina.logstreams.http4s
 
 import cats.effect.kernel.Sync
 import cats.effect.{IO, Resource}
@@ -12,15 +12,11 @@ import com.malliina.http.UrlSyntax.url
 import com.malliina.http.io.HttpClientIO
 import com.malliina.logback.LogbackUtils
 import com.malliina.logstreams.auth.*
-import com.malliina.logstreams.http4s.{AppResources, Http4sAuth, JWTError, SourceInfo}
-import com.malliina.logstreams.models.{AppName, LogClientId}
+import com.malliina.logstreams.http4s.{AppResources, Http4sAuth, SourceInfo}
 import com.malliina.logstreams.{LocalConf, LogstreamsConf}
 import com.malliina.values.Literals.user
 import com.malliina.values.{Password, Username}
-import com.malliina.web.Expired
 import munit.AnyFixture
-
-import java.time.Instant
 
 class LogsAppConf(override val database: Conf) extends AppConf:
   override def close(): Unit = ()
@@ -62,10 +58,13 @@ trait MUnitDatabaseSuite:
   val db = ResourceSuiteLocalFixture("database", DatabaseUtils.testDatabase)
   override def munitFixtures: Seq[AnyFixture[?]] = Seq(db)
 
+object ServerSuite:
+  val initLogging = LogbackUtils.init(rootLevel = Level.INFO)
+
 trait ServerSuite extends MUnitDatabaseSuite:
   self: munit.CatsEffectSuite =>
   object TestServer extends AppResources:
-    LogbackUtils.init(rootLevel = Level.INFO)
+    val _ = ServerSuite.initLogging
   val http = ResourceFunFixture(HttpClientIO.resource[IO])
   val conf = for
     database <- IO(db())
@@ -75,7 +74,7 @@ trait ServerSuite extends MUnitDatabaseSuite:
   val testResource = Resource
     .eval(conf)
     .flatMap: conf =>
-      TestServer.server(conf, testAuths, port"12345")
+      TestServer.server(conf, testAuths, port"0")
   val server = ResourceSuiteLocalFixture("server", testResource)
 
   def testAuths: AuthBuilder = new AuthBuilder:
@@ -88,15 +87,6 @@ abstract class TestServerSuite extends munit.CatsEffectSuite with ServerSuite
 
 class TestAuther[F[_]: Sync](users: UserService[F], val web: Http4sAuth[F], testUser: Username)
   extends Auther[F]:
-  override def sources: HeaderAuthenticator[F, Username] = Auths.sources(users)
+  override val sources: HeaderAuthenticator[F, Username] = Auths.sources(users)
   override def viewers: HeaderAuthenticator[F, Username] = hs => Sync[F].pure(Right(testUser))
-  override def public: RequestAuthenticator[F, SourceInfo] = req =>
-    val res = Http4sAuth
-      .token(req.headers)
-      .flatMap: token =>
-        if token.token == "expired" then
-          Left(
-            JWTError(Expired(token, Instant.now().minusSeconds(300), Instant.now()), req.headers)
-          )
-        else Right(SourceInfo(AppName.fromUsername(testUser), LogClientId.random()))
-    Sync[F].pure(res)
+  override val public: RequestAuthenticator[F, SourceInfo] = Auths.public(users, web)

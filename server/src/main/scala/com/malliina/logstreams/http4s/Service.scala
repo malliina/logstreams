@@ -289,7 +289,7 @@ class Service[F[_]: Async](
   private def stringify(map: Map[String, String]): String =
     map.map((key, value) => s"$key=$value").mkString("&")
 
-  private def webAuth(req: Request[F])(code: UserRequest => F[Response[F]]) =
+  private def webAuth(req: Request[F])(code: UserRequest => F[Response[F]]): F[Response[F]] =
     auths.viewers
       .authenticate(req.headers)
       .flatMap: e =>
@@ -309,7 +309,7 @@ class Service[F[_]: Async](
 
   private def authed[U, R](req: Request[F], auther: RequestAuthenticator[F, U])(
     code: U => F[Response[F]]
-  ) =
+  ): F[Response[F]] =
     auther
       .authenticate(req)
       .flatMap: e =>

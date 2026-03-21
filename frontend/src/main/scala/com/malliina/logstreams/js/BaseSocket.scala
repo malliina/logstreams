@@ -16,8 +16,10 @@ object BaseSocket:
 class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.printer):
   private val statusElem = Option(elem("status"))
   private var socket: dom.WebSocket = openSocket(wsPath)
+  private var isPendingReconnect = false
   dom.window.onfocus = e =>
     if !Seq(WebSocket.OPEN, WebSocket.CONNECTING).contains(socket.readyState) then
+      isPendingReconnect = true
       socket = openSocket(wsPath)
 
   def handlePayload(payload: Json): Unit = ()
@@ -45,16 +47,22 @@ class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.printer):
 
   private def onConnected(e: Event): Unit = showConnected()
 
-  private def onClosed(e: CloseEvent): Unit = showDisconnected()
+  private def onClosed(e: CloseEvent): Unit =
+    showDisconnected()
 
-  def onError(e: Event): Unit = showDisconnected()
+  def onError(e: Event): Unit =
+    showDisconnected()
 
-  private def openSocket(pathAndQuery: String) =
+  private def openSocket(pathAndQuery: String): WebSocket =
     val url = wsBaseUrl.append(pathAndQuery)
     val socket = new dom.WebSocket(url.url)
-    socket.onopen = (e: Event) => onConnected(e)
+    socket.onopen = (e: Event) =>
+      isPendingReconnect = false
+      onConnected(e)
     socket.onmessage = (e: MessageEvent) => onMessage(e)
-    socket.onclose = (e: CloseEvent) => onClosed(e)
+    socket.onclose = (e: CloseEvent) =>
+      isPendingReconnect = false
+      onClosed(e)
     socket.onerror = (e: Event) => onError(e)
     socket
 

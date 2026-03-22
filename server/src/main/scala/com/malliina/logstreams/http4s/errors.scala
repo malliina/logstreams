@@ -1,5 +1,6 @@
 package com.malliina.logstreams.http4s
 
+import com.malliina.values.Email
 import com.malliina.web.AuthError
 import org.http4s.Headers
 
@@ -20,3 +21,4 @@ sealed trait IdentityError:
 
 case class MissingCredentials(message: String, headers: Headers) extends IdentityError
 case class JWTError(error: AuthError, headers: Headers) extends IdentityError
+case class EmailNotFound(email: Email, headers: Headers) extends IdentityError

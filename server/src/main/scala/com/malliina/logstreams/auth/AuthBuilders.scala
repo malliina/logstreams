@@ -4,7 +4,8 @@ import cats.Applicative
 import cats.effect.kernel.Sync
 import cats.syntax.all.toFunctorOps
 import com.malliina.http4s.QueryParsers
-import com.malliina.logstreams.http4s.{Http4sAuth, IdentityError, JWTError, MissingCredentials, SourceInfo}
+import com.malliina.logstreams.db.Admin
+import com.malliina.logstreams.http4s.{EmailNotFound, Http4sAuth, IdentityError, JWTError, MissingCredentials, SourceInfo}
 import com.malliina.util.AppLogger
 import com.malliina.values.{Email, ErrorMessage, IdToken, Password, Username}
 import com.malliina.web.PermissionError
@@ -17,15 +18,16 @@ trait AuthBuilder:
 trait Auther[F[_]]:
   def web: Http4sAuth[F]
   def sources: HeaderAuthenticator[F, Username]
-  def viewers: HeaderAuthenticator[F, Username]
+  def viewers: HeaderAuthenticator[F, Admin]
   def public: RequestAuthenticator[F, SourceInfo]
 
 class Auths[F[_]: Sync](
   val public: RequestAuthenticator[F, SourceInfo],
   val sources: HeaderAuthenticator[F, Username],
-  val web: Http4sAuth[F]
+  val web: Http4sAuth[F],
+  users: UserService[F]
 ) extends Auther[F]:
-  val viewers = Auths.viewers(web)
+  val viewers = Auths.viewers(web, users)
 
 object Auths extends AuthBuilder:
   private val log = AppLogger(getClass)
@@ -37,7 +39,7 @@ object Auths extends AuthBuilder:
     IdToken.build(str).left.map(err => ParseFailure(err.message, err.message))
 
   def apply[F[_]: Sync](users: UserService[F], web: Http4sAuth[F]): Auther[F] =
-    new Auths(public(users, web), sources(users), web)
+    new Auths(public(users, web), sources(users), web, users)
 
   private def tokenFromQuery(req: Request[?]): Either[MissingCredentials, IdToken] =
     QueryParsers
@@ -85,15 +87,32 @@ object Auths extends AuthBuilder:
           identity
         )
 
-  def viewers[F[_]: Sync](auth: Http4sAuth[F]): HeaderAuthenticator[F, Username] =
+  def viewers[F[_]: Sync](
+    auth: Http4sAuth[F],
+    users: UserService[F]
+  ): HeaderAuthenticator[F, Admin] =
     (hs: Headers) =>
-      Applicative[F].pure(
-        auth
-          .authenticate(hs)
-          .flatMap: u =>
-            if u.name == authorizedEmail.value then Right(u)
-            else Left(JWTError(PermissionError(ErrorMessage(s"User '$u' is not authorized.")), hs))
-      )
+      val F = Sync[F]
+      auth
+        .authenticate(hs)
+        .fold(
+          err => F.pure(Left(err)),
+          u =>
+            Email
+              .build(u.name)
+              .fold(
+                err =>
+                  F.pure(
+                    Left(
+                      JWTError(PermissionError(ErrorMessage(s"User '$u' is not authorized.")), hs)
+                    )
+                  ),
+                email =>
+                  users
+                    .admin(email)
+                    .map(e => e.left.map[IdentityError](nse => EmailNotFound(email, hs)))
+              )
+        )
 
   private def basic(hs: Headers) = hs
     .get[Authorization]

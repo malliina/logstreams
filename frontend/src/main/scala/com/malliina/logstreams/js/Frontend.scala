@@ -16,9 +16,10 @@ object Frontend:
   private val appCss = AppCss
 
   def main(args: Array[String]): Unit =
-    val lang = readCookie[Language](Lang.cookieName).getOrElse(Lang.default)
+    val language = readCookie[Language](Lang.cookieName).getOrElse(Language.default)
+    val lang = Lang(language)
     val log: BaseLogger = BaseLogger.printer
-    if has(classes.Socket) then LogsPage(log)
+    if has(classes.Socket) then LogsPage(lang, log)
     if has(classes.Sources) then SourcesPage(log)
 
   private def has(feature: String) = dom.document.body.classList.contains(feature)

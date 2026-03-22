@@ -1,13 +1,13 @@
 package com.malliina.logstreams.js
 
+import com.malliina.logstreams.js.ListenerSocket.given
 import com.malliina.logstreams.js.ScriptHelpers.{elem, elemOptAs, getElem}
 import com.malliina.logstreams.models.FrontStrings.*
-import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents, FrontEvent, LogClientId, LogLevel, MetaEvent, SimpleEvent, UserAgent}
+import com.malliina.logstreams.models.{AppLogEvent, AppLogEvents, FrontEvent, Lang, LogClientId, LogLevel, MetaEvent, SimpleEvent, UserAgent}
 import io.circe.Json
 import org.scalajs.dom
 import org.scalajs.dom.{Event, HTMLElement, HTMLInputElement, HTMLParagraphElement, HTMLTableElement, document}
 import scalatags.JsDom.all.*
-import ListenerSocket.given
 
 case class RowContent(content: Frag, cellId: String, linkId: String, moreId: String)
 
@@ -15,7 +15,7 @@ object ListenerSocket:
   given Conversion[LogClientId, Modifier] = (ci: LogClientId) => ci.id
   given Conversion[UserAgent, Modifier] = (ua: UserAgent) => ua.string
 
-class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean)
+class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean, lang: Lang)
   extends BaseSocket(wsPath):
   private val CellContent = "cell-content"
   private val CellWide = "cell-wide"
@@ -40,20 +40,21 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
   private val responsiveClass = "d-none d-md-table-cell"
 
   private val responsiveTh = th(cls := responsiveClass)
+  val rlang = lang.logs.results
 
   if verboseSupport then
     val verboseClass = names(VerboseKey, if isVerbose then "" else Off)
     getElem[HTMLElement](TableHeadId).appendChild(
       tr(
-        th("App"),
-        th("Time"),
-        th("Message"),
-        th(cls := verboseClass)("Logger"),
-        th(cls := verboseClass)("Thread"),
-        th(cls := verboseClass)("Client"),
-        th(cls := verboseClass)("User Agent"),
+        th(rlang.app),
+        th(rlang.time),
+        th(rlang.message),
+        th(cls := verboseClass)(rlang.logger),
+        th(cls := verboseClass)(rlang.thread),
+        th(cls := verboseClass)(rlang.client),
+        th(cls := verboseClass)(rlang.userAgent),
         th(div(cls := "cell-more-content")),
-        th("Level")
+        th(rlang.level)
       ).render
     )
   private val compactInput = getElem[HTMLInputElement](OptionCompact)
@@ -82,7 +83,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
           loadingSpinner.hide()
           searchFeedbackRow.show()
           table.hideFull()
-          val msg = s"No results for ${meta.describe}."
+          val msg = s"${rlang.noResults} ${meta.describe}."
           searchFeedback.innerText = msg
         else if e == MetaEvent.Loading then
           table.hideFull()

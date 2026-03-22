@@ -2,13 +2,12 @@ package com.malliina.logstreams.js
 
 import com.malliina.logstreams.js.ScriptHelpers.*
 import com.malliina.logstreams.models.FrontStrings.ToTimePickerId
-import com.malliina.logstreams.models.Queries
+import com.malliina.logstreams.models.{Lang, Queries}
 import org.scalajs.dom.{HTMLButtonElement, HTMLInputElement, KeyboardEvent, MouseEvent, window}
 
-import scala.scalajs.js
 import scala.scalajs.js.Date
 
-class LogsPage(log: BaseLogger):
+class LogsPage(lang: Lang, log: BaseLogger):
   val settings: Settings = StorageSettings
   private def dateInQuery(key: String) = QueryString.parse.get(key).map(str => new Date(str))
   def maxDate = new Date(Date.now())
@@ -24,7 +23,8 @@ class LogsPage(log: BaseLogger):
         DisplayOptions.basic(close = true)
       )
     )
-  private val socket: ListenerSocket = ListenerSocket(pathFor(), settings, verboseSupport = true)
+  private val socket: ListenerSocket =
+    ListenerSocket(pathFor(), settings, verboseSupport = true, lang = lang)
   private val searchInput = getElem[HTMLInputElement](SearchInput)
   getElem[HTMLButtonElement](SearchButton).onclick = (e: MouseEvent) => updateSearch()
   searchInput.onkeydown = (ke: KeyboardEvent) => if ke.key == "Enter" then updateSearch()

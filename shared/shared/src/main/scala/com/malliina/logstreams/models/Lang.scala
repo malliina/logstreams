@@ -2,7 +2,7 @@ package com.malliina.logstreams.models
 
 import com.malliina.values.StringEnumCompanion
 
-case class ProfileLang(language: String, english: String)
+case class ProfileLang(title: String, language: String, english: String, swedish: String)
 
 case class CalendarLang(from: String, to: String)
 
@@ -16,6 +16,12 @@ case class ResultsLang(
   userAgent: String,
   level: String,
   noResults: String
+)
+
+case class PagingLang(
+  navigation: String,
+  next: String,
+  previous: String
 )
 
 case class LogsLang(
@@ -48,7 +54,13 @@ case class UsersLang(
   deleteUser: String
 )
 
-case class NavLang(appName: String, logs: String, sources: String, users: String)
+case class NavLang(
+  appName: String,
+  logs: String,
+  sources: String,
+  users: String,
+  paging: PagingLang
+)
 
 case class Lang(
   nav: NavLang,
@@ -61,8 +73,8 @@ case class Lang(
 object Lang:
   val cookieName = "lang"
 
-  val en = Lang(
-    NavLang("logstreams", "Logs", "Sources", "Users"),
+  val en: Lang = Lang(
+    NavLang("logstreams", "Logs", "Sources", "Users", PagingLang("Navigation", "Next", "Previous")),
     LogsLang(
       "Logs",
       "Verbose",
@@ -80,14 +92,19 @@ object Lang:
         "Client",
         "User Agent",
         "Level",
-        "No results"
+        "No results for"
       )
     ),
     ServersLang("Servers", "App", "Address", "User-Agent", "ID", "Joined", "Unknown"),
-    UsersLang("Users", "Username", "Password", "Aciton", "Add User", "Delete"),
-    ProfileLang("Language", "English")
+    UsersLang("Users", "Username", "Password", "Action", "Add User", "Delete"),
+    ProfileLang("Profile", "Language", "English", "Swedish")
   )
   val default = en
+
+  def apply(language: Language) = language match
+    case Language.English => en
+    case Language.Finnish => en
+    case Language.Swedish => en
 
 enum Language(val code: String):
   case English extends Language("en-US")

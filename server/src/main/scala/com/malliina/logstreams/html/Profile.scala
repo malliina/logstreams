@@ -11,7 +11,7 @@ class Profile:
       "radio-en",
       Language.English.code,
       "English",
-      language == Language.English
+      checked = false
     )
 
   case class RadioOptions(id: String, value: String, label: String, checked: Boolean)

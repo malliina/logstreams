@@ -3,12 +3,12 @@ package com.malliina.logstreams.db
 import cats.*
 import cats.implicits.*
 import com.malliina.database.DoobieDatabase
-import com.malliina.logstreams.auth.UserError.{AlreadyExists, DoesNotExist}
+import com.malliina.logstreams.auth.UserError.{AlreadyExists, DoesNotExist, NoSuchEmail}
 import com.malliina.logstreams.auth.{BasicCredentials, UserService}
 import com.malliina.logstreams.db.DoobieDatabaseAuth.log
 import com.malliina.logstreams.models.AppName
 import com.malliina.util.AppLogger
-import com.malliina.values.{Password, Username}
+import com.malliina.values.{Email, Password, Username}
 import doobie.free.connection.ConnectionIO
 import doobie.implicits.*
 
@@ -58,5 +58,12 @@ class DoobieDatabaseAuth[F[_]](db: DoobieDatabase[F]) extends UserService[F]:
 
   def all(): F[List[Username]] = db.run:
     sql"select USER from USERS order by USER".query[Username].to[List]
+
+  def admin(email: Email): F[Either[NoSuchEmail, Admin]] = db.run:
+    sql"select email, language, created_at from admins where email = $email"
+      .query[Admin]
+      .option
+      .map: opt =>
+        opt.map(a => Right(a)).getOrElse(Left(NoSuchEmail(email)))
 
   private def hash(creds: BasicCredentials): Password = Utils.hash(creds)

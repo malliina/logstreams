@@ -8,7 +8,7 @@ import com.malliina.live.LiveReload
 import com.malliina.logstreams.db.StreamsQuery
 import com.malliina.logstreams.html.Htmls.{*, given}
 import com.malliina.logstreams.http4s.{LogRoutes, UserFeedback}
-import com.malliina.logstreams.models.{AppName, FrontStrings, Limits, LogLevel}
+import com.malliina.logstreams.models.{AppName, FrontStrings, LogLevel}
 import com.malliina.logstreams.{FileAssets, HashedAssets}
 import com.malliina.values.Username
 import org.http4s.Uri
@@ -72,7 +72,7 @@ class Htmls(
       div(cls := "form-check")
     )
   )
-  
+
   def logs(apps: Seq[AppName], query: StreamsQuery) =
     baseIndex("logs", bodyClasses = Seq(classes.Socket))(
       headerRow("Logs"),

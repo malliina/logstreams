@@ -12,11 +12,13 @@ import com.malliina.http.UrlSyntax.url
 import com.malliina.http.io.HttpClientIO
 import com.malliina.logback.LogbackUtils
 import com.malliina.logstreams.auth.*
+import com.malliina.logstreams.db.Admin
 import com.malliina.logstreams.http4s.{AppResources, Http4sAuth, SourceInfo}
+import com.malliina.logstreams.models.Language.English
 import com.malliina.logstreams.{LocalConf, LogstreamsConf}
-import com.malliina.values.Literals.user
-import com.malliina.values.{Password, Username}
+import com.malliina.values.{Email, Password, Username}
 import munit.AnyFixture
+import java.time.Instant
 
 class LogsAppConf(override val database: Conf) extends AppConf:
   override def close(): Unit = ()
@@ -79,14 +81,14 @@ trait ServerSuite extends MUnitDatabaseSuite:
 
   def testAuths: AuthBuilder = new AuthBuilder:
     override def apply[F[_]: Sync](users: UserService[F], web: Http4sAuth[F]) =
-      TestAuther(users, web, user"u")
+      TestAuther(users, web, Admin(Email.unsafe("u@example.com"), English, Instant.now()))
 
   override def munitFixtures: Seq[AnyFixture[?]] = Seq(db, server)
 
 abstract class TestServerSuite extends munit.CatsEffectSuite with ServerSuite
 
-class TestAuther[F[_]: Sync](users: UserService[F], val web: Http4sAuth[F], testUser: Username)
+class TestAuther[F[_]: Sync](users: UserService[F], val web: Http4sAuth[F], testUser: Admin)
   extends Auther[F]:
   override val sources: HeaderAuthenticator[F, Username] = Auths.sources(users)
-  override def viewers: HeaderAuthenticator[F, Username] = hs => Sync[F].pure(Right(testUser))
+  override def viewers: HeaderAuthenticator[F, Admin] = hs => Sync[F].pure(Right(testUser))
   override val public: RequestAuthenticator[F, SourceInfo] = Auths.public(users, web)

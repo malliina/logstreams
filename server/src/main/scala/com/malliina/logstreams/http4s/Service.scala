@@ -291,13 +291,17 @@ class Service[F[_]: Async](
 
   private def webAuth(req: Request[F])(code: UserRequest => F[Response[F]]): F[Response[F]] =
     auths.viewers
-      .authenticate(req.headers)
+      .authenticate(req)
       .flatMap: e =>
         e.map: user =>
-          code(UserRequest.req(user, req))
-        .recover: err =>
-            log.debug(s"Unauthorized. $err")
-            unauthorized(Errors.single(s"Unauthorized."))
+          code(UserRequest.admin(user, req))
+        .recover:
+            case err @ EmailNotFound(email, headers) =>
+              log.info(s"Unauthorized. $err")
+              unauthorizedJson(SingleError(s"User '$email' is not authorized."))
+            case err =>
+              log.debug(s"Unauthorized. $err")
+              unauthorized(Errors.single(s"Unauthorized."))
 
   private def sourceAuth(req: Request[F])(code: Username => F[Response[F]]) =
     authed(req, auths.sources): user =>
@@ -320,6 +324,7 @@ class Service[F[_]: Async](
             val error = err match
               case MissingCredentials(message, headers) => SingleError.input(message)
               case http4s.JWTError(error, headers)      => SingleError(error.message, error.key)
+              case EmailNotFound(email, headers)        => SingleError("Email not found.")
             log.warn(s"Unauthorized request to ${req.method} ${req.uri}. $error $err")
             unauthorizedJson(error)
 

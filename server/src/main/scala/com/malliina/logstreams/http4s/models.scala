@@ -1,5 +1,6 @@
 package com.malliina.logstreams.http4s
 
+import com.malliina.logstreams.db.Admin
 import com.malliina.logstreams.http4s.UserRequest.header
 import com.malliina.logstreams.models.{AppName, LogClientId, UserAgent}
 import com.malliina.values.{IdToken, Readable, Username}
@@ -33,6 +34,9 @@ case class UserRequest(
 object UserRequest:
   def req(user: Username, req: Request[?]): UserRequest =
     make(user, req, req.headers.header[LogClientId](ci"X-Client-Id"))
+
+  def admin(user: Admin, req: Request[?]): UserRequest =
+    make(Username.unsafe(user.email.email), req, None)
 
   def make(user: Username, req: Request[?], clientId: Option[LogClientId]): UserRequest =
     UserRequest(

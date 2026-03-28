@@ -36,6 +36,11 @@ object DateFormats:
   ): DateFormats =
     literal(LTS = lts, LT = lt, L = l, LL = ll, LLL = lll, LLLL = llll).asInstanceOf[DateFormats]
 
+enum TimeLocale(val name: String):
+  case Fi extends TimeLocale("fi")
+  case Sv extends TimeLocale("sv")
+  case En extends TimeLocale("en")
+
 @js.native
 trait TimeLocalization extends js.Object:
   def dateFormats: DateFormats = js.native
@@ -48,8 +53,8 @@ object TimeLocalization:
   val se = "sv-SE"
   val en = "en-US"
 
-  def apply(df: DateFormats): TimeLocalization =
-    literal(dateFormats = df, hourCycle = "h23", startOfTheWeek = 1, locale = en)
+  def apply(df: DateFormats, locale: TimeLocale): TimeLocalization =
+    literal(dateFormats = df, hourCycle = "h23", startOfTheWeek = 1, locale = locale.name)
       .asInstanceOf[TimeLocalization]
 
 @js.native

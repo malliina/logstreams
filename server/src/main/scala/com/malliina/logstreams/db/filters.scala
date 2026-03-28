@@ -5,7 +5,7 @@ import com.malliina.http.Errors
 import com.malliina.http4s.QueryParsers
 import com.malliina.logback.TimeFormatter
 import com.malliina.logstreams.LimitsParser
-import com.malliina.logstreams.models.{AppName, FormattedTimeRange, Limits, LogLevel, Queries, QueryInfo, SearchInfo}
+import com.malliina.logstreams.models.{AppName, FormattedTimeRange, Limits, LogLevel, Queries, QueryInfo, ResultsLang, SearchInfo}
 import com.malliina.values.Literals.nonNeg
 import com.malliina.values.{StringEnumCompanion, Username}
 import org.http4s.{Query, QueryParamDecoder, QueryParamEncoder}
@@ -79,8 +79,8 @@ case class StreamsQuery(
   query: Option[String]
 ) extends QueryInfo:
   def queryStar = query.map(q => s"$q*")
-  def describe(formatter: DateTimeFormatter): String =
-    s"$summary${timeRange.formatted(formatter).describe} order $order"
+  def describe(formatter: DateTimeFormatter, lang: ResultsLang): String =
+    s"${summary(lang)}${timeRange.formatted(formatter).describe(lang)} order $order"
 
   def toJs(dtf: DateTimeFormatter) =
     SearchInfo(apps, level, timeRange.formatted(dtf), limits, query)

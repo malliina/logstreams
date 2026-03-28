@@ -195,13 +195,11 @@ object Limits:
   val default = Limits(DefaultLimit, DefaultOffset)
 
 case class FormattedTimeRange(from: Option[String], to: Option[String]) derives Codec.AsObject:
-  def describe = (from, to) match
-    case (Some(f), Some(t)) => s" time between $f - $t"
-    case (None, Some(t))    => s" time until $t"
-    case (Some(f), None)    => s" time starting $f"
+  def describe(lang: ResultsLang) = (from, to) match
+    case (Some(f), Some(t)) => s" ${lang.queryTime} ${lang.between} $f - $t"
+    case (None, Some(t))    => s" ${lang.queryTime} ${lang.until} $t"
+    case (Some(f), None)    => s" ${lang.queryTime} ${lang.starting} $f"
     case other              => ""
-
-  override def toString: String = describe
 
 trait QueryInfo:
   def apps: Seq[Username]
@@ -211,10 +209,10 @@ trait QueryInfo:
   def limit = limits.limit
   def offset = limits.offset
 
-  def summary: String =
-    val appsList = if apps.nonEmpty then s"apps ${apps.mkString(", ")} " else ""
-    val queryStr = query.map(q => s"query '$q' ").getOrElse("")
-    s"$queryStr${appsList}level $level limit $limit offset $offset"
+  def summary(lang: ResultsLang): String =
+    val appsList = if apps.nonEmpty then s"${lang.apps} ${apps.mkString(", ")} " else ""
+    val queryStr = query.map(q => s"${lang.query} '$q' ").getOrElse("")
+    s"$queryStr$appsList${lang.queryLevel} $level ${lang.limit} $limit ${lang.offset} $offset"
 
 case class SearchInfo(
   apps: Seq[Username],
@@ -223,7 +221,7 @@ case class SearchInfo(
   limits: Limits,
   query: Option[String]
 ) extends QueryInfo derives Codec.AsObject:
-  def describe = s"$summary${timeRange.describe}"
+  def describe(lang: ResultsLang) = s"${summary(lang)}${timeRange.describe(lang)}"
 
 case class MetaEvent(event: String, meta: SearchInfo) extends FrontEvent derives Codec.AsObject
 object MetaEvent:

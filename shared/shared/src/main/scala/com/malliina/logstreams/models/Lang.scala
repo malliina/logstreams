@@ -2,6 +2,16 @@ package com.malliina.logstreams.models
 
 import com.malliina.values.StringEnumCompanion
 
+enum Language(val code: String):
+  case English extends Language("en-US")
+  case Finnish extends Language("fi-FI")
+  case Swedish extends Language("sv-SE")
+
+object Language extends StringEnumCompanion[Language]:
+  override def all: Seq[Language] = Seq(English, Swedish, Finnish)
+  override def write(t: Language): String = t.code
+  val default: Language = English
+
 case class ProfileLang(
   title: String,
   language: String,
@@ -22,7 +32,16 @@ case class ResultsLang(
   client: String,
   userAgent: String,
   level: String,
-  noResults: String
+  noResults: String,
+  query: String,
+  apps: String,
+  queryLevel: String,
+  limit: String,
+  offset: String,
+  queryTime: String,
+  starting: String,
+  until: String,
+  between: String
 )
 
 case class PagingLang(
@@ -71,6 +90,7 @@ case class NavLang(
 )
 
 case class Lang(
+  language: Language,
   nav: NavLang,
   logs: LogsLang,
   servers: ServersLang,
@@ -79,9 +99,10 @@ case class Lang(
 )
 
 object Lang:
-  val cookieName = "lang"
+  val cookieName = "logstreams-lang"
 
   val en: Lang = Lang(
+    Language.English,
     NavLang("logstreams", "Logs", "Sources", "Users", PagingLang("Navigation", "Next", "Previous")),
     LogsLang(
       "Logs",
@@ -100,7 +121,16 @@ object Lang:
         "Client",
         "User Agent",
         "Level",
-        "No results for"
+        "No results for",
+        "query",
+        "apps",
+        "level",
+        "limit",
+        "offset",
+        "time",
+        "starting",
+        "until",
+        "between"
       )
     ),
     ServersLang("Servers", "App", "Address", "User-Agent", "ID", "Joined", "Unknown"),
@@ -115,6 +145,7 @@ object Lang:
     )
   )
   val se: Lang = Lang(
+    Language.Swedish,
     NavLang(
       "logstreams",
       "Loggar",
@@ -139,7 +170,16 @@ object Lang:
         "Klient",
         "Agent",
         "Nivå",
-        "Inga resultat för"
+        "Inga resultat för",
+        "sökord",
+        "appar",
+        "nivå",
+        "högst",
+        "hoppa över",
+        "tid",
+        "från",
+        "tills",
+        "mellan"
       )
     ),
     ServersLang("Servrar", "App", "Adress", "User-Agent", "ID", "Kopplade", "Okänd"),
@@ -160,13 +200,3 @@ object Lang:
     case Language.English => en
     case Language.Finnish => en
     case Language.Swedish => se
-
-enum Language(val code: String):
-  case English extends Language("en-US")
-  case Finnish extends Language("fi-FI")
-  case Swedish extends Language("sv-SE")
-
-object Language extends StringEnumCompanion[Language]:
-  override def all: Seq[Language] = Seq(English, Swedish, Finnish)
-  override def write(t: Language): String = t.code
-  val default: Language = English

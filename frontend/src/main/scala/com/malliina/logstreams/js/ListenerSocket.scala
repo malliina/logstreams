@@ -83,7 +83,7 @@ class ListenerSocket(wsPath: String, settings: Settings, verboseSupport: Boolean
           loadingSpinner.hide()
           searchFeedbackRow.show()
           table.hideFull()
-          val msg = s"${rlang.noResults} ${meta.describe}."
+          val msg = s"${rlang.noResults} ${meta.describe(lang.logs.results)}."
           searchFeedback.innerText = msg
         else if e == MetaEvent.Loading then
           table.hideFull()

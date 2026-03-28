@@ -2,7 +2,7 @@ package com.malliina.logstreams.js
 
 import com.malliina.logstreams.js.ScriptHelpers.*
 import com.malliina.logstreams.models.FrontStrings.ToTimePickerId
-import com.malliina.logstreams.models.{Lang, Queries}
+import com.malliina.logstreams.models.{Lang, Language, Queries}
 import org.scalajs.dom.{HTMLButtonElement, HTMLInputElement, KeyboardEvent, MouseEvent, window}
 
 import scala.scalajs.js.Date
@@ -14,12 +14,16 @@ class LogsPage(lang: Lang, log: BaseLogger):
   private val fromPicker = makePicker(FromTimePickerId, dateInQuery(Queries.From))
   private val toPicker = makePicker(ToTimePickerId, dateInQuery(Queries.To))
   private def makePicker(elementId: String, initialDate: Option[Date]): TempusDominus =
+    val locale = lang.language match
+      case Language.Swedish => TimeLocale.Sv
+      case Language.Finnish => TimeLocale.Fi
+      case Language.English => TimeLocale.En
     TempusDominus(
       elem(elementId),
       TimeOptions(
         initialDate,
         TimeRestrictions(None, None),
-        TimeLocalization(DateFormats.default),
+        TimeLocalization(DateFormats.default, locale),
         DisplayOptions.basic(close = true)
       )
     )

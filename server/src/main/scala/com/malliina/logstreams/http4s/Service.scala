@@ -95,7 +95,14 @@ class Service[F[_]: Async](
         users
           .all()
           .flatMap: us =>
-            ok(htmls.logs(us.map(u => AppName.fromUsername(u)), query, user.lang))
+            val languageCookie = ResponseCookie(
+              Lang.cookieName,
+              user.language.code,
+              secure = Urls.isSecure(req),
+              httpOnly = false
+            )
+            ok(htmls.logs(us.map(u => AppName.fromUsername(u)), query, user.lang)).map: res =>
+              res.addCookie(languageCookie)
     case req @ GET -> Root / "sources" =>
       webAuth(req): src =>
         ok(htmls.sources(src.lang))
@@ -190,13 +197,13 @@ class Service[F[_]: Async](
     case req @ GET -> Root / "ws" / "logs" =>
       logsRequest(req): (query, user) =>
         log.info(
-          s"Opening log stream with ${query.describe(LogSockets.helsinkiFormatter)} for '${user.email}'..."
+          s"Opening log stream with ${query.describe(LogSockets.helsinkiFormatter, Lang.en.logs.results)} for '${user.email}'..."
         )
         sockets.listener(query, socketBuilder)
     case req @ GET -> Root / "logs" / "history" =>
       logsRequest(req): (query, user) =>
         log.info(
-          s"Searching for logs with ${query.describe} for '${user.email}'..."
+          s"Searching for logs with ${query.describe(LogSockets.helsinkiFormatter, Lang.en.logs.results)} for '${user.email}'..."
         )
         sockets.db
           .events(query)

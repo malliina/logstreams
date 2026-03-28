@@ -125,6 +125,10 @@ h1, h2 {
   }
 
   &.user {
+    background-image: url("../img/computer-solid-full.svg");
+  }
+
+  &.profile {
     background-image: url("../img/user.svg");
   }
 }

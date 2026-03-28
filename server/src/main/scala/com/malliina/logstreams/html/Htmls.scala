@@ -8,7 +8,7 @@ import com.malliina.live.LiveReload
 import com.malliina.logstreams.db.StreamsQuery
 import com.malliina.logstreams.html.Htmls.{*, given}
 import com.malliina.logstreams.http4s.{LogRoutes, UserFeedback}
-import com.malliina.logstreams.models.{AppName, FrontStrings, LogLevel}
+import com.malliina.logstreams.models.{AppName, FrontStrings, Lang, LogLevel}
 import com.malliina.logstreams.{FileAssets, HashedAssets}
 import com.malliina.values.Username
 import org.http4s.Uri
@@ -66,15 +66,15 @@ class Htmls(
   private def inlineOrUri(name: String) =
     HashedAssets.dataUris.getOrElse(name, asset(name).renderString)
 
-  def profile() = baseIndex("profile")(
+  def profile(lang: Lang) = baseIndex("profile", lang)(
     headerRow("Profile"),
     div(cls := "language-form")(
       div(cls := "form-check")
     )
   )
 
-  def logs(apps: Seq[AppName], query: StreamsQuery) =
-    baseIndex("logs", bodyClasses = Seq(classes.Socket))(
+  def logs(apps: Seq[AppName], query: StreamsQuery, lang: Lang) =
+    baseIndex("logs", lang, bodyClasses = Seq(classes.Socket))(
       headerRow("Logs"),
       row(
         div(cls := s"col-sm-2 col-md-3 mt-1 mt-sm-0 d-none d-md-block")(
@@ -181,12 +181,12 @@ class Htmls(
     val prev = query.limits.prev.map(p => move(query.copy(limits = p)))
     val next = move(query.copy(limits = query.limits.next))
     val prevExtra = if prev.isRight then "" else " disabled"
-    nav(aria.label := "Navigation", `class` := s"d-flex py-3 $divClass")(
-      ul(`class` := "pagination")(
-        li(`class` := s"page-item $prevExtra")(
-          a(`class` := "page-link", prev.map(p => href := p).getOrElse(href := "#"))("Previous")
+    nav(aria.label := "Navigation", cls := s"d-flex py-3 $divClass")(
+      ul(cls := "pagination")(
+        li(cls := s"page-item $prevExtra")(
+          a(cls := "page-link", prev.map(p => href := p).getOrElse(href := "#"))("Previous")
         ),
-        li(`class` := "page-item")(a(`class` := "page-link", href := next)("Next"))
+        li(cls := "page-item")(a(cls := "page-link", href := next)("Next"))
       )
     )
 
@@ -219,30 +219,39 @@ class Htmls(
       )
     )
 
-  def sources = baseIndex("sources", bodyClasses = Seq(classes.Sources))(
-    headerRow("Servers"),
-    fullRow(
-      defaultTable(SourceTableId, Seq("App", "Address", "User-Agent", "ID", "Joined"))
+  def sources(lang: Lang) =
+    val slang = lang.servers
+    baseIndex("sources", lang, bodyClasses = Seq(classes.Sources))(
+      headerRow(lang.servers.title),
+      fullRow(
+        defaultTable(
+          SourceTableId,
+          Seq(slang.app, slang.address, slang.userAgent, slang.id, slang.joined)
+        )
+      )
     )
-  )
 
-  def users(us: Seq[Username], feedback: Option[UserFeedback], csrf: CSRFToken) =
+  def users(us: Seq[Username], feedback: Option[UserFeedback], csrf: CSRFToken, lang: Lang) =
+    val ulang = lang.users
     val csrfInput = input(tpe := "hidden", name := csrfConf.tokenName, value := csrf)
-    baseIndex("users")(
-      headerRow("Users"),
+    baseIndex("users", lang)(
+      headerRow(lang.users.title),
       fullRow(feedback.fold(empty)(feedbackDiv)),
       row(
         div6(
-          if us.isEmpty then leadPara("No users.")
+          if us.isEmpty then leadPara(ulang.noUsers)
           else
-            headeredTable(s"${tables.stripedHover} align-middle", Seq("Username", "Actions"))(
+            headeredTable(
+              s"${tables.stripedHover} align-middle",
+              Seq(ulang.username, ulang.action)
+            )(
               tbody(us.map: user =>
                 tr(
                   td(user.name),
                   td(cls := "table-button")(
                     postableForm(reverse.removeUser(user), cls := "table-form")(
                       csrfInput,
-                      button(cls := s"${btn.danger} ${btn.sm}")(" Delete")
+                      button(cls := s"${btn.danger} ${btn.sm}")(s" ${ulang.deleteUser}")
                     )
                   )
                 ))
@@ -251,22 +260,29 @@ class Htmls(
         div6(
           form(action := reverse.addUser, method := Post)(
             csrfInput,
-            div(cls := "mb-3")(
-              label(`for` := UsernameKey, cls := "form-label")("Username"),
-              input(tpe := "text", cls := "form-control", id := UsernameKey, name := UsernameKey)
-            ),
-            div(cls := "mb-3")(
-              label(`for` := PasswordKey, cls := "form-label")("Password"),
-              input(
-                tpe := "password",
-                cls := "form-control",
-                id := PasswordKey,
-                name := PasswordKey
-              )
-            ),
-            button(tpe := "submit", cls := "btn btn-primary")("Add User")
+            formInput(UsernameKey, ulang.username),
+            formInput(PasswordKey, ulang.password, "password"),
+            button(tpe := "submit", cls := "btn btn-primary")(ulang.addUser)
           )
         )
+      )
+    )
+
+  def formInput(
+    identifier: String,
+    labelText: String,
+    inType: String = "text",
+    inCls: String = "form-control",
+    labelCls: String = "form-label",
+    divCls: String = "mb-3"
+  ) =
+    div(cls := divCls)(
+      label(`for` := identifier, cls := labelCls)(labelText),
+      input(
+        tpe := inType,
+        cls := inCls,
+        id := identifier,
+        name := identifier
       )
     )
 
@@ -282,7 +298,9 @@ class Htmls(
       tbody
     )
 
-  private def baseIndex(tabName: String, bodyClasses: Seq[String] = Nil)(inner: Modifier*) =
+  private def baseIndex(tabName: String, lang: Lang, bodyClasses: Seq[String] = Nil)(
+    inner: Modifier*
+  ) =
     def navItem(thisTabName: String, tabId: String, url: Uri, faName: String) =
       val itemClass = if tabId == tabName then "nav-item active" else "nav-item"
       li(cls := itemClass)(a(href := url, cls := "nav-link")(fa(faName), s" $thisTabName"))
@@ -292,9 +310,9 @@ class Htmls(
         reverse.index,
         "logstreams",
         modifier(
-          navItem("Logs", "logs", reverse.index, "list"),
-          navItem("Sources", "sources", reverse.sources, "tower-broadcast"),
-          navItem("Users", "users", reverse.allUsers, "user")
+          navItem(lang.logs.title, "logs", reverse.index, "list"),
+          navItem(lang.servers.title, "sources", reverse.sources, "tower-broadcast"),
+          navItem(lang.users.title, "users", reverse.allUsers, "user")
         )
       ),
       div(cls := "wide-content", id := "page-content")(inner)
@@ -308,7 +326,7 @@ class Htmls(
         link(
           rel := "shortcut icon",
           tpe := "image/png",
-          href := inlineOrUri("img/jag-16x16.png")
+          href := inlineOrUri(FileAssets.img.jag_16x16_png)
         ),
         cssFiles.map(file => cssLink(asset(file))),
         extraHeader

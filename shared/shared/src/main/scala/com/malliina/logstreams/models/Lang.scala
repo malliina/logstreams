@@ -51,7 +51,8 @@ case class UsersLang(
   password: String,
   action: String,
   addUser: String,
-  deleteUser: String
+  deleteUser: String,
+  noUsers: String
 )
 
 case class NavLang(
@@ -96,7 +97,7 @@ object Lang:
       )
     ),
     ServersLang("Servers", "App", "Address", "User-Agent", "ID", "Joined", "Unknown"),
-    UsersLang("Users", "Username", "Password", "Action", "Add User", "Delete"),
+    UsersLang("Users", "Username", "Password", "Action", "Add User", "Delete", "No users."),
     ProfileLang("Profile", "Language", "English", "Swedish")
   )
   val default = en

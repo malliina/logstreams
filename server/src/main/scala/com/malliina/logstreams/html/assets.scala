@@ -2,7 +2,6 @@ package com.malliina.logstreams.html
 
 import com.malliina.logstreams.HashedAssets
 import org.http4s.Uri
-import com.malliina.http.FullUrl
 import org.http4s.implicits.uri
 
 trait AssetsSource:
@@ -15,15 +14,9 @@ object AssetsSource:
 
 object DirectAssets extends AssetsSource:
   override def at(file: String): Uri =
-    uri"/assets" / file
+    uri"/assets".addPath(file)
 
 object HashedAssetsSource extends AssetsSource:
   override def at(file: String): Uri =
     val optimal = HashedAssets.assets.getOrElse(file, file)
-    uri"/assets" / optimal
-
-class CDNAssets(cdnBaseUrl: FullUrl) extends AssetsSource:
-  override def at(file: String): Uri =
-    val optimal = HashedAssets.assets.getOrElse(file, file)
-    val url = cdnBaseUrl / "assets" / optimal
-    Uri.unsafeFromString(url.url)
+    uri"/assets".addPath(optimal)

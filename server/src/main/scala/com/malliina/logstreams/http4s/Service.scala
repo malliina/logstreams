@@ -16,7 +16,7 @@ import com.malliina.logstreams.html.Htmls
 import com.malliina.logstreams.html.Htmls.{PasswordKey, UsernameKey}
 import com.malliina.logstreams.http4s
 import com.malliina.logstreams.http4s.Service.{log, given}
-import com.malliina.logstreams.models.{AppName, LogClientId, ParsedLogEvents}
+import com.malliina.logstreams.models.{AppName, Language, LogClientId, ParsedLogEvents}
 import com.malliina.util.AppLogger
 import com.malliina.values.{Email, Password, Username}
 import com.malliina.web.*
@@ -69,10 +69,10 @@ class Service[F[_]: Async](
         users
           .all()
           .flatMap: us =>
-            ok(htmls.logs(us.map(u => AppName.fromUsername(u)), query))
+            ok(htmls.logs(us.map(u => AppName.fromUsername(u)), query, user.lang))
     case req @ GET -> Root / "sources" =>
       webAuth(req): src =>
-        ok(htmls.sources)
+        ok(htmls.sources(src.lang))
     case req @ POST -> Root / "sources" / "token" =>
       req
         .decodeJson[TokenRequest]
@@ -88,7 +88,12 @@ class Service[F[_]: Async](
           else unauthorized(Errors.single(s"Illegal app: '$app'."))
     case req @ POST -> Root / "sources" / "logs" =>
       publicAuth(req): src =>
-        val user = UserRequest.make(Username.unsafe(src.app.name), req, Option(src.clientId))
+        val user = UserRequest.make(
+          Username.unsafe(src.app.name),
+          Language.default,
+          req,
+          Option(src.clientId)
+        )
         for
           decoded <- req.decodeJson[ParsedLogEvents]
           published <- sockets.publishLogs(decoded, user)
@@ -101,7 +106,7 @@ class Service[F[_]: Async](
           .all()
           .flatMap: us =>
             csrfOk: token =>
-              htmls.users(us, feedback, token)
+              htmls.users(us, feedback, token, user.lang)
           .clearFeedback
     case req @ POST -> Root / "users" =>
       webAuth(req): user =>
@@ -159,13 +164,13 @@ class Service[F[_]: Async](
     case req @ GET -> Root / "ws" / "logs" =>
       logsRequest(req): (query, user) =>
         log.info(
-          s"Opening log stream with ${query.describe(LogSockets.helsinkiFormatter)} for '$user'..."
+          s"Opening log stream with ${query.describe(LogSockets.helsinkiFormatter)} for '${user.user}'..."
         )
         sockets.listener(query, socketBuilder)
     case req @ GET -> Root / "logs" / "history" =>
       logsRequest(req): (query, user) =>
         log.info(
-          s"Searching for logs with ${query.describe} for '$user'..."
+          s"Searching for logs with ${query.describe} for '${user.user}'..."
         )
         sockets.db
           .events(query)
@@ -182,7 +187,8 @@ class Service[F[_]: Async](
       publicAuth(req): src =>
         log.info(s"Opening connection for app '${src.describe}'.")
         sockets.source(
-          UserRequest.make(Username.unsafe(src.app.name), req, Option(src.clientId)),
+          UserRequest
+            .make(Username.unsafe(src.app.name), Language.default, req, Option(src.clientId)),
           socketBuilder
         )
     case req @ GET -> Root / "oauth" =>
@@ -195,7 +201,7 @@ class Service[F[_]: Async](
       )
   }
 
-  private def logsRequest(req: Request[F])(q: (StreamsQuery, Username) => F[Response[F]]) =
+  private def logsRequest(req: Request[F])(q: (StreamsQuery, UserRequest) => F[Response[F]]) =
     webAuth(req): principal =>
       val user = principal.user
       StreamsQuery
@@ -205,7 +211,7 @@ class Service[F[_]: Async](
             log.warn(s"Invalid log stream request by '$user'. $err")
             badRequest(err)
           ,
-          query => q(query, user)
+          query => q(query, principal)
         )
 
   val cookieNames = auths.web.cookieNames

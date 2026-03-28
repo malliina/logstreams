@@ -2,7 +2,7 @@ package com.malliina.logstreams.http4s
 
 import com.malliina.logstreams.db.Admin
 import com.malliina.logstreams.http4s.UserRequest.header
-import com.malliina.logstreams.models.{AppName, LogClientId, UserAgent}
+import com.malliina.logstreams.models.{AppName, Lang, Language, LogClientId, UserAgent}
 import com.malliina.values.{IdToken, Readable, Username}
 import io.circe.Codec
 import org.http4s.{Headers, Request}
@@ -25,24 +25,32 @@ case class UserRequest(
   user: Username,
   headers: Headers,
   address: String,
+  language: Language,
   clientId: Option[LogClientId],
   now: OffsetDateTime
 ):
   val userAgent = headers.header[UserAgent](ci"User-Agent")
   def describe: String = clientId.fold(user.name)(id => s"$user ($id)")
+  def lang = Lang(language)
 
 object UserRequest:
   def req(user: Username, req: Request[?]): UserRequest =
-    make(user, req, req.headers.header[LogClientId](ci"X-Client-Id"))
+    make(user, Language.default, req, req.headers.header[LogClientId](ci"X-Client-Id"))
 
   def admin(user: Admin, req: Request[?]): UserRequest =
-    make(Username.unsafe(user.email.email), req, None)
+    make(Username.unsafe(user.email.email), user.language, req, None)
 
-  def make(user: Username, req: Request[?], clientId: Option[LogClientId]): UserRequest =
+  def make(
+    user: Username,
+    language: Language,
+    req: Request[?],
+    clientId: Option[LogClientId]
+  ): UserRequest =
     UserRequest(
       user,
       req.headers,
       Urls.address(req),
+      language,
       clientId,
       OffsetDateTime.now()
     )

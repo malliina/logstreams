@@ -3,7 +3,7 @@ package com.malliina.logstreams.http4s
 import cats.data.NonEmptyList
 import cats.effect.Sync
 import cats.effect.kernel.Async
-import cats.syntax.all.{toFlatMapOps, toFunctorOps}
+import cats.syntax.all.{catsSyntaxApplicativeError, toFlatMapOps, toFunctorOps}
 import com.malliina.app.AppMeta
 import com.malliina.database.DoobieDatabase
 import com.malliina.http.{Errors, SingleError}
@@ -13,18 +13,19 @@ import com.malliina.logstreams.auth.*
 import com.malliina.logstreams.auth.AuthProvider.{Google, PromptKey, SelectAccount}
 import com.malliina.logstreams.db.StreamsQuery
 import com.malliina.logstreams.html.Htmls
-import com.malliina.logstreams.html.Htmls.{PasswordKey, UsernameKey}
+import com.malliina.logstreams.html.Htmls.{LanguageKey, PasswordKey, UsernameKey}
 import com.malliina.logstreams.http4s
 import com.malliina.logstreams.http4s.Service.{log, given}
-import com.malliina.logstreams.models.{AppName, Language, LogClientId, ParsedLogEvents}
+import com.malliina.logstreams.models.{AppName, Lang, Language, LogClientId, ParsedLogEvents}
 import com.malliina.util.AppLogger
 import com.malliina.values.{Email, Password, Username}
 import com.malliina.web.*
 import com.malliina.web.OAuthKeys.{Nonce, State}
 import com.malliina.web.Utils.randomString
 import io.circe.syntax.EncoderOps
+import io.circe.Decoder
 import org.http4s.circe.CirceEntityEncoder.circeEntityEncoder
-import org.http4s.headers.`WWW-Authenticate`
+import org.http4s.headers.{Location, `Content-Type`, `User-Agent`, `WWW-Authenticate`}
 import org.http4s.server.middleware.CSRF
 import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.{BasicCredentials as _, Callback as _, *}
@@ -43,6 +44,12 @@ object Service:
         .read[Password](PasswordKey)
         .filterOrElse(_.pass.nonEmpty, Errors("Password was empty."))
     yield BasicCredentials(username, password)
+
+  given FormReadableT[ChangeLanguage] = FormReadableT.reader.emap: form =>
+    form
+      .read[Language](LanguageKey)
+      .map: language =>
+        ChangeLanguage(language)
 
 class Service[F[_]: Async](
   val db: DoobieDatabase[F],
@@ -64,6 +71,25 @@ class Service[F[_]: Async](
     case req @ GET -> Root      =>
       logsRequest(req): (query, user) =>
         seeOther(reverse.toLogs(StreamsQuery.toQuery(query)))
+    case req @ GET -> Root / "profile" =>
+      webAuth(req): user =>
+        val feedback = req.feedbackAs[UserFeedback]
+        csrfOk: token =>
+          log.info(s"User ${user.email} lang is ${user.language}.")
+          htmls.profile(user.language, token, user.lang, feedback)
+        .clearFeedback
+    case req @ POST -> Root / "profile" =>
+      formAction[ChangeLanguage](req): r =>
+        val user = r.user
+        for
+          outcome <- users.changeLanguage(user.email, r.payload.language)
+          feedback = outcome
+            .map: upd =>
+              UserFeedback.success(Lang(upd.language).profile.success)
+            .getOrElse:
+              UserFeedback.error(user.lang.profile.failure)
+          res <- seeOther(reverse.profile).withFeedback(feedback)
+        yield res
     case req @ GET -> Root / "logs" =>
       logsRequest(req): (query, user) =>
         users
@@ -164,13 +190,13 @@ class Service[F[_]: Async](
     case req @ GET -> Root / "ws" / "logs" =>
       logsRequest(req): (query, user) =>
         log.info(
-          s"Opening log stream with ${query.describe(LogSockets.helsinkiFormatter)} for '${user.user}'..."
+          s"Opening log stream with ${query.describe(LogSockets.helsinkiFormatter)} for '${user.email}'..."
         )
         sockets.listener(query, socketBuilder)
     case req @ GET -> Root / "logs" / "history" =>
       logsRequest(req): (query, user) =>
         log.info(
-          s"Searching for logs with ${query.describe} for '${user.user}'..."
+          s"Searching for logs with ${query.describe} for '${user.email}'..."
         )
         sockets.db
           .events(query)
@@ -201,14 +227,13 @@ class Service[F[_]: Async](
       )
   }
 
-  private def logsRequest(req: Request[F])(q: (StreamsQuery, UserRequest) => F[Response[F]]) =
+  private def logsRequest(req: Request[F])(q: (StreamsQuery, AdminUser) => F[Response[F]]) =
     webAuth(req): principal =>
-      val user = principal.user
       StreamsQuery
         .fromQuery(req.uri.query, principal.now.toInstant)
         .fold(
           err =>
-            log.warn(s"Invalid log stream request by '$user'. $err")
+            log.warn(s"Invalid log stream request by '${principal.email}'. $err")
             badRequest(err)
           ,
           query => q(query, principal)
@@ -295,19 +320,35 @@ class Service[F[_]: Async](
   private def stringify(map: Map[String, String]): String =
     map.map((key, value) => s"$key=$value").mkString("&")
 
-  private def webAuth(req: Request[F])(code: UserRequest => F[Response[F]]): F[Response[F]] =
+  private def webAuth(req: Request[F])(code: AdminUser => F[Response[F]]): F[Response[F]] =
     auths.viewers
       .authenticate(req)
       .flatMap: e =>
         e.map: user =>
-          code(UserRequest.admin(user, req))
+          code(AdminUser.make(user))
         .recover:
             case err @ EmailNotFound(email, headers) =>
               log.info(s"Unauthorized. $err")
               unauthorizedJson(SingleError(s"User '$email' is not authorized."))
             case err =>
-              log.debug(s"Unauthorized. $err")
+              log.info(s"Unauthorized. $err")
               unauthorized(Errors.single(s"Unauthorized."))
+
+  private def formAction[T: Decoder](req: Request[F])(
+    code: JsonRequest[T] => F[Response[F]]
+  )(using decoder: EntityDecoder[F, T]): F[Response[F]] =
+    webAuth(req): user =>
+      val isForm = req.headers
+        .get[`Content-Type`]
+        .exists(_.mediaType == MediaType.application.`x-www-form-urlencoded`)
+      val decoded =
+        if isForm then req.as[T]
+        else req.decodeJson[T]
+      decoded
+        .flatMap(t => code(JsonRequest(user, t)))
+        .handleErrorWith: err =>
+          log.error(s"Form failure. $err")
+          badRequest(Errors(SingleError.input("Invalid form input.")))
 
   private def sourceAuth(req: Request[F])(code: Username => F[Response[F]]) =
     authed(req, auths.sources): user =>
@@ -336,6 +377,9 @@ class Service[F[_]: Async](
 
   private def buildMessage(req: UserRequest, message: String) =
     s"User '${req.user}' from '${req.address}' $message."
+
+  private def buildMessage(req: AdminUser, message: String) =
+    s"User '${req.email}' $message."
 
   private def unauthorized(errors: Errors) = seeOther(LogRoutes.googleStart)
 

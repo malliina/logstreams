@@ -2,7 +2,14 @@ package com.malliina.logstreams.models
 
 import com.malliina.values.StringEnumCompanion
 
-case class ProfileLang(title: String, language: String, english: String, swedish: String)
+case class ProfileLang(
+  title: String,
+  language: String,
+  english: String,
+  swedish: String,
+  success: String,
+  failure: String
+)
 
 case class CalendarLang(from: String, to: String)
 
@@ -98,14 +105,61 @@ object Lang:
     ),
     ServersLang("Servers", "App", "Address", "User-Agent", "ID", "Joined", "Unknown"),
     UsersLang("Users", "Username", "Password", "Action", "Add User", "Delete", "No users."),
-    ProfileLang("Profile", "Language", "English", "Swedish")
+    ProfileLang(
+      "Profile",
+      "Language",
+      "English",
+      "Swedish",
+      "Completed successfully.",
+      "An error occurred."
+    )
+  )
+  val se: Lang = Lang(
+    NavLang(
+      "logstreams",
+      "Loggar",
+      "Källor",
+      "Användare",
+      PagingLang("Navigering", "Följande", "Föregående")
+    ),
+    LogsLang(
+      "Loggar",
+      "Mera",
+      "Kompakt",
+      "Appar",
+      CalendarLang("Från", "Till"),
+      "Sök",
+      "Meddelande, tråd, ...",
+      ResultsLang(
+        "App",
+        "Tid",
+        "Meddelande",
+        "Loggare",
+        "Tråd",
+        "Klient",
+        "Agent",
+        "Nivå",
+        "Inga resultat för"
+      )
+    ),
+    ServersLang("Servrar", "App", "Adress", "User-Agent", "ID", "Kopplade", "Okänd"),
+    UsersLang(
+      "Användare",
+      "Användarnamn",
+      "Lösenord",
+      "Gärning",
+      "Lägg till",
+      "Radera",
+      "Inga användare."
+    ),
+    ProfileLang("Profil", "Språk", "Engelska", "Svenska", "Okej.", "Det misslyckades.")
   )
   val default = en
 
-  def apply(language: Language) = language match
+  def apply(language: Language): Lang = language match
     case Language.English => en
     case Language.Finnish => en
-    case Language.Swedish => en
+    case Language.Swedish => se
 
 enum Language(val code: String):
   case English extends Language("en-US")
@@ -113,6 +167,6 @@ enum Language(val code: String):
   case Swedish extends Language("sv-SE")
 
 object Language extends StringEnumCompanion[Language]:
-  override def all: Seq[Language] = Seq(English)
+  override def all: Seq[Language] = Seq(English, Swedish, Finnish)
   override def write(t: Language): String = t.code
   val default: Language = English

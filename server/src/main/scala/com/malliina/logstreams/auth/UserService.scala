@@ -2,7 +2,7 @@ package com.malliina.logstreams.auth
 
 import com.malliina.logstreams.auth.UserError.{AlreadyExists, DoesNotExist, NoSuchEmail}
 import com.malliina.logstreams.db.Admin
-import com.malliina.logstreams.models.AppName
+import com.malliina.logstreams.models.{AppName, Language}
 import com.malliina.values.{Email, Username}
 
 trait UserService[F[_]]:
@@ -13,6 +13,7 @@ trait UserService[F[_]]:
   def exists(app: AppName): F[Boolean]
   def all(): F[List[Username]]
   def admin(email: Email): F[Either[NoSuchEmail, Admin]]
+  def changeLanguage(email: Email, to: Language): F[Either[NoSuchEmail, Admin]]
 
 sealed trait UserError
 

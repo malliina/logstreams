@@ -15,6 +15,10 @@ trait FrontStrings:
   val SearchFeedbackId = "search-feedback"
   val SearchFeedbackRowId = "search-feedback-row"
 
+  val LanguageRadios = "language-radios"
+  val LanguageForm = "language-form"
+  val LanguageKey = "language"
+
   val LoadingSpinner = "loading-spinner"
   val LogLevelDropdown = "level-dropdown"
   val LogLevelDropdownButton = "level-dropdown-button"
@@ -46,3 +50,4 @@ trait FrontStrings:
     val MobileList = "mobile-list d-md-none"
     val Socket = "sockets"
     val Sources = "sources"
+    val Profile = "profile"

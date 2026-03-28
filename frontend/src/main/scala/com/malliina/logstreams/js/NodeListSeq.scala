@@ -1,6 +1,6 @@
 package com.malliina.logstreams.js
 
-import org.scalajs.dom.{DOMList, Element, HTMLElement, Node}
+import org.scalajs.dom.{DOMList, Element, Event, EventTarget, HTMLElement, Node}
 import com.malliina.logstreams.models.FrontStrings.DisplayNone
 
 implicit class NodeListSeq[T <: Node](nodes: DOMList[T]) extends IndexedSeq[T]:
@@ -22,3 +22,8 @@ extension (e: Element)
   def show(): Unit = e.classList.remove(DisplayNone)
 
 extension (e: HTMLElement) def hideFull(): Unit = e.className = DisplayNone
+
+extension (et: EventTarget)
+  def addOnClick(code: Event => Unit): Unit = addClickListener[Event](code)
+  private def addClickListener[E <: Event](code: E => Unit): Unit =
+    et.addEventListener("click", code)

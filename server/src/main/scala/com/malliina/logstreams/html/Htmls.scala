@@ -8,7 +8,7 @@ import com.malliina.live.LiveReload
 import com.malliina.logstreams.db.StreamsQuery
 import com.malliina.logstreams.html.Htmls.{*, given}
 import com.malliina.logstreams.http4s.{LogRoutes, UserFeedback}
-import com.malliina.logstreams.models.{AppName, FrontStrings, Lang, LogLevel}
+import com.malliina.logstreams.models.{AppName, FrontStrings, Lang, Language, LogLevel, PagingLang}
 import com.malliina.logstreams.{FileAssets, HashedAssets}
 import com.malliina.values.Username
 import org.http4s.Uri
@@ -19,6 +19,7 @@ import scalatags.text.Builder
 object Htmls:
   val UsernameKey = "username"
   val PasswordKey = "password"
+  val LanguageKey = "language"
 
   case class PageConf(titleText: String, bodyClasses: Seq[String])
 
@@ -54,8 +55,7 @@ class Htmls(
   cssFiles: Seq[String],
   assets: AssetsSource,
   csrfConf: CSRFConf
-) extends Bootstrap(HtmlTags)
-  with FrontStrings:
+) extends BaseHtml:
 
   import tags.*
 
@@ -66,16 +66,15 @@ class Htmls(
   private def inlineOrUri(name: String) =
     HashedAssets.dataUris.getOrElse(name, asset(name).renderString)
 
-  def profile(lang: Lang) = baseIndex("profile", lang)(
-    headerRow("Profile"),
-    div(cls := "language-form")(
-      div(cls := "form-check")
+  def profile(language: Language, token: CSRFToken, lang: Lang, feedback: Option[UserFeedback]) =
+    baseIndex("profile", lang, bodyClasses = Seq(classes.Profile))(
+      Profile(csrfConf)(language, token, lang, feedback)
     )
-  )
 
   def logs(apps: Seq[AppName], query: StreamsQuery, lang: Lang) =
+    val llang = lang.logs
     baseIndex("logs", lang, bodyClasses = Seq(classes.Socket))(
-      headerRow("Logs"),
+      headerRow(llang.title),
       row(
         div(cls := s"col-sm-2 col-md-3 mt-1 mt-sm-0 d-none d-md-block")(
           div(
@@ -93,7 +92,7 @@ class Htmls(
             label(
               cls := "btn btn-sm btn-outline-primary",
               `for` := OptionVerbose
-            )("Verbose"),
+            )(llang.verbose),
             input(
               cls := "btn-check",
               tpe := "radio",
@@ -104,7 +103,7 @@ class Htmls(
             label(
               cls := "btn btn-sm btn-outline-primary",
               `for` := OptionCompact
-            )("Compact")
+            )(llang.compact)
           )
         ),
         divClass("col-sm-2 col-md-2 col-lg-1")(
@@ -121,7 +120,7 @@ class Htmls(
         ),
         divClass("col-sm-6 col-md-7 mt-2 mb-2 mt-sm-0")(
           div(id := AppsDropdown, cls := "dropdown")(
-            dropdown("dd", "primary")("Apps"),
+            dropdown("dd", "primary")(llang.apps),
             div(cls := DropdownMenu, id := AppsDropdownMenuId)(
               apps.map: app =>
                 val included =
@@ -138,8 +137,8 @@ class Htmls(
         )
       ),
       divClass(s"$Row form-row")(
-        timePicker("From", FromTimePickerId),
-        timePicker("To", ToTimePickerId)
+        timePicker(llang.calendar.from, FromTimePickerId),
+        timePicker(llang.calendar.to, ToTimePickerId)
       ),
       divClass(s"$Row form-row")(
         div(cls := "input-group my-3")(
@@ -148,10 +147,10 @@ class Htmls(
             cls := "form-control search-control",
             aria.label := "Search input",
             id := SearchInput,
-            placeholder := "Message, stacktrace, thread, ..."
+            placeholder := llang.searchPlaceholder
           ),
           button(tpe := "button", cls := "btn btn-outline-primary", id := SearchButton)(
-            "Search"
+            llang.search
           )
         )
       ),
@@ -163,7 +162,7 @@ class Htmls(
         div(id := MobileContentId)
       ),
       logEntriesTable(LogTableId)(thead(id := TableHeadId), tbody(id := TableBodyId)),
-      pageNav(query)
+      pageNav(query, lang.nav.paging)
     )
 
   private def dropdown(identifier: String, flavor: String) = button(
@@ -177,16 +176,20 @@ class Htmls(
 
   private def names(ns: String*): String = ns.map(_.trim).filter(_.nonEmpty).mkString(" ")
 
-  private def pageNav(query: StreamsQuery, divClass: String = "justify-content-center") =
+  private def pageNav(
+    query: StreamsQuery,
+    plang: PagingLang,
+    divClass: String = "justify-content-center"
+  ) =
     val prev = query.limits.prev.map(p => move(query.copy(limits = p)))
     val next = move(query.copy(limits = query.limits.next))
     val prevExtra = if prev.isRight then "" else " disabled"
     nav(aria.label := "Navigation", cls := s"d-flex py-3 $divClass")(
       ul(cls := "pagination")(
         li(cls := s"page-item $prevExtra")(
-          a(cls := "page-link", prev.map(p => href := p).getOrElse(href := "#"))("Previous")
+          a(cls := "page-link", prev.map(p => href := p).getOrElse(href := "#"))(plang.previous)
         ),
-        li(cls := "page-item")(a(cls := "page-link", href := next)("Next"))
+        li(cls := "page-item")(a(cls := "page-link", href := next)(plang.next))
       )
     )
 
@@ -231,9 +234,12 @@ class Htmls(
       )
     )
 
+  def csrfInputField(csrf: CSRFToken) =
+    input(tpe := "hidden", name := csrfConf.tokenName, value := csrf)
+
   def users(us: Seq[Username], feedback: Option[UserFeedback], csrf: CSRFToken, lang: Lang) =
     val ulang = lang.users
-    val csrfInput = input(tpe := "hidden", name := csrfConf.tokenName, value := csrf)
+    val csrfInput = csrfInputField(csrf)
     baseIndex("users", lang)(
       headerRow(lang.users.title),
       fullRow(feedback.fold(empty)(feedbackDiv)),
@@ -312,7 +318,8 @@ class Htmls(
         modifier(
           navItem(lang.logs.title, "logs", reverse.index, "list"),
           navItem(lang.servers.title, "sources", reverse.sources, "tower-broadcast"),
-          navItem(lang.users.title, "users", reverse.allUsers, "user")
+          navItem(lang.users.title, "users", reverse.allUsers, "user"),
+          navItem(lang.profile.title, "profile", reverse.profile, "profile")
         )
       ),
       div(cls := "wide-content", id := "page-content")(inner)
@@ -339,11 +346,6 @@ class Htmls(
           jsScript(js, defer)
       )
     )
-
-  private def feedbackDiv(feedback: UserFeedback) =
-    val message = feedback.message
-    if feedback.isError then alertDanger(message)
-    else alertSuccess(message)
 
   private def postableForm(onAction: Uri, more: Modifier*) =
     form(role := FormRole, action := onAction, method := Post, more)

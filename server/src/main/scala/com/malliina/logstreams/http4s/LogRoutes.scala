@@ -16,6 +16,7 @@ trait LogRoutes:
   val sources = uri"/sources"
   val allUsers = uri"/users"
   val addUser = uri"/users"
+  val profile = uri"/profile"
 
   object sockets:
     val admins = uri"/ws/admins"

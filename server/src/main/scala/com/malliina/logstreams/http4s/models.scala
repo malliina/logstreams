@@ -3,12 +3,12 @@ package com.malliina.logstreams.http4s
 import com.malliina.logstreams.db.Admin
 import com.malliina.logstreams.http4s.UserRequest.header
 import com.malliina.logstreams.models.{AppName, Lang, Language, LogClientId, UserAgent}
-import com.malliina.values.{IdToken, Readable, Username}
+import com.malliina.values.{Email, IdToken, Readable, Username}
 import io.circe.Codec
 import org.http4s.{Headers, Request}
 import org.typelevel.ci.{CIString, CIStringSyntax}
 
-import java.time.OffsetDateTime
+import java.time.{Instant, OffsetDateTime}
 
 case class UserFeedback(message: String, isError: Boolean) derives Codec.AsObject
 
@@ -20,6 +20,12 @@ object UserFeedback:
 
   def success(message: String) = UserFeedback(message, isError = false)
   def error(message: String) = UserFeedback(message, isError = true)
+
+case class AdminUser(email: Email, language: Language, now: OffsetDateTime):
+  def lang = Lang(language)
+
+object AdminUser:
+  def make(admin: Admin): AdminUser = AdminUser(admin.email, admin.language, OffsetDateTime.now())
 
 case class UserRequest(
   user: Username,
@@ -36,9 +42,6 @@ case class UserRequest(
 object UserRequest:
   def req(user: Username, req: Request[?]): UserRequest =
     make(user, Language.default, req, req.headers.header[LogClientId](ci"X-Client-Id"))
-
-  def admin(user: Admin, req: Request[?]): UserRequest =
-    make(Username.unsafe(user.email.email), user.language, req, None)
 
   def make(
     user: Username,
@@ -58,6 +61,10 @@ object UserRequest:
   extension (hs: Headers)
     def header[T](name: CIString)(using r: Readable[T]): Option[T] =
       hs.get(name).map(_.head.value).flatMap(str => r.read(str).toOption)
+
+case class JsonRequest[T](user: AdminUser, payload: T)
+
+case class ChangeLanguage(language: Language) derives Codec.AsObject
 
 case class TokenRequest(app: AppName) derives Codec.AsObject
 

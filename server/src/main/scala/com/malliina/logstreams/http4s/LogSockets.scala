@@ -81,11 +81,11 @@ class LogSockets[F[_]: Async](
       .through(jsonTransform[FrontEvent])
     socketBuilder.build(toClient, logIncoming)
 
-  def admin(user: UserRequest, socketBuilder: WebSocketBuilder2[F]): F[Response[F]] =
+  def admin(user: AdminUser, socketBuilder: WebSocketBuilder2[F]): F[Response[F]] =
     socketBuilder
-      .withOnClose(F.delay(log.info(s"Admin '${user.user}' disconnected.")))
+      .withOnClose(F.delay(log.info(s"Admin '${user.email}' disconnected.")))
       .build(
-        Stream.eval(F.delay(log.info(s"Admin '${user.user}' connected."))) >> pings
+        Stream.eval(F.delay(log.info(s"Admin '${user.email}' connected."))) >> pings
           .mergeHaltBoth(Stream.eval(connectedSources.get) ++ admins.subscribe(100))
           .through(jsonTransform[AdminEvent]),
         logIncoming

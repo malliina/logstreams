@@ -6,7 +6,7 @@ import com.malliina.database.DoobieDatabase
 import com.malliina.logstreams.auth.UserError.{AlreadyExists, DoesNotExist, NoSuchEmail}
 import com.malliina.logstreams.auth.{BasicCredentials, UserService}
 import com.malliina.logstreams.db.DoobieDatabaseAuth.log
-import com.malliina.logstreams.models.AppName
+import com.malliina.logstreams.models.{AppName, Language}
 import com.malliina.util.AppLogger
 import com.malliina.values.{Email, Password, Username}
 import doobie.free.connection.ConnectionIO
@@ -60,10 +60,18 @@ class DoobieDatabaseAuth[F[_]](db: DoobieDatabase[F]) extends UserService[F]:
     sql"select USER from USERS order by USER".query[Username].to[List]
 
   def admin(email: Email): F[Either[NoSuchEmail, Admin]] = db.run:
+    adminIO(email)
+
+  private def adminIO(email: Email) =
     sql"select email, language, created_at from admins where email = $email"
       .query[Admin]
       .option
       .map: opt =>
         opt.map(a => Right(a)).getOrElse(Left(NoSuchEmail(email)))
+
+  def changeLanguage(email: Email, to: Language): F[Either[NoSuchEmail, Admin]] = db.run:
+    sql"update admins set language = $to where email = $email".update.run.flatMap: rowsChanged =>
+      if rowsChanged > 0 then log.info(s"Changed language of user $email to $to.")
+      adminIO(email)
 
   private def hash(creds: BasicCredentials): Password = Utils.hash(creds)

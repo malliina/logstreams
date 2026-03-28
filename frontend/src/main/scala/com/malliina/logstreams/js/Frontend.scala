@@ -21,6 +21,7 @@ object Frontend:
     val log: BaseLogger = BaseLogger.printer
     if has(classes.Socket) then LogsPage(lang, log)
     if has(classes.Sources) then SourcesPage(log)
+    if has(classes.Profile) then ProfilePage(log)
 
   private def has(feature: String) = dom.document.body.classList.contains(feature)
 

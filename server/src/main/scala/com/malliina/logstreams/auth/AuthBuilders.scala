@@ -1,6 +1,5 @@
 package com.malliina.logstreams.auth
 
-import cats.Applicative
 import cats.effect.kernel.Sync
 import cats.syntax.all.toFunctorOps
 import com.malliina.http4s.QueryParsers
@@ -102,11 +101,10 @@ object Auths extends AuthBuilder:
               .build(u.name)
               .fold(
                 err =>
-                  F.pure(
-                    Left(
-                      JWTError(PermissionError(ErrorMessage(s"User '$u' is not authorized.")), hs)
-                    )
-                  ),
+                  val err =
+                    JWTError(PermissionError(ErrorMessage(s"User '$u' is not authorized.")), hs)
+                  F.pure(Left(err))
+                ,
                 email =>
                   users
                     .admin(email)

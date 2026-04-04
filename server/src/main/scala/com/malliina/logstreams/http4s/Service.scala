@@ -302,7 +302,7 @@ class Service[F[_]: Async](
     val cb = Callback(
       params.get(OAuthKeys.State),
       session.get(State),
-      params.get(OAuthKeys.CodeKey),
+      params.get(OAuthKeys.CodeKey).flatMap(Code.build(_).toOption),
       session.get(Nonce),
       Urls.hostOnly(req) / LogRoutes.googleCallback.renderString
     )

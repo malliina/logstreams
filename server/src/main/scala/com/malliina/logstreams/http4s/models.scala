@@ -8,7 +8,7 @@ import io.circe.Codec
 import org.http4s.{Headers, Request}
 import org.typelevel.ci.{CIString, CIStringSyntax}
 
-import java.time.{Instant, OffsetDateTime}
+import java.time.OffsetDateTime
 
 case class UserFeedback(message: String, isError: Boolean) derives Codec.AsObject
 

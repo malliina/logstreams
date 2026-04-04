@@ -29,7 +29,7 @@ object JWT:
     claimsJson: Json
   ):
     val exp = Option(claims.getExpirationTime).map(_.toInstant)
-    val iss = Option(claims.getIssuer).map(Issuer.apply)
+    val iss = Option(claims.getIssuer).flatMap(Issuer.build(_).toOption)
 
     def readString(key: String): Either[JWTError, String] =
       read(token, claims.getStringClaim(key), s"Claim missing: '$key'.")
@@ -77,7 +77,7 @@ object JWT:
     catch
       case pe: ParseException =>
         log.error(s"Parse error for token '$token'.", pe)
-        Left(ParseError(token, pe))
+        Left(ParseError.exception(token, pe))
 
 class JWT(secret: SecretKey, dataKey: String = "data"):
   def sign[T: Encoder](payload: T, ttl: FiniteDuration, now: Instant = Instant.now()): IdToken =

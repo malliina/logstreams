@@ -29,7 +29,7 @@ case class LogstreamsConf(
   def isFull = isProdBuild || isTest
 
 object LogstreamsConf:
-  private val googleClientId = ClientId(
+  private val googleClientId = ClientId.unsafe(
     "122390040180-qflbc31ourl9gfinfl7jhl0jk70i8jur.apps.googleusercontent.com"
   )
 

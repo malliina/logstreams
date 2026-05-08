@@ -147,7 +147,8 @@ class Htmls(
             cls := "form-control search-control",
             aria.label := "Search input",
             id := SearchInput,
-            placeholder := llang.searchPlaceholder
+            placeholder := llang.searchPlaceholder,
+            value := query.query.getOrElse("")
           ),
           button(tpe := "button", cls := "btn btn-outline-primary", id := SearchButton)(
             llang.search

@@ -19,7 +19,9 @@ class BaseSocket(wsPath: String, val log: BaseLogger = BaseLogger.printer):
   private var isPendingReconnect = false
   dom.window.onfocus = e =>
     if !Seq(WebSocket.OPEN, WebSocket.CONNECTING).contains(socket.readyState) then
+      log.info(s"Reconnecting to $wsPath...")
       isPendingReconnect = true
+      clear()
       socket = openSocket(wsPath)
 
   def handlePayload(payload: Json): Unit = ()

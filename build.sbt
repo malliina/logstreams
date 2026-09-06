@@ -1,22 +1,9 @@
-import com.comcast.ip4s.IpLiteralSyntax
+import com.comcast.ip4s.port
 import sbtbuildinfo.BuildInfoKey
 import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
 
 val malliinaGroup = "com.malliina"
-
-val versions = new {
-  val circe = "0.14.15"
-  val fs2 = "3.13.0"
-  val logback = "1.5.32"
-  val mariadbClient = "3.5.8"
-  val munit = "1.3.1"
-  val munitCatsEffect = "2.2.0"
-  val scala3 = "3.8.3"
-  val scalatags = "0.13.1"
-  val server = "0.7.0"
-  val util = "6.14.3"
-}
 val webAuthDep = malliinaGroup %% "web-auth" % versions.util
 
 inThisBuild(
@@ -27,9 +14,9 @@ inThisBuild(
       "org.scalameta" %% "munit" % versions.munit % Test
     ),
     assemblyMergeStrategy := {
-      case PathList("META-INF", "versions", xs @ _*)  => MergeStrategy.first
+      case PathList("META-INF", "versions", xs*)  => MergeStrategy.first
       case PathList("META-INF", "okio.kotlin_module") => MergeStrategy.first
-      case PathList("com", "malliina", xs @ _*)       => MergeStrategy.first
+      case PathList("com", "malliina", xs*)       => MergeStrategy.first
       case PathList("module-info.class")              => MergeStrategy.discard
       case x                                          =>
         val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
@@ -44,11 +31,11 @@ val cross = crossProject(JSPlatform, JVMPlatform)
   .in(file("shared"))
   .settings(
     libraryDependencies ++= Seq("generic", "parser").map { m =>
-      "io.circe" %%% s"circe-$m" % versions.circe
+      "io.circe" %% s"circe-$m" % versions.circe
     } ++ Seq(
-      "com.malliina" %%% "primitives" % versions.util,
-      "com.malliina" %%% "util-html" % versions.util,
-      "com.lihaoyi" %%% "scalatags" % versions.scalatags
+      "com.malliina" %% "primitives" % versions.util,
+      "com.malliina" %% "util-html" % versions.util,
+      "com.lihaoyi" %% "scalatags" % versions.scalatags
     )
   )
 val crossJvm = cross.jvm
@@ -65,8 +52,6 @@ val frontend = project
 val server = project
   .in(file("server"))
   .enablePlugins(
-    FileTreePlugin,
-    BuildInfoPlugin,
     ServerPlugin,
     LiveRevolverPlugin,
     DebPlugin
@@ -82,18 +67,18 @@ val server = project
     ),
     libraryDependencies ++=
       Seq(
-        "okclient-io",
         "config",
-        "logstreams-client",
-        "util-html",
         "database",
+        "logstreams-client",
+        "okclient-io",
+        "util-html",
         "util-http4s",
         "web-auth"
       ).map { m =>
         "com.malliina" %% m % versions.util
       } ++ Seq(
         "org.mariadb.jdbc" % "mariadb-java-client" % versions.mariadbClient,
-        webAuthDep % Test classifier "tests",
+        (webAuthDep % Test).classifier("tests"),
         "org.typelevel" %% "munit-cats-effect" % versions.munitCatsEffect % Test
       ),
     Compile / doc / sources := Seq.empty,

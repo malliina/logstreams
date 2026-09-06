@@ -1,14 +1,11 @@
-scalaVersion := "2.12.21"
-
-val utilsVersion = "1.7.1"
+val utilsVersion = "2.0.3"
 
 Seq(
   "com.malliina" % "sbt-revolver-rollup" % utilsVersion,
   "com.malliina" % "sbt-utils-maven" % utilsVersion,
-  "com.malliina" % "sbt-filetree" % utilsVersion,
   "com.malliina" % "sbt-nodejs" % utilsVersion,
-  "org.portable-scala" % "sbt-scalajs-crossproject" % "1.3.2",
-  "org.scalameta" % "sbt-scalafmt" % "2.5.6",
-  "com.eed3si9n" % "sbt-assembly" % "2.3.1",
+  "org.portable-scala" % "sbt-scalajs-crossproject" % "1.4.0",
+  "org.scalameta" % "sbt-scalafmt" % "2.6.1",
+  "com.eed3si9n" % "sbt-assembly" % "2.5.0",
   "com.github.sbt" % "sbt-native-packager" % "1.11.7"
 ) map addSbtPlugin

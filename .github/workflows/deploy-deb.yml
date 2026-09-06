@@ -46,5 +46,5 @@ jobs:
           sbt "mode prod;Deb/packageBin"
       - name: Deploy
         run: |
-          scp server/target/logstreams.deb server:/home/mle/logstreams.deb
+          scp target/out/jvm/scala-3.9.0/server/logstreams.deb server:/home/mle/logstreams.deb
           ssh server 'sudo dpkg --force-confold -i /home/mle/logstreams.deb'

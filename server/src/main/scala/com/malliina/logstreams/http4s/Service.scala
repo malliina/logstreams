@@ -111,7 +111,7 @@ class Service[F[_]: Async](
         .decodeJson[TokenRequest]
         .flatMap: body =>
           val app = body.app
-          val suffixes = Seq("ios", "android", "web")
+          val suffixes = Seq("ios", "android", "web", "aaos")
           val legalApp = suffixes.exists(s => app.name.endsWith(s))
           if legalApp then
             val info = SourceInfo(app, LogClientId.random())

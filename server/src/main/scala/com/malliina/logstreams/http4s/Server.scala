@@ -11,11 +11,11 @@ import com.malliina.http.CSRFConf
 import com.malliina.http.io.HttpClientIO
 import com.malliina.http4s.CSRFUtils
 import com.malliina.logstreams.auth.{AuthBuilder, Auther, Auths, JWT}
-import com.malliina.logstreams.client.LogstreamsUtils
+import com.malliina.logstreams.client.{LogstreamsConf, LogstreamsUtils}
 import com.malliina.logstreams.db.{DoobieDatabaseAuth, DoobieLogsDatabase}
 import com.malliina.logstreams.html.{AssetsSource, Htmls}
 import com.malliina.logstreams.models.{AppLogEvents, LogEntryInputs, LogSources}
-import com.malliina.logstreams.{LogConf, LogstreamsConf}
+import com.malliina.logstreams.{LogConf, LogstreamsAppConf}
 import com.malliina.util.AppLogger
 import com.malliina.web.GoogleAuthFlow
 import fs2.concurrent.Topic
@@ -41,7 +41,7 @@ object Server extends IOApp with AppResources:
 
   override def run(args: List[String]): IO[ExitCode] =
     for
-      conf <- LogstreamsConf.parseIO[IO]
+      conf <- LogstreamsAppConf.parseIO[IO]
       app <- server[IO](conf, Auths).use(_ => IO.never).as(ExitCode.Success)
     yield app
 
@@ -52,7 +52,7 @@ trait AppResources:
     sys.env.get("SERVER_PORT").flatMap(s => Port.fromString(s)).getOrElse(port"9001")
 
   def server[F[_]: Async](
-    conf: LogstreamsConf,
+    conf: LogstreamsAppConf,
     authBuilder: AuthBuilder,
     port: Port = serverPort
   ): Resource[F, ServerComponents[F]] =
@@ -82,7 +82,7 @@ trait AppResources:
     yield ServerComponents(service, server)
 
   private def appService[F[_]: Async](
-    conf: LogstreamsConf,
+    conf: LogstreamsAppConf,
     authBuilder: AuthBuilder,
     csrf: CSRF[F, F],
     csrfConf: CSRFConf
@@ -91,7 +91,13 @@ trait AppResources:
       http <- HttpClientIO.resource[F]
       dispatcher <- Dispatcher.parallel[F]
       _ <- Resource.eval(
-        LogstreamsUtils.installIfEnabled(LogConf.name, LogConf.userAgent, dispatcher, http)
+        LogstreamsUtils.installIfEnabled(
+          LogConf.name,
+          LogConf.userAgent,
+          LogstreamsConf.DefaultEmitInterval,
+          dispatcher,
+          http
+        )
       )
       db <-
         if conf.isFull then DoobieDatabase.init[F](conf.db)

@@ -15,7 +15,7 @@ import com.malliina.logstreams.auth.*
 import com.malliina.logstreams.db.Admin
 import com.malliina.logstreams.http4s.{AppResources, Http4sAuth, SourceInfo}
 import com.malliina.logstreams.models.Language.English
-import com.malliina.logstreams.{LocalConf, LogstreamsConf}
+import com.malliina.logstreams.{LocalConf, LogstreamsAppConf}
 import com.malliina.values.{Email, Password, Username}
 import munit.AnyFixture
 import java.time.Instant
@@ -40,8 +40,11 @@ object DatabaseUtils:
       url"jdbc:mariadb://127.0.0.1:3306/testlogstreams",
       "testlogstreams",
       password,
-      LogstreamsConf.mariaDbDriver,
-      maxPoolSize = 2,
+      LogstreamsAppConf.mariaDbDriver,
+      2,
+      Conf.DefaultMaxLifetime,
+      Conf.DefaultKeepaliveTime,
+      Conf.DefaultIdleTimeout,
       autoMigrate = true
     )
 
@@ -71,7 +74,7 @@ trait ServerSuite extends MUnitDatabaseSuite:
   val conf = for
     database <- IO(db())
     node <- IO.fromEither(DatabaseUtils.testConf.parse[ConfigNode]("logstreams"))
-    conf <- IO.fromEither(LogstreamsConf.parse(node, pass => database, isTest = true))
+    conf <- IO.fromEither(LogstreamsAppConf.parse(node, pass => database, isTest = true))
   yield conf
   val testResource = Resource
     .eval(conf)

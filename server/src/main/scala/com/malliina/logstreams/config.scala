@@ -19,7 +19,7 @@ object LocalConf:
     if BuildInfo.isProd then ConfigNode.load("application-prod.conf")
     else local("logstreams.conf")
 
-case class LogstreamsConf(
+case class LogstreamsAppConf(
   isTest: Boolean,
   isProdBuild: Boolean,
   secret: SecretKey,
@@ -28,14 +28,14 @@ case class LogstreamsConf(
 ):
   def isFull = isProdBuild || isTest
 
-object LogstreamsConf:
+object LogstreamsAppConf:
   private val googleClientId = ClientId.unsafe(
     "122390040180-qflbc31ourl9gfinfl7jhl0jk70i8jur.apps.googleusercontent.com"
   )
 
   private def logsNode = LocalConf.conf.parse[ConfigNode]("logstreams")
 
-  def parseIO[F[_]: Sync]: F[LogstreamsConf] = Sync[F].fromEither(parseConf)
+  def parseIO[F[_]: Sync]: F[LogstreamsAppConf] = Sync[F].fromEither(parseConf)
 
   private def parseConf =
     val env = Env.read[String]("ENV_NAME")
@@ -55,7 +55,7 @@ object LogstreamsConf:
     c: ConfigNode,
     dbConf: Password => Conf,
     isTest: Boolean
-  ): Either[ConfigError, LogstreamsConf] =
+  ): Either[ConfigError, LogstreamsAppConf] =
     val env = Env.read[String]("ENV_NAME")
     val isProd = env.contains("prod")
     for
@@ -64,7 +64,7 @@ object LogstreamsConf:
         else c.opt[SecretKey]("secret").map(_.getOrElse(SecretKey.dev))
       dbPass <- c.parse[Password]("db.pass")
       googleSecret <- c.parse[ClientSecret]("google.client-secret")
-    yield LogstreamsConf(
+    yield LogstreamsAppConf(
       isTest,
       isProdBuild = BuildInfo.isProd,
       secret,
@@ -74,20 +74,20 @@ object LogstreamsConf:
 
   val mariaDbDriver = "org.mariadb.jdbc.Driver"
 
-  private def prodDatabaseConf(password: Password, maxPoolSize: Int) = Conf(
+  private def prodDatabaseConf(password: Password, maxPoolSize: Int) =
+    databaseConf(password, maxPoolSize, autoMigrate = true)
+
+  private def devDatabaseConf(password: Password) =
+    databaseConf(password, 2, true)
+
+  private def databaseConf(password: Password, maxPoolSize: Int, autoMigrate: Boolean) = Conf(
     url"jdbc:mariadb://localhost:3306/logstreams",
     "logstreams",
     password,
     mariaDbDriver,
     maxPoolSize,
-    autoMigrate = true
-  )
-
-  private def devDatabaseConf(password: Password) = Conf(
-    url"jdbc:mariadb://localhost:3306/logstreams",
-    "logstreams",
-    password,
-    mariaDbDriver,
-    maxPoolSize = 2,
-    autoMigrate = true
+    Conf.DefaultMaxLifetime,
+    Conf.DefaultKeepaliveTime,
+    Conf.DefaultIdleTimeout,
+    autoMigrate = autoMigrate
   )

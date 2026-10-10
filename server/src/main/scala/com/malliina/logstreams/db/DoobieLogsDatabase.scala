@@ -1,31 +1,34 @@
 package com.malliina.logstreams.db
 
-import cats.implicits.*
+import cats.syntax.all.{catsSyntaxApplicativeId, catsSyntaxList}
 import com.malliina.database.DoobieDatabase
 import com.malliina.logstreams.db.DoobieLogsDatabase.log
 import com.malliina.logstreams.models.*
 import com.malliina.util.AppLogger
-import doobie.*
-import doobie.implicits.*
+import doobie.syntax.all.toSqlInterpolator
+import doobie.{ConnectionIO, Fragment, Fragments, Update}
 
 object DoobieLogsDatabase:
   private val log = AppLogger(getClass)
 
-class DoobieLogsDatabase[F[_]](db: DoobieDatabase[F]) extends LogsDatabase[F]:
+class DoobieLogsDatabase[F[_]](db: DoobieDatabase[F]) extends LogsDatabase[F] with DoobieMappings:
   def insert(events: List[LogEntryInput]): F[EntriesWritten] = db.run:
-    val insertions = events.traverse: e =>
-      sql"""insert into LOGS(APP, ADDRESS, MESSAGE, LOGGER, THREAD, LEVEL, CLIENT, USER_AGENT, STACKTRACE, TIMESTAMP)
-            values(${e.appName}, ${e.remoteAddress}, ${e.message}, ${e.loggerName}, ${e.threadName}, ${e.level}, ${e.clientId}, ${e.userAgent}, ${e.stackTrace}, ${e.timestamp})""".update
-        .withUniqueGeneratedKeys[LogEntryId]("ID")
-    insertions.flatMap: idList =>
-      idList.toNel
-        .map: ids =>
-          val inClause = Fragments.in(fr"ID", ids)
-          logsQuery(inClause)
-        .getOrElse:
-          List.empty[LogEntryRow].pure[ConnectionIO]
-        .map: list =>
-          EntriesWritten(events, list)
+    val q =
+      """insert into LOGS(APP, ADDRESS, TIMESTAMP, MESSAGE, LOGGER, THREAD, LEVEL, CLIENT, USER_AGENT, STACKTRACE)
+         values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+    Update[LogEntryInput](q)
+      .updateManyWithGeneratedKeys[LogEntryId]("ID")(events)
+      .compile
+      .toList
+      .flatMap: (idList: List[LogEntryId]) =>
+        idList.toNel
+          .map: nel =>
+            val inClause = Fragments.in(fr"ID", nel)
+            logsQuery(inClause)
+          .getOrElse:
+            List.empty[LogEntryRow].pure[ConnectionIO]
+          .map: list =>
+            EntriesWritten(events, list)
 
   def events(query: StreamsQuery = StreamsQuery.default): F[AppLogEvents] = db.run:
     val levels = LogLevel.all

@@ -1,7 +1,6 @@
 package com.malliina.logstreams.db
 
-import cats.*
-import cats.implicits.*
+import cats.syntax.all.catsSyntaxApplicativeId
 import com.malliina.database.DoobieDatabase
 import com.malliina.logstreams.auth.UserError.{AlreadyExists, DoesNotExist, NoSuchEmail}
 import com.malliina.logstreams.auth.{BasicCredentials, UserService}
@@ -10,12 +9,12 @@ import com.malliina.logstreams.models.{AppName, Language}
 import com.malliina.util.AppLogger
 import com.malliina.values.{Email, Password, Username}
 import doobie.free.connection.ConnectionIO
-import doobie.implicits.*
+import doobie.syntax.all.toSqlInterpolator
 
 object DoobieDatabaseAuth:
   private val log = AppLogger(getClass)
 
-class DoobieDatabaseAuth[F[_]](db: DoobieDatabase[F]) extends UserService[F]:
+class DoobieDatabaseAuth[F[_]](db: DoobieDatabase[F]) extends UserService[F] with DoobieMappings:
   def add(creds: BasicCredentials): F[Either[AlreadyExists, Unit]] = db.run:
     val existsIO = sql"select exists(select USER from USERS where USER = ${creds.username})"
       .query[Boolean]

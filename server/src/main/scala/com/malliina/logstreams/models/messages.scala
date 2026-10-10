@@ -2,7 +2,10 @@ package com.malliina.logstreams.models
 
 import ch.qos.logback.classic.Level
 import com.malliina.logback.LogbackFormatting
+import com.malliina.logstreams.db.DoobieMappings
+import com.malliina.logstreams.db.DoobieMappings.given
 import com.malliina.values.Username
+import doobie.{Meta, Read, Write}
 import io.circe.{Codec, Decoder, Encoder}
 
 import java.time.Instant
@@ -47,7 +50,7 @@ case class LogEntryInput(
   clientId: Option[LogClientId],
   userAgent: Option[UserAgent],
   stackTrace: Option[String]
-)
+) derives Write
 
 case class LogEntryInputs(events: List[LogEntryInput])
 
@@ -64,7 +67,7 @@ case class LogEntryRow(
   userAgent: Option[UserAgent],
   stacktrace: Option[String],
   added: Instant
-):
+) derives Read:
   def toEvent = AppLogEvent(
     id,
     SimpleLogSource(AppName.fromUsername(app), address, clientId, userAgent),

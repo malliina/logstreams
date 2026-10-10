@@ -8,14 +8,16 @@ import doobie.util.meta.Meta
 
 import java.time.Instant
 
+object DoobieMappings extends DoobieMappings
+
 trait DoobieMappings:
-  given Meta[Instant] = doobie.implicits.legacy.instant.JavaTimeInstantMeta
-  given Meta[Username] = validated(Username)
+  given instantMeta: Meta[Instant] = doobie.implicits.legacy.instant.JavaTimeInstantMeta
+  given usernameMeta: Meta[Username] = validated(Username)
   given Meta[AppName] = validated(AppName)
   given Meta[Level] = Meta.IntMeta.timap(i => Level.toLevel(i))(_.toInt)
-  given Meta[LogEntryId] = validated(LogEntryId)
+  given logEntryIdMeta: Meta[LogEntryId] = validated(LogEntryId)
   given Meta[Password] = validated(Password)
-  given Meta[LogLevel] =
+  given logLevelMeta: Meta[LogLevel] =
     Meta.IntMeta.tiemap(int => LogLevel.of(int).toRight(s"Invalid level: '$int'."))(_.int)
   given Meta[NonNeg] = validated(NonNeg)
   given Meta[LogClientId] = validated(LogClientId)

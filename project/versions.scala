@@ -8,4 +8,4 @@ object versions:
   val scala3 = "3.10.0"
   val scalatags = "0.13.1"
   val server = "0.7.0"
-  val util = "6.17.0"
+  val util = "6.18.0"

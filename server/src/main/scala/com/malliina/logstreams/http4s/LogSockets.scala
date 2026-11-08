@@ -19,7 +19,7 @@ import org.http4s.websocket.WebSocketFrame.Text
 
 import java.time.Instant
 import java.time.format.DateTimeFormatter
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util.Try
 
 object LogSockets:
@@ -37,10 +37,14 @@ class LogSockets[F[_]: Async](
   val db: LogsDatabase[F]
 ):
   val F = Async[F]
+  private val chunkSize = 1024
+  private val chunkWithin: FiniteDuration = 5.seconds
   private val savedEvents: Stream[F, AppLogEvents] = logs
-    .subscribe(100)
-    .evalMap: ins =>
-      db.insert(ins.events)
+    .subscribe(1000)
+    .flatMap(es => Stream.emits(es.events))
+    .groupWithin(chunkSize, chunkWithin)
+    .evalMap: events =>
+      db.insert(events.toList)
         .map: written =>
           AppLogEvents(written.rows.map(_.toEvent))
   // saves to the database and publishes events

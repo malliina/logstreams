@@ -4,11 +4,11 @@ import cats.effect.kernel.{Async, Ref}
 import cats.syntax.all.{catsSyntaxApplicativeError, toFlatMapOps, toFunctorOps}
 import com.malliina.logback.TimeFormatter
 import com.malliina.logstreams.db.{LogsDatabase, StreamsQuery}
-import com.malliina.logstreams.http4s.LogSockets.{helsinkiFormatter, log}
+import com.malliina.logstreams.http4s.LogSockets.{Chunking, helsinkiFormatter, log}
 import com.malliina.logstreams.models.*
 import com.malliina.util.AppLogger
 import fs2.concurrent.Topic
-import fs2.{Pipe, Stream}
+import fs2.{Chunk, Pipe, Stream}
 import io.circe.Encoder
 import io.circe.parser.decode
 import io.circe.syntax.EncoderOps
@@ -26,9 +26,9 @@ object LogSockets:
   private val instantFormatter = DateTimeFormatter.ISO_INSTANT
   val helsinkiFormatter =
     DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(TimeFormatter.helsinki)
-  object chunkWithin:
-    val dev = 50.millis
-    val prod = 5.seconds
+  case class Chunking(size: Int, within: FiniteDuration)
+  object Chunking:
+    val prod = Chunking(1024, 5.seconds)
 
 class LogSockets[F[_]: Async](
   logs: Topic[F, LogEntryInputs],
@@ -36,14 +36,17 @@ class LogSockets[F[_]: Async](
   connectedSources: Ref[F, LogSources],
   logUpdates: Topic[F, AppLogEvents],
   val db: LogsDatabase[F],
-  chunkWithin: FiniteDuration
+  chunking: Option[Chunking]
 ):
   val F = Async[F]
   private val chunkSize = 1024
   private val savedEvents: Stream[F, AppLogEvents] = logs
     .subscribe(1000)
     .flatMap(es => Stream.emits(es.events))
-    .groupWithin(chunkSize, chunkWithin)
+    .through(s => chunking.map(c => s.groupWithin(c.size, c.within)).getOrElse(s.map(e => Chunk.singleton(e))))
+//    .through(s => Stream.emit(Chunk.singleton(s)))
+//    .through(s => chunking.map(c => Stream.emit(Chunk.singleton(s))).getOrElse(Stream.emit(Chunk.singleton(s))))
+//    .groupWithin(chunkSize, chunkWithin)
     .evalMap: events =>
       val eventsList = events.toList
       db.insert(eventsList)

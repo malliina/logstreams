@@ -107,7 +107,8 @@ trait AppResources:
       connecteds <- Resource.eval(Ref[F].of(LogSources(Nil)))
       logUpdates <- Resource.eval(Topic[F, AppLogEvents])
       logsDatabase = DoobieLogsDatabase(db)
-      sockets = LogSockets(logsTopic, adminsTopic, connecteds, logUpdates, logsDatabase)
+      chunkWithin = if BuildInfo.isProd then LogSockets.chunkWithin.prod else LogSockets.chunkWithin.dev
+      sockets = LogSockets(logsTopic, adminsTopic, connecteds, logUpdates, logsDatabase, chunkWithin)
       _ <- fs2.Stream.emit(()).concurrently(sockets.publisher).compile.resource.lastOrError
     yield
       val users = DoobieDatabaseAuth(db)

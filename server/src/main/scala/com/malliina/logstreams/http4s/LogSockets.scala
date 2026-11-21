@@ -17,10 +17,8 @@ import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.websocket.WebSocketFrame
 import org.http4s.websocket.WebSocketFrame.Text
 
-import java.time.Instant
 import java.time.format.DateTimeFormatter
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.util.Try
 
 object LogSockets:
   private val log = AppLogger(getClass)
@@ -28,17 +26,20 @@ object LogSockets:
   private val instantFormatter = DateTimeFormatter.ISO_INSTANT
   val helsinkiFormatter =
     DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(TimeFormatter.helsinki)
+  object chunkWithin:
+    val dev = 50.millis
+    val prod = 5.seconds
 
 class LogSockets[F[_]: Async](
   logs: Topic[F, LogEntryInputs],
   admins: Topic[F, LogSources],
   connectedSources: Ref[F, LogSources],
   logUpdates: Topic[F, AppLogEvents],
-  val db: LogsDatabase[F]
+  val db: LogsDatabase[F],
+  chunkWithin: FiniteDuration
 ):
   val F = Async[F]
   private val chunkSize = 1024
-  private val chunkWithin: FiniteDuration = 5.seconds
   private val savedEvents: Stream[F, AppLogEvents] = logs
     .subscribe(1000)
     .flatMap(es => Stream.emits(es.events))

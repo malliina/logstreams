@@ -54,23 +54,31 @@ class LogstreamsTests extends TestServerSuite:
 
     val user = user"u2"
     val task = withSource(user, client): source =>
-      Deferred[IO, AppLogEvents].flatMap: p =>
-        withListener(client): listener =>
-          val receive: IO[Unit] =
-            listener.jsonMessages
-              .flatMap: json =>
-                Decoder[AppLogEvents]
-                  .decodeJson(json)
-                  .fold(fail => Stream.empty, es => Stream.eval(p.complete(es)))
-              .take(1)
-              .compile
-              .drain
-          val payload = LogEvents(List(testEvent))
-          for
-            _ <- receive.start
-            _ <- source.send(payload)
-            receivedEvent <- p.get
-          yield
+      withListener(client): listener =>
+        val received =
+          listener.jsonMessages.flatMap(json =>
+            json
+              .as[FrontEvent]
+              .fold(
+                f => Stream.raiseError[IO](f),
+                {
+                  case SimpleEvent(event)         => Stream.empty
+                  case ale @ AppLogEvents(events) => Stream.emit(ale)
+                  case MetaEvent(event, meta)     => Stream.empty
+                }
+              )
+          )
+        val payload = LogEvents(List(testEvent))
+        val sendMessage = source
+          .send(payload)
+          .map: success =>
+            assert(success)
+        received
+          .concurrently(Stream.eval(sendMessage))
+          .take(1)
+          .compile
+          .lastOrError
+          .map: receivedEvent =>
             val jsonResult = receivedEvent
             val events = jsonResult.events
             assertEquals(events.size, 1)

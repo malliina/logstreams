@@ -1,7 +1,7 @@
 package com.malliina.logstreams.http4s
 
 import cats.effect.kernel.{Async, Ref}
-import cats.syntax.all.{toFlatMapOps, toFunctorOps}
+import cats.syntax.all.{catsSyntaxApplicativeError, toFlatMapOps, toFunctorOps}
 import com.malliina.logback.TimeFormatter
 import com.malliina.logstreams.db.{LogsDatabase, StreamsQuery}
 import com.malliina.logstreams.http4s.LogSockets.{helsinkiFormatter, log}
@@ -44,7 +44,12 @@ class LogSockets[F[_]: Async](
     .flatMap(es => Stream.emits(es.events))
     .groupWithin(chunkSize, chunkWithin)
     .evalMap: events =>
-      db.insert(events.toList)
+      val eventsList = events.toList
+      db.insert(eventsList)
+        .handleError: t =>
+          val apps = eventsList.map(_.appName).distinct.sorted.mkString(", ")
+          log.error(s"Failed to insert ${eventsList.size} logs from app(s) $apps. Discarding.", t)
+          EntriesWritten(Nil, Nil)
         .map: written =>
           AppLogEvents(written.rows.map(_.toEvent))
   // saves to the database and publishes events

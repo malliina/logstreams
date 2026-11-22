@@ -78,10 +78,11 @@ class LogstreamsTests extends TestServerSuite:
                   case MetaEvent(event, meta)     => Stream.empty
                 }
               )
-        val payload = LogEvents(List(testEvent))
+        log.info("Connects source, then listener, then source sends message...")
         val sendMessage = source.connect >> listener.connect >> source.socket
-          .send(payload)
+          .send(LogEvents(List(testEvent)))
           .map: success =>
+            log.info(s"Sent test message, success: $success")
             assert(success)
         received
           .concurrently(Stream.eval(sendMessage))

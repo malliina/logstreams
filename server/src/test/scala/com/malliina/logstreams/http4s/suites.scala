@@ -68,7 +68,7 @@ trait MUnitDatabaseSuite:
 trait ServerSuite extends MUnitDatabaseSuite:
   self: munit.CatsEffectSuite =>
   object TestServer extends AppResources:
-    val _ = LogbackUtils.init(rootLevel = Level.OFF)
+    val _ = LogbackUtils.init(rootLevel = Level.INFO)
   val http = ResourceFunFixture(HttpClientIO.resource[IO])
   val conf = for
     database <- IO(db())

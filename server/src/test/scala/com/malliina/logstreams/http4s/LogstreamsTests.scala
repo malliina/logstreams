@@ -3,7 +3,7 @@ package com.malliina.logstreams.http4s
 import cats.effect.{Deferred, IO}
 import com.malliina.http.SocketEvent.Open
 import com.malliina.http.io.{HttpClientF2, OkSocket}
-import com.malliina.http.{FullUrl, ReconnectingSocket, SocketEvent}
+import com.malliina.http.{FullUrl, ReconnectingSocket}
 import com.malliina.logstreams.auth.BasicCredentials
 import com.malliina.logstreams.client.{HttpUtil, KeyValue}
 import com.malliina.logstreams.http4s.LogRoutes
@@ -27,6 +27,7 @@ object LogstreamsTests:
       .concurrently(Stream.eval(socket.connectSocket))
       .compile
       .lastOrError
+    def messages = socket.jsonMessages
     def jsons = socket.jsonMessages.concurrently(Stream.eval(socket.connectSocket))
 
 class LogstreamsTests extends TestServerSuite:
@@ -41,7 +42,7 @@ class LogstreamsTests extends TestServerSuite:
   def components = server().app
   def users = components.users
 
-  http.test("can open socket".ignore): client =>
+  http.test("can open socket"): client =>
     val c = creds(user"u1")
     users
       .add(c)
@@ -66,7 +67,7 @@ class LogstreamsTests extends TestServerSuite:
     val task = withSource(user, client): source =>
       withListener(client): listener =>
         val received =
-          listener.flatMap: json =>
+          listener.messages.flatMap: json =>
             json
               .as[FrontEvent]
               .fold(
@@ -78,7 +79,7 @@ class LogstreamsTests extends TestServerSuite:
                 }
               )
         val payload = LogEvents(List(testEvent))
-        val sendMessage = source.connect >> source.socket
+        val sendMessage = source.connect >> listener.connect >> source.socket
           .send(payload)
           .map: success =>
             assert(success)
@@ -163,8 +164,8 @@ class LogstreamsTests extends TestServerSuite:
     )
     openSocket(wsUrl, kvs, httpClient)(s => code(s.jsons))
 
-  def withListener[T](httpClient: HttpClientF2[IO])(code: Stream[IO, Json] => IO[T]) =
-    openAuthedSocket(testUser, LogRoutes.sockets.logs, httpClient)(s => code(s.jsons))
+  def withListener[T](httpClient: HttpClientF2[IO])(code: TestSocket => IO[T]) =
+    openAuthedSocket(testUser, LogRoutes.sockets.logs, httpClient)(s => code(s))
 
   def withSource[T](username: Username, httpClient: HttpClientF2[IO])(code: TestSocket => IO[T]) =
     openAuthedSocket(username, LogRoutes.sockets.sources, httpClient)(code)

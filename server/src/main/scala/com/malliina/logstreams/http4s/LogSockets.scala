@@ -36,17 +36,17 @@ class LogSockets[F[_]: Async](
   connectedSources: Ref[F, LogSources],
   logUpdates: Topic[F, AppLogEvents],
   val db: LogsDatabase[F],
-  chunking: Option[Chunking]
+  val chunking: Option[Chunking]
 ):
   val F = Async[F]
+  def describe = chunking.fold("no chunking")(c => s"chunking size ${c.size} within ${c.within.toSeconds} seconds")
   private val chunkSize = 1024
   private val savedEvents: Stream[F, AppLogEvents] = logs
     .subscribe(1000)
     .flatMap(es => Stream.emits(es.events))
-    .through(s => chunking.map(c => s.groupWithin(c.size, c.within)).getOrElse(s.map(e => Chunk.singleton(e))))
-//    .through(s => Stream.emit(Chunk.singleton(s)))
-//    .through(s => chunking.map(c => Stream.emit(Chunk.singleton(s))).getOrElse(Stream.emit(Chunk.singleton(s))))
-//    .groupWithin(chunkSize, chunkWithin)
+    .through(s =>
+      chunking.map(c => s.groupWithin(c.size, c.within)).getOrElse(s.map(e => Chunk.singleton(e)))
+    )
     .evalMap: events =>
       val eventsList = events.toList
       db.insert(eventsList)

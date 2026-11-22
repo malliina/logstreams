@@ -16,8 +16,10 @@ import com.malliina.logstreams.db.Admin
 import com.malliina.logstreams.http4s.{AppResources, Http4sAuth, SourceInfo}
 import com.malliina.logstreams.models.Language.English
 import com.malliina.logstreams.{LocalConf, LogstreamsAppConf}
+import com.malliina.values.Literals.email
 import com.malliina.values.{Email, Password, Username}
 import munit.AnyFixture
+
 import java.time.Instant
 
 class LogsAppConf(override val database: Conf) extends AppConf:
@@ -63,13 +65,10 @@ trait MUnitDatabaseSuite:
   val db = ResourceSuiteLocalFixture("database", DatabaseUtils.testDatabase)
   override def munitFixtures: Seq[AnyFixture[?]] = Seq(db)
 
-object ServerSuite:
-  val initLogging = LogbackUtils.init(rootLevel = Level.INFO)
-
 trait ServerSuite extends MUnitDatabaseSuite:
   self: munit.CatsEffectSuite =>
   object TestServer extends AppResources:
-    val _ = ServerSuite.initLogging
+    val _ = LogbackUtils.init(rootLevel = Level.OFF)
   val http = ResourceFunFixture(HttpClientIO.resource[IO])
   val conf = for
     database <- IO(db())
@@ -84,7 +83,7 @@ trait ServerSuite extends MUnitDatabaseSuite:
 
   def testAuths: AuthBuilder = new AuthBuilder:
     override def apply[F[_]: Sync](users: UserService[F], web: Http4sAuth[F]) =
-      TestAuther(users, web, Admin(Email.unsafe("u@example.com"), English, Instant.now()))
+      TestAuther(users, web, Admin(email"u@example.com", English, Instant.now()))
 
   override def munitFixtures: Seq[AnyFixture[?]] = Seq(db, server)
 

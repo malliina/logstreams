@@ -61,13 +61,11 @@ trait AppResources:
     for
       csrf <- Resource.eval(csrfUtils.default[F](onFailure = CSRFUtils.defaultFailure[F]))
       service <- appService[F](conf, authBuilder, csrf, csrfConf)
-      _ <- Resource.eval(
-        Async[F].delay(
+      _ <- Resource.eval:
+        Async[F].delay:
           log.info(
-            s"Binding on port $port using app version ${AppMeta.ThisApp.git} Google client ID '${conf.google.clientId}'..."
+            s"Binding on port $port using app version ${AppMeta.ThisApp.git} Google client ID '${conf.google.clientId}' with ${service.describe}..."
           )
-        )
-      )
       server <- EmberServerBuilder
         .default[F]
         .withIdleTimeout(30.days)
@@ -108,7 +106,14 @@ trait AppResources:
       logUpdates <- Resource.eval(Topic[F, AppLogEvents])
       logsDatabase = DoobieLogsDatabase(db)
       chunkWithin = if BuildInfo.isProd then Option(LogSockets.Chunking.prod) else None
-      sockets = LogSockets(logsTopic, adminsTopic, connecteds, logUpdates, logsDatabase, chunkWithin)
+      sockets = LogSockets(
+        logsTopic,
+        adminsTopic,
+        connecteds,
+        logUpdates,
+        logsDatabase,
+        chunkWithin
+      )
       _ <- fs2.Stream.emit(()).concurrently(sockets.publisher).compile.resource.lastOrError
     yield
       val users = DoobieDatabaseAuth(db)

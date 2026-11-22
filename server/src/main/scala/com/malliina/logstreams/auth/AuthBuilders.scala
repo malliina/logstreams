@@ -6,6 +6,7 @@ import com.malliina.http4s.QueryParsers
 import com.malliina.logstreams.db.Admin
 import com.malliina.logstreams.http4s.{EmailNotFound, Http4sAuth, IdentityError, JWTError, MissingCredentials, SourceInfo}
 import com.malliina.util.AppLogger
+import com.malliina.values.Literals.email
 import com.malliina.values.{Email, ErrorMessage, IdToken, Password, Username}
 import com.malliina.web.PermissionError
 import org.http4s.{Headers, ParseFailure, QueryParamDecoder, Request}
@@ -30,7 +31,7 @@ class Auths[F[_]: Sync](
 
 object Auths extends AuthBuilder:
   private val log = AppLogger(getClass)
-  private val authorizedEmail = Email.unsafe("malliina123@gmail.com")
+  private val authorizedEmail: Email = email"malliina123@gmail.com"
 
   private val tokenQueryName = "token"
 

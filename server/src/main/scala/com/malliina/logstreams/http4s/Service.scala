@@ -64,6 +64,7 @@ class Service[F[_]: Async](
   with CSRFSupport[F]:
   val reverse = LogRoutes
   val F = Sync[F]
+  def describe = sockets.describe
 
   def routes(socketBuilder: WebSocketBuilder2[F]): HttpRoutes[F] = HttpRoutes.of[F] {
     case GET -> Root / "health" => ok(AppMeta.ThisApp)

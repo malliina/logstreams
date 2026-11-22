@@ -5,7 +5,7 @@ import com.malliina.logback.LogbackFormatting
 import com.malliina.logstreams.db.DoobieMappings
 import com.malliina.logstreams.db.DoobieMappings.given
 import com.malliina.values.Username
-import doobie.{Meta, Read, Write}
+import doobie.{Read, Write}
 import io.circe.{Codec, Decoder, Encoder}
 
 import java.time.Instant

@@ -34,8 +34,10 @@ object DatabaseUtils:
       .map: pass =>
         testDatabaseConf(pass)
     either.fold(err => throw err, identity)
+
   val testDatabase: Resource[IO, Conf] = Resource.make(acquire): conf =>
-    truncateTestData(conf).void
+    if !sys.env.get("CI").contains("true") then truncateTestData(conf).void
+    else IO.unit
 
   private def testDatabaseConf(password: Password): Conf =
     Conf(
@@ -51,7 +53,7 @@ object DatabaseUtils:
     )
 
   private def truncateTestData(conf: Conf): IO[Int] =
-    import doobie.implicits.*
+    import doobie.implicits.toSqlInterpolator
     DoobieDatabase
       .default[IO](conf)
       .use: database =>
@@ -68,7 +70,7 @@ trait MUnitDatabaseSuite:
 trait ServerSuite extends MUnitDatabaseSuite:
   self: munit.CatsEffectSuite =>
   object TestServer extends AppResources:
-    val _ = LogbackUtils.init(rootLevel = Level.INFO)
+    val _ = LogbackUtils.init(rootLevel = Level.OFF)
   val http = ResourceFunFixture(HttpClientIO.resource[IO])
   val conf = for
     database <- IO(db())

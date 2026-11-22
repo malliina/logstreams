@@ -39,7 +39,9 @@ class LogSockets[F[_]: Async](
   val chunking: Option[Chunking]
 ):
   val F = Async[F]
-  def describe = chunking.fold("no chunking")(c => s"chunking size ${c.size} within ${c.within.toSeconds} seconds")
+  def describe = chunking.fold("no chunking")(c =>
+    s"chunking size ${c.size} within ${c.within.toSeconds} seconds"
+  )
   private val chunkSize = 1024
   private val savedEvents: Stream[F, AppLogEvents] = logs
     .subscribe(1000)

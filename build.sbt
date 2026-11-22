@@ -22,7 +22,8 @@ inThisBuild(
         val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
         oldStrategy(x)
     },
-    dependencyOverrides += "org.scala-lang" %% "scala3-library" % scalaVersion.value
+    dependencyOverrides += "org.scala-lang" %% "scala3-library" % scalaVersion.value,
+    Test / parallelExecution := false
   )
 )
 
